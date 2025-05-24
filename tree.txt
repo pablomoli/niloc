@@ -1,0 +1,83 @@
+ls on root directory
+ .git
+ __pycache__
+ admin
+ migrations
+ static
+ templates
+ venv
+ .DS_Store
+ .env
+ .gitignore
+ app.py
+ auth_utils.py
+ cleanaddresses.py
+ cleandata.py
+ cleaned_job_numbers.txt
+ counties.py
+ data.xlsx
+ job_numbers.txt
+ missing.py
+ models.py
+ populate.py
+ processed_valid_addr_estimates.xlsx
+ processed_valid_invoices.xlsx
+ Procfile
+ requirements.txt
+ run.bat
+ run.sh
+ start.sh
+ to_be_cleaned.xlsx
+ todo.md
+ tree.txt
+ utils.py
+tree on admin
+admin
+├── __pycache__
+│   ├── __init__.cpython-311.pyc
+│   ├── __init__.cpython-313.pyc
+│   ├── routes.cpython-311.pyc
+│   └── routes.cpython-313.pyc
+├── __init__.py
+└── routes.py
+tree on static
+static
+├── css
+│   └── style.css
+├── data
+│   ├── cntbnd_sep15.dbf
+│   ├── cntbnd_sep15.fgdc.htm
+│   ├── cntbnd_sep15.htm
+│   ├── cntbnd_sep15.prj
+│   ├── cntbnd_sep15.shp
+│   ├── cntbnd_sep15.shp.xml
+│   ├── cntbnd_sep15.shx
+│   ├── cntbnd_sep15.zip
+│   ├── florida_counties.geojson
+│   └── s.py
+├── icons
+│   ├── flag.svg
+│   ├── marker-icon-black.png
+│   ├── marker-icon-blue.png
+│   ├── marker-icon-gold.png
+│   ├── marker-icon-green.png
+│   ├── marker-icon-grey.png
+│   ├── marker-icon-orange.png
+│   ├── marker-icon-pink.png
+│   ├── marker-icon-red.png
+│   ├── marker-icon-violet.png
+│   ├── marker-icon-yellow.png
+│   ├── marker-shadow.png
+│   └── reset-arrow.svg
+└── js
+    ├── admin_spa.js
+    └── map.js
+tree on templates
+templates
+├── admin.html
+├── admin_dashboard.html
+├── admin_jobs.html
+├── admin_spa.html
+├── form.html
+├── login.html
+└── map.html
