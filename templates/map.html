@@ -2,10 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Epic Map - Survey Job Management</title>
+    <title>Epic Map - Enhanced Survey Job Management</title>
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <!-- Base Leaflet -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -18,216 +17,169 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
     />
+
+    <!-- Fullscreen Control -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.css"
+    />
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/css/style.css" />
   </head>
 
   <body>
     <header class="spa-header">
-      <h1>Epic Map</h1>
-
+      <div>
+        <h1>Epic Map</h1>
+      </div>
       <nav class="spa-nav">
         <a href="/admin" class="spa-nav-item">Admin Panel</a>
         <a href="/logout" class="spa-nav-item">Logout</a>
       </nav>
     </header>
 
-    <div class="spa-form-card no-radius">
-      <div class="controls-grid">
-        <div>
-          <h3 class="section-heading">Filter Existing Jobs</h3>
-          <form id="filterForm" class="spa-form">
-            <div
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem"
-            >
-              <input
-                type="text"
-                id="job_number"
-                name="job_number"
-                placeholder="Job #"
-                class="spa-input"
-              />
-              <input
-                type="text"
-                id="client"
-                name="client"
-                placeholder="Client/Buyer"
-                class="spa-input"
-              />
-            </div>
-            <select
-              id="status"
-              name="status"
-              class="spa-input"
-              style="margin-top: 1rem"
-            >
-              <option value="">-- All Statuses --</option>
-              <option value="On Hold/Pending">On Hold/Pending</option>
-              <option value="Needs Fieldwork">Needs Fieldwork</option>
-              <option value="Fieldwork Complete/Needs Office Work">
-                Fieldwork Complete/Needs Office Work
-              </option>
-              <option value="To Be Printed/Packaged">
-                To Be Printed/Packaged
-              </option>
-              <option value="Survey Complete/Invoice Sent/Unpaid">
-                Survey Complete/Invoice Sent/Unpaid
-              </option>
-              <option value="Set/Flag Pins">Set/Flag Pins</option>
-              <option value="Completed/To Be Filed">
-                Completed/To Be Filed
-              </option>
-              <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-            </select>
-            <div style="display: flex; gap: 10px; margin-top: 1rem">
-              <button type="submit" class="spa-btn spa-btn-primary">
-                Apply Filters
-              </button>
-              <button
-                type="button"
-                onclick="clearFilters()"
-                class="spa-btn spa-btn-secondary"
-              >
-                Reset
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Search & Create Section -->
-        <div>
-          <h3 class="section-heading">Search Address</h3>
-          <form id="searchForm" class="spa-form">
-            <div style="display: flex; gap: 10px">
-              <input
-                type="text"
-                id="search"
-                placeholder="123 Main St, Orlando FL"
-                class="spa-input"
-                style="flex: 1"
-              />
-              <button type="submit" class="spa-btn spa-btn-primary">
-                Search
-              </button>
-            </div>
-          </form>
+    <!-- Controls Panel -->
+    <div class="map-controls-panel" id="controlsPanel">
+      <!-- Mode Selection -->
+      <div class="control-section">
+        <h4><i class="fas fa-mouse-pointer"></i> Mode</h4>
+        <div class="mode-toggle">
           <button
-            class="spa-btn spa-btn-success"
-            onclick="openModal('createJobModal')"
-            style="margin-top: 1rem"
+            class="mode-btn active"
+            id="panMode"
+            onclick="setMapMode('pan')"
           >
-            Create New Job
+            <i class="fas fa-hand-paper"></i> Pan
           </button>
+          <button class="mode-btn" id="clickMode" onclick="setMapMode('click')">
+            <i class="fas fa-map-pin"></i> Add Marker
+          </button>
+        </div>
+        <div id="modeStatus" class="mode-status">
+          Click mode: Click map to place temporary markers
+        </div>
+      </div>
+
+      <!-- Address Search -->
+      <div class="control-section">
+        <h4><i class="fas fa-search"></i> Address Search</h4>
+        <input
+          type="text"
+          class="search-input"
+          id="addressSearch"
+          placeholder="123 Main St, Orlando FL..."
+          onkeypress="handleSearchKeypress(event)"
+        />
+        <button class="search-btn" onclick="searchAddress()">
+          <i class="fas fa-crosshairs"></i> Find & Fly To
+        </button>
+      </div>
+
+      <!-- Job Filters -->
+      <div class="control-section">
+        <h4><i class="fas fa-filter"></i> Filter by Status</h4>
+        <div class="filter-group" id="statusFilters">
+          <button
+            class="filter-btn active"
+            data-status="all"
+            onclick="toggleStatusFilter(this)"
+          >
+            <span>All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Job Search -->
+      <div class="control-section">
+        <h4><i class="fas fa-briefcase"></i> Find Jobs</h4>
+        <input
+          type="text"
+          class="search-input"
+          id="jobSearch"
+          placeholder="Job # or Client name..."
+          oninput="filterJobs(this.value)"
+        />
+        <div id="searchResults" class="search-results">
+          <!-- Search results summary -->
+        </div>
+      </div>
+
+      <!-- Multi-Select Jobs -->
+      <div class="control-section">
+        <h4><i class="fas fa-check-square"></i> Selected Jobs</h4>
+        <div id="selectedJobs" class="selected-jobs">
+          <div class="selection-help">
+            Hold Ctrl/Cmd + Click markers to select multiple jobs
+          </div>
+        </div>
+        <button
+          class="search-btn route-btn"
+          id="routeBtn"
+          onclick="planRoute()"
+        >
+          <i class="fas fa-route"></i> Plan Route
+        </button>
+        <button class="search-btn clear-btn" onclick="clearSelection()">
+          <i class="fas fa-times"></i> Clear Selection
+        </button>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="control-section">
+        <h4><i class="fas fa-chart-bar"></i> Map Stats</h4>
+        <div class="stats-grid">
+          <div id="totalJobs" class="stat-item">Total: 0 jobs</div>
+          <div id="visibleJobs" class="stat-item">Visible: 0 jobs</div>
+          <div id="selectedCount" class="stat-item">Selected: 0 jobs</div>
         </div>
       </div>
     </div>
 
     <!-- Main Map Container -->
     <div id="main-container">
-      <!-- Enhanced Job Details Sidebar using existing styling -->
-      <div
-        id="info-panel"
-        class="spa-form-card"
-        style="
-          width: 320px;
-          height: calc(100vh - 200px);
-          position: fixed;
-          right: -340px;
-          top: 200px;
-          transition: right 0.3s ease;
-          overflow-y: auto;
-          z-index: 200;
-          margin: 0;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-          "
-        >
-          <h2 style="margin: 0; color: #333">Job Details</h2>
+      <!-- Enhanced Job Details Sidebar -->
+      <div id="info-panel" class="info-panel">
+        <div class="panel-header">
+          <h2>Job Details</h2>
           <button
             id="close-panel"
-            class="spa-btn spa-btn-small spa-btn-secondary"
+            class="spa-btn spa-btn-small spa-btn-secondary close-panel-btn"
           >
             ×
           </button>
         </div>
 
-        <div id="info-content">
-          <p style="color: #666; text-align: center">
-            Click a job marker to view details.
-          </p>
+        <div id="info-content" class="info-content">
+          <p class="empty-state">Click a job marker to view details.</p>
         </div>
 
-        <!-- Job Stats using existing metric card concept -->
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin: 1rem 0;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-          "
-        >
-          <div style="text-align: center">
-            <div
-              style="font-size: 1.5rem; font-weight: 600; color: #2196f3"
-              id="visited-count"
-            >
-              0
-            </div>
-            <div style="font-size: 0.9rem; color: #666">Site Visits</div>
+        <!-- Job Stats -->
+        <div class="job-stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="visited-count">0</div>
+            <div class="stat-label">Site Visits</div>
           </div>
-          <div style="text-align: center">
-            <div
-              style="font-size: 1.5rem; font-weight: 600; color: #2196f3"
-              id="total-time-spent"
-            >
-              0.0
-            </div>
-            <div style="font-size: 0.9rem; color: #666">Hours Spent</div>
+          <div class="stat-card">
+            <div class="stat-number" id="total-time-spent">0.0</div>
+            <div class="stat-label">Hours Spent</div>
           </div>
         </div>
 
         <!-- Fieldwork Section -->
-        <div id="fieldwork-form">
-          <h4 style="margin: 1.5rem 0 0.5rem 0; color: #333">
-            Past Field Work
-          </h4>
-          <ul id="fieldwork-list" style="list-style: none; padding: 0">
-            <li style="color: #666; font-style: italic">Loading...</li>
+        <div id="fieldwork-form" class="fieldwork-section">
+          <h4>Past Field Work</h4>
+          <ul id="fieldwork-list" class="fieldwork-list">
+            <li class="loading-item">Loading...</li>
           </ul>
         </div>
       </div>
 
       <!-- Map -->
-      <div id="map" style="height: calc(100vh - 200px)"></div>
-
-      <!-- Enhanced Reset Button -->
-      <button
-        id="reset-map"
-        class="spa-btn spa-btn-primary"
-        style="
-          position: absolute;
-          bottom: 80px;
-          right: 20px;
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 100;
-        "
-      ></button>
+      <div id="map" class="map-container"></div>
     </div>
 
-    <!-- Reuse existing modal styling for all modals -->
+    <!-- Create Job Modal -->
     <div id="createJobModal" class="spa-modal">
       <div class="spa-modal-content">
         <span class="spa-close" onclick="closeModal('createJobModal')"
@@ -257,7 +209,7 @@
             required
             class="spa-input"
           />
-          <div id="address-suggestions" style="display: none"></div>
+          <div id="address-suggestions" class="address-suggestions"></div>
           <select name="status" class="spa-input">
             <option value="">-- Select Status --</option>
             <option value="On Hold/Pending">On Hold/Pending</option>
@@ -275,7 +227,7 @@
             <option value="Completed/To Be Filed">Completed/To Be Filed</option>
             <option value="Ongoing Site Plan">Ongoing Site Plan</option>
           </select>
-          <div style="display: flex; gap: 10px; margin-top: 20px">
+          <div class="modal-actions">
             <button type="submit" class="spa-btn spa-btn-success">
               Create Job
             </button>
@@ -290,7 +242,6 @@
         </form>
       </div>
     </div>
-
     <div id="editJobModal" class="spa-modal">
       <div class="spa-modal-content">
         <span class="spa-close" onclick="closeModal('editJobModal')"
@@ -300,36 +251,37 @@
         <form id="editJobForm" class="spa-form">
           <input
             type="text"
-            id="edit-job-number"
             name="job_number"
+            id="edit-job-number"
             placeholder="Job Number"
             readonly
             class="spa-input"
+            style="background-color: #f5f5f5"
           />
           <input
             type="text"
-            id="edit-client"
             name="client"
+            id="edit-client"
             placeholder="Client"
             required
             class="spa-input"
           />
           <input
             type="text"
-            id="edit-address"
             name="address"
+            id="edit-address"
             placeholder="Address"
             required
             class="spa-input"
           />
           <input
             type="text"
-            id="edit-county"
             name="county"
+            id="edit-county"
             placeholder="County"
             class="spa-input"
           />
-          <select id="edit-status" name="status" class="spa-input">
+          <select name="status" id="edit-status" class="spa-input">
             <option value="">-- Select Status --</option>
             <option value="On Hold/Pending">On Hold/Pending</option>
             <option value="Needs Fieldwork">Needs Fieldwork</option>
@@ -347,42 +299,42 @@
             <option value="Ongoing Site Plan">Ongoing Site Plan</option>
           </select>
           <textarea
-            id="edit-notes"
             name="notes"
+            id="edit-notes"
             placeholder="Notes"
-            rows="3"
             class="spa-input"
+            rows="3"
           ></textarea>
           <input
             type="url"
-            id="edit-prop-appr-link"
             name="prop_appr_link"
+            id="edit-prop-appr-link"
             placeholder="Property Appraiser Link"
             class="spa-input"
           />
           <input
             type="url"
-            id="edit-plat-link"
             name="plat_link"
+            id="edit-plat-link"
             placeholder="Plat Link"
             class="spa-input"
           />
           <input
             type="url"
-            id="edit-fema-link"
             name="fema_link"
+            id="edit-fema-link"
             placeholder="FEMA Link"
             class="spa-input"
           />
           <input
             type="url"
-            id="edit-document-url"
             name="document_url"
+            id="edit-document-url"
             placeholder="Document URL"
             class="spa-input"
           />
-          <div style="display: flex; gap: 10px; margin-top: 20px">
-            <button type="submit" class="spa-btn spa-btn-primary">
+          <div class="modal-actions">
+            <button type="submit" class="spa-btn spa-btn-success">
               Update Job
             </button>
             <button
@@ -397,28 +349,63 @@
       </div>
     </div>
 
+    <!-- Add Fieldwork Modal -->
     <div id="addFieldworkModal" class="spa-modal">
       <div class="spa-modal-content">
         <span class="spa-close" onclick="closeModal('addFieldworkModal')"
           >&times;</span
         >
-        <h2>Add Field Work</h2>
+        <h2>Add Fieldwork Entry</h2>
         <form id="addFieldworkForm" class="spa-form">
-          <input type="date" name="work_date" required class="spa-input" />
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
-            <input type="time" name="start_time" required class="spa-input" />
-            <input type="time" name="end_time" required class="spa-input" />
+          <input
+            type="date"
+            name="work_date"
+            id="fieldwork-date"
+            required
+            class="spa-input"
+          />
+          <div class="time-inputs">
+            <input
+              type="time"
+              name="start_time"
+              id="fieldwork-start-time"
+              placeholder="Start Time"
+              required
+              class="spa-input"
+            />
+            <input
+              type="time"
+              name="end_time"
+              id="fieldwork-end-time"
+              placeholder="End Time"
+              required
+              class="spa-input"
+            />
           </div>
-          <input type="text" name="crew" placeholder="Crew" class="spa-input" />
+          <input
+            type="text"
+            name="crew"
+            id="fieldwork-crew"
+            placeholder="Crew (optional)"
+            class="spa-input"
+          />
           <input
             type="text"
             name="drone_card"
-            placeholder="Drone Card"
+            id="fieldwork-drone-card"
+            placeholder="Drone Card (optional)"
             class="spa-input"
           />
-          <div style="display: flex; gap: 10px; margin-top: 20px">
+          <textarea
+            name="notes"
+            id="fieldwork-notes"
+            placeholder="Notes (optional)"
+            class="spa-input"
+            rows="3"
+          ></textarea>
+          <div class="modal-actions">
             <button type="submit" class="spa-btn spa-btn-success">
-              Add Field Work
+              Add Fieldwork
             </button>
             <button
               type="button"
@@ -432,54 +419,62 @@
       </div>
     </div>
 
+    <!-- Edit Fieldwork Modal -->
     <div id="editFieldworkModal" class="spa-modal">
       <div class="spa-modal-content">
         <span class="spa-close" onclick="closeModal('editFieldworkModal')"
           >&times;</span
         >
-        <h2>Edit Field Work</h2>
+        <h2>Edit Fieldwork Entry</h2>
         <form id="editFieldworkForm" class="spa-form">
           <input type="hidden" id="edit-fieldwork-id" />
           <input
             type="date"
-            id="edit-work-date"
             name="work_date"
+            id="edit-fieldwork-date"
             required
             class="spa-input"
           />
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <div class="time-inputs">
             <input
               type="time"
-              id="edit-start-time"
               name="start_time"
+              id="edit-fieldwork-start-time"
               required
               class="spa-input"
             />
             <input
               type="time"
-              id="edit-end-time"
               name="end_time"
+              id="edit-fieldwork-end-time"
               required
               class="spa-input"
             />
           </div>
           <input
             type="text"
-            id="edit-crew"
             name="crew"
-            placeholder="Crew"
+            id="edit-fieldwork-crew"
+            placeholder="Crew (optional)"
             class="spa-input"
           />
           <input
             type="text"
-            id="edit-drone-card"
             name="drone_card"
-            placeholder="Drone Card"
+            id="edit-fieldwork-drone-card"
+            placeholder="Drone Card (optional)"
             class="spa-input"
           />
-          <div style="display: flex; gap: 10px; margin-top: 20px">
-            <button type="submit" class="spa-btn spa-btn-primary">
-              Update Field Work
+          <textarea
+            name="notes"
+            id="edit-fieldwork-notes"
+            placeholder="Notes (optional)"
+            class="spa-input"
+            rows="3"
+          ></textarea>
+          <div class="modal-actions">
+            <button type="submit" class="spa-btn spa-btn-success">
+              Update Fieldwork
             </button>
             <button
               type="button"
@@ -493,42 +488,499 @@
       </div>
     </div>
 
-    <!-- Enhanced loading indicator using existing styles -->
-    <div id="loading-indicator" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
-
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+
+    <!-- Enhanced Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <!-- Enhanced Map JavaScript -->
     <script src="/static/js/map.js"></script>
 
     <style>
-      /* Add this to handle the top control panel specifically */
-      .map-controls {
-        background: white;
-        padding: 1.5rem 2rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid #e0e0e0;
-        margin: 0; /* Remove margin */
-        border-radius: 0; /* Remove border radius for full width */
-      }
-      /* Small additions to make sidebar work with existing classes */
-      #info-panel.visible {
-        right: 20px !important;
+      .mode-status {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: var(--space-xs);
       }
 
-      /* Ensure modals use spa-modal classes instead of old modal */
-      .modal {
-        display: none;
+      .search-results {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: var(--space-xs);
       }
-      .spa-modal {
-        display: none;
+
+      .selection-help {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-align: center;
+        padding: var(--space-md);
       }
-      .spa-modal.show {
-        display: block;
+
+      .route-btn {
+        display: none;
+        margin-bottom: var(--space-sm);
+      }
+
+      .clear-btn {
+        background: var(--color-danger);
+      }
+
+      .clear-btn:hover {
+        background: var(--color-danger-hover);
+      }
+
+      .stats-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+      }
+
+      .stat-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .info-panel {
+        width: 20rem;
+        height: calc(100vh - 12.5rem);
+        position: fixed;
+        right: -21rem;
+        top: 12.5rem;
+        transition: right var(--transition-slow);
+        overflow-y: auto;
+        z-index: 200;
+        margin: 0;
+        background: var(--bg-primary);
+        border-left: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .info-panel.visible {
+        right: 0;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        color: var(--text-primary);
+      }
+
+      .close-panel-btn {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+      }
+
+      .info-content {
+        margin-bottom: var(--space-xl);
+      }
+
+      .empty-state {
+        color: var(--text-muted);
+        text-align: center;
+        font-style: italic;
+      }
+
+      .job-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-lg);
+        margin: var(--space-lg) 0;
+        padding: var(--space-lg);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+      }
+
+      .stat-card {
+        text-align: center;
+      }
+
+      .stat-number {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-primary);
+        line-height: 1;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: var(--space-xs);
+      }
+
+      .fieldwork-section h4 {
+        margin: var(--space-lg) 0 var(--space-sm) 0;
+        color: var(--text-primary);
+      }
+
+      .fieldwork-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .loading-item {
+        color: var(--text-muted);
+        font-style: italic;
+        padding: var(--space-sm);
+        text-align: center;
+      }
+
+      .map-container {
+        height: calc(100vh - 5rem);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
+      }
+
+      .address-suggestions {
+        display: none;
       }
     </style>
+    <script>
+      // FIXED: Enhanced Collapsible Panel Controller
+      class CollapsiblePanel {
+        constructor() {
+          this.panel = null;
+          this.toggleBtn = null;
+          this.closeBtn = null;
+          this.isCollapsed = false;
+          this.isAnimating = false;
+
+          this.init();
+        }
+
+        init() {
+          // Wait for DOM to be ready
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", () => this.setup());
+          } else {
+            this.setup();
+          }
+        }
+
+        setup() {
+          this.panel =
+            document.getElementById("controlsPanel") ||
+            document.querySelector(".map-controls-panel");
+
+          if (!this.panel) {
+            console.warn("Controls panel not found");
+            return;
+          }
+
+          this.createToggleButton();
+          this.createCloseButton();
+          this.bindEvents();
+          this.handleInitialState();
+        }
+
+        createToggleButton() {
+          // Create the floating toggle button
+          this.toggleBtn = document.createElement("button");
+          this.toggleBtn.className = "panel-toggle-btn";
+          this.toggleBtn.innerHTML = `
+      <span class="panel-toggle-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    `;
+          this.toggleBtn.setAttribute("aria-label", "Toggle controls panel");
+          this.toggleBtn.setAttribute("title", "Show Controls");
+
+          document.body.appendChild(this.toggleBtn);
+
+          console.log("Toggle button created:", this.toggleBtn);
+        }
+
+        createCloseButton() {
+          if (this.panel) {
+            this.closeBtn = document.createElement("button");
+            this.closeBtn.className = "panel-close-btn";
+            this.closeBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+            this.closeBtn.setAttribute("aria-label", "Close controls panel");
+            this.closeBtn.setAttribute("title", "Close Panel");
+
+            this.panel.appendChild(this.closeBtn);
+
+            console.log("Close button created:", this.closeBtn);
+          }
+        }
+
+        bindEvents() {
+          // Toggle button click - FIXED: Better event handling
+          if (this.toggleBtn) {
+            this.toggleBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log(
+                "Toggle button clicked, current state:",
+                this.isCollapsed,
+              );
+              this.toggle();
+            });
+          }
+
+          // Close button click
+          if (this.closeBtn) {
+            this.closeBtn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("Close button clicked");
+              this.collapse();
+            });
+          }
+
+          // Keyboard shortcuts
+          document.addEventListener("keydown", (e) => {
+            // Press 'C' to toggle controls (when not in input)
+            if (
+              e.key.toLowerCase() === "c" &&
+              !e.ctrlKey &&
+              !e.metaKey &&
+              !this.isInputFocused()
+            ) {
+              console.log("Keyboard shortcut C pressed");
+              this.toggle();
+            }
+
+            // Press Escape to close panel
+            if (e.key === "Escape" && !this.isCollapsed) {
+              console.log("Escape pressed, closing panel");
+              this.collapse();
+            }
+          });
+
+          // Auto-collapse on mobile when clicking outside
+          document.addEventListener("click", (e) => {
+            if (
+              window.innerWidth <= 768 &&
+              !this.isCollapsed &&
+              this.panel &&
+              !this.panel.contains(e.target) &&
+              !this.toggleBtn.contains(e.target)
+            ) {
+              this.collapse();
+            }
+          });
+
+          // Handle window resize
+          window.addEventListener("resize", () => {
+            this.handleResize();
+          });
+
+          // Animation event handlers
+          if (this.panel) {
+            this.panel.addEventListener("transitionstart", () => {
+              this.isAnimating = true;
+              console.log("Animation started");
+            });
+
+            this.panel.addEventListener("transitionend", () => {
+              this.isAnimating = false;
+              this.updateAriaStates();
+              console.log("Animation ended, collapsed:", this.isCollapsed);
+            });
+          }
+        }
+
+        handleInitialState() {
+          // Check if user prefers collapsed state (localStorage)
+          const savedState = localStorage.getItem("mapControlsPanelCollapsed");
+          console.log("Initial state from localStorage:", savedState);
+
+          if (savedState === "true") {
+            this.collapse(false); // No animation on page load
+          } else {
+            this.expand(false);
+          }
+        }
+
+        toggle() {
+          if (this.isAnimating) {
+            console.log("Already animating, ignoring toggle");
+            return;
+          }
+
+          console.log("Toggling panel, current state:", this.isCollapsed);
+
+          if (this.isCollapsed) {
+            this.expand();
+          } else {
+            this.collapse();
+          }
+        }
+
+        expand(animate = true) {
+          if (!this.panel) return;
+
+          console.log("Expanding panel, animate:", animate);
+
+          this.isCollapsed = false;
+
+          if (animate) {
+            // Add expanding class for staggered animations
+            this.panel.classList.add("expanded");
+            setTimeout(() => {
+              this.panel.classList.remove("expanded");
+            }, 800);
+          }
+
+          // Remove collapsed state and hide toggle button
+          this.panel.classList.remove("collapsed");
+          if (this.toggleBtn) {
+            this.toggleBtn.classList.remove("collapsed");
+            this.toggleBtn.classList.add("hidden");
+          }
+
+          // Update aria attributes
+          this.updateAriaStates();
+
+          // Save state
+          localStorage.setItem("mapControlsPanelCollapsed", "false");
+
+          // Dispatch custom event
+          this.dispatchEvent("panelExpanded");
+        }
+
+        collapse(animate = true) {
+          if (!this.panel) return;
+
+          console.log("Collapsing panel, animate:", animate);
+
+          this.isCollapsed = true;
+
+          // Add collapsed state and show toggle button
+          this.panel.classList.add("collapsed");
+          if (this.toggleBtn) {
+            this.toggleBtn.classList.add("collapsed");
+            this.toggleBtn.classList.remove("hidden");
+          }
+
+          // Update aria attributes
+          this.updateAriaStates();
+
+          // Save state
+          localStorage.setItem("mapControlsPanelCollapsed", "true");
+
+          // Dispatch custom event
+          this.dispatchEvent("panelCollapsed");
+        }
+
+        updateAriaStates() {
+          if (this.panel && this.toggleBtn) {
+            this.panel.setAttribute("aria-hidden", this.isCollapsed.toString());
+            this.toggleBtn.setAttribute(
+              "aria-expanded",
+              (!this.isCollapsed).toString(),
+            );
+
+            // Update title text
+            this.toggleBtn.setAttribute(
+              "title",
+              this.isCollapsed ? "Show Controls Panel" : "Hide Controls Panel",
+            );
+          }
+        }
+
+        handleResize() {
+          // Ensure proper state on resize
+          if (window.innerWidth <= 768) {
+            // Mobile: ensure proper z-index
+            if (this.panel) {
+              this.panel.style.zIndex = "9999";
+            }
+          } else {
+            // Desktop: reset z-index
+            if (this.panel) {
+              this.panel.style.zIndex = "1000";
+            }
+          }
+        }
+
+        isInputFocused() {
+          const activeElement = document.activeElement;
+          return (
+            activeElement &&
+            (activeElement.tagName === "INPUT" ||
+              activeElement.tagName === "TEXTAREA" ||
+              activeElement.tagName === "SELECT" ||
+              activeElement.isContentEditable)
+          );
+        }
+
+        dispatchEvent(eventName) {
+          const event = new CustomEvent(eventName, {
+            detail: {
+              isCollapsed: this.isCollapsed,
+              panel: this.panel,
+            },
+          });
+          document.dispatchEvent(event);
+        }
+
+        // Public API methods
+        show() {
+          this.expand();
+        }
+        hide() {
+          this.collapse();
+        }
+        isVisible() {
+          return !this.isCollapsed;
+        }
+
+        // Debug method
+        getState() {
+          return {
+            isCollapsed: this.isCollapsed,
+            isAnimating: this.isAnimating,
+            panelElement: this.panel,
+            toggleButton: this.toggleBtn,
+          };
+        }
+      }
+
+      // Initialize the collapsible panel
+      let collapsiblePanel;
+
+      // Auto-initialize when DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM ready, initializing collapsible panel");
+        collapsiblePanel = new CollapsiblePanel();
+
+        // Global access for debugging
+        window.collapsiblePanel = collapsiblePanel;
+      });
+
+      // EMERGENCY X: If the panel gets stuck, you can run this in console:
+      // collapsiblePanel.expand() or collapsiblePanel.collapse()
+    </script>
   </body>
 </html>

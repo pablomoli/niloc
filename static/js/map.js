@@ -1,23 +1,23 @@
+// Enhanced Map with Advanced Leaflet Plugins
 // Map Configuration
 const INITIAL_CENTER = [28.5383, -81];
 const INITIAL_ZOOM = 10;
-const MAX_GEOCODE_CALLS = 10;
 
-// Application State
+// Enhanced Application State
 const AppState = {
   map: null,
   markerCluster: null,
-  lastFetchedJobs: [],
+  allJobs: [], // Store all jobs
+  filteredJobs: [], // Currently visible jobs
+  selectedJobs: new Set(), // Multi-selected jobs
   selectedJobNumber: null,
   searchMarker: null,
+  tempMarkers: [], // Temporary click markers
+  mapMode: "pan", // 'pan' or 'click'
+  activeFilters: new Set(["all"]), // Active status filters
 };
 
-// Job Creation State
-let geocodeCallCount = 0;
-const addressCache = new Map();
-const geocodeCache = new Map();
-
-// Company Color System - Epic Surveying & Mapping, LLC
+// Epic Color System
 const EPIC_COLORS = {
   "On Hold/Pending": "#C0C0C0",
   "Needs Fieldwork": "#FFA500",
@@ -30,17 +30,17 @@ const EPIC_COLORS = {
   "Estimate/Quote Available": "#607080",
 };
 
-// Status Icons Mapping (used for dropdown options)
-const statusIcons = {
-  "On Hold/Pending": "grey",
-  "Needs Fieldwork": "orange",
-  "Fieldwork Complete/Needs Office Work": "violet",
-  "To Be Printed/Packaged": "blue",
-  "Survey Complete/Invoice Sent/Unpaid": "yellow",
-  "Set/Flag Pins": "red",
-  "Completed/To Be Filed": "green",
-  "Ongoing Site Plan": "pink",
-  "Estimate/Quote Available": "gray",
+// Status Display Names
+const STATUS_NAMES = {
+  "On Hold/Pending": "On Hold",
+  "Needs Fieldwork": "Needs Field",
+  "Fieldwork Complete/Needs Office Work": "Office Work",
+  "To Be Printed/Packaged": "To Print",
+  "Survey Complete/Invoice Sent/Unpaid": "Invoice Sent",
+  "Set/Flag Pins": "Set Pins",
+  "Completed/To Be Filed": "Completed",
+  "Ongoing Site Plan": "Site Plan",
+  "Estimate/Quote Available": "Quote Ready",
 };
 
 // Utility Functions
@@ -52,22 +52,702 @@ function debounce(func, delay) {
   };
 }
 
-function showLoading(show) {
-  const loadingEl = document.getElementById("loading-indicator");
-  if (show) {
-    loadingEl.classList.add("show");
+// Enhanced SVG Marker Creation
+function createEpicMarkerSVG(
+  status,
+  isSelected = false,
+  isHighlighted = false,
+) {
+  const color = EPIC_COLORS[status] || EPIC_COLORS["To Be Printed/Packaged"];
+  const strokeColor = isSelected
+    ? "#ff0000"
+    : isHighlighted
+      ? "#ffff00"
+      : "#333";
+  const strokeWidth = isSelected ? "3" : isHighlighted ? "2.5" : "1.5";
+
+  return `
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="marker-shadow-${isSelected ? "selected" : "normal"}" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="1" dy="2" stdDeviation="${isSelected ? "2" : "1"}" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+      
+      <ellipse cx="12.5" cy="38" rx="8" ry="3" fill="rgba(0,0,0,0.3)"/>
+      
+      <path d="M12.5 2C6.7 2 2 6.7 2 12.5c0 7.3 10.5 26.5 10.5 26.5s10.5-19.2 10.5-26.5C23 6.7 18.3 2 12.5 2z" 
+            fill="${color}" 
+            stroke="${strokeColor}" 
+            stroke-width="${strokeWidth}"
+            filter="url(#marker-shadow-${isSelected ? "selected" : "normal"})"/>
+      
+      <circle cx="12.5" cy="12.5" r="6" fill="white" stroke="${strokeColor}" stroke-width="1"/>
+      <circle cx="12.5" cy="12.5" r="3" fill="${color}"/>
+      
+      ${isSelected ? '<circle cx="12.5" cy="12.5" r="2" fill="red"/>' : ""}
+    </svg>
+  `;
+}
+
+function getStatusIcon(status, isSelected = false, isHighlighted = false) {
+  return L.divIcon({
+    html: createEpicMarkerSVG(status, isSelected, isHighlighted),
+    className: `epic-svg-marker ${isSelected ? "selected" : ""} ${isHighlighted ? "highlighted" : ""}`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+  });
+}
+
+// Map Setup with Enhanced Controls
+const baseMaps = {
+  Satellite: L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { attribution: "Tiles © Esri" },
+  ),
+  Street: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap contributors",
+  }),
+  Terrain: L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    { attribution: "Tiles © Esri" },
+  ),
+};
+
+// Initialize Enhanced Map
+AppState.map = L.map("map", {
+  center: INITIAL_CENTER,
+  zoom: INITIAL_ZOOM,
+  layers: [baseMaps["Satellite"]],
+  fullscreenControl: true,
+  fullscreenControlOptions: {
+    position: "topleft",
+  },
+});
+
+// Add layer control
+L.control.layers(baseMaps).addTo(AppState.map);
+
+// Add fullscreen control
+
+// Enhanced Map Mode Management
+function setMapMode(mode) {
+  AppState.mapMode = mode;
+
+  // Update UI
+  document
+    .querySelectorAll(".mode-btn")
+    .forEach((btn) => btn.classList.remove("active"));
+  document.getElementById(mode + "Mode").classList.add("active");
+
+  // Update cursor and instructions
+  const mapElement = document.getElementById("map");
+  const statusElement = document.getElementById("modeStatus");
+
+  if (mode === "click") {
+    mapElement.style.cursor = "crosshair";
+    statusElement.textContent =
+      "Click mode: Click anywhere on map to place temporary markers";
+    statusElement.classList.add("active-mode");
   } else {
-    loadingEl.classList.remove("show");
+    mapElement.style.cursor = "";
+    statusElement.textContent = "Pan mode: Normal map navigation enabled";
+    statusElement.classList.remove("active-mode");
   }
 }
 
-// Modal Control Functions - Updated for spa-modal classes
+// Enhanced Map Click Handler
+AppState.map.on("click", function (e) {
+  if (AppState.mapMode === "click") {
+    // Create temporary marker at click location
+    const tempMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+      icon: L.divIcon({
+        html: '<div class="temp-marker-dot"></div>',
+        className: "temp-marker",
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+      }),
+    }).addTo(AppState.map);
+
+    // Store temporary marker
+    AppState.tempMarkers.push(tempMarker);
+
+    // Enhanced popup with modern styling
+    tempMarker
+      .bindPopup(
+        `
+        <div class="temp-marker-popup">
+          <h4>Temporary Marker</h4>
+          <div class="coordinates">
+            <strong>Lat:</strong> ${e.latlng.lat.toFixed(6)}<br>
+            <strong>Lng:</strong> ${e.latlng.lng.toFixed(6)}
+          </div>
+          <div class="popup-actions">
+            <button onclick="createJobAtLocation(${e.latlng.lat}, ${e.latlng.lng})" class="spa-btn spa-btn-small spa-btn-primary">
+              Create Job Here
+            </button>
+            <button onclick="removeThisMarker(this)" class="spa-btn spa-btn-small spa-btn-danger">
+              Remove
+            </button>
+          </div>
+        </div>
+      `,
+      )
+      .openPopup();
+  }
+});
+
+// Clear temporary markers
+function clearTempMarkers() {
+  AppState.tempMarkers.forEach((marker) => AppState.map.removeLayer(marker));
+  AppState.tempMarkers = [];
+}
+
+function removeThisMarker(buttonElement) {
+  // Find and remove the specific marker
+  const popup = buttonElement.closest(".leaflet-popup");
+  if (popup) {
+    AppState.map.closePopup();
+    // Remove the marker (this is a simplified approach)
+    // In a real app, you'd want to track markers more precisely
+    clearTempMarkers();
+  }
+}
+
+// Enhanced Job Fetching and Filtering
+async function fetchAllJobs() {
+  try {
+    const response = await fetch("/api/jobs");
+    const data = await response.json();
+    AppState.allJobs = data.jobs || data;
+    AppState.filteredJobs = [...AppState.allJobs];
+
+    updateMapMarkers();
+    updateStats();
+    initializeStatusFilters();
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+  }
+}
+async function fetchSingleJob(jobNumber) {
+  try {
+    const response = await fetch(`/api/jobs/${jobNumber}`);
+    if (response.ok) {
+      const updatedJob = await response.json();
+
+      // Update the job in our local state
+      const jobIndex = AppState.allJobs.findIndex(
+        (j) => j.job_number === jobNumber,
+      );
+      if (jobIndex !== -1) {
+        AppState.allJobs[jobIndex] = updatedJob;
+      }
+
+      // Update filtered jobs too
+      const filteredIndex = AppState.filteredJobs.findIndex(
+        (j) => j.job_number === jobNumber,
+      );
+      if (filteredIndex !== -1) {
+        AppState.filteredJobs[filteredIndex] = updatedJob;
+      }
+
+      // Update map markers to reflect any status changes
+      updateMapMarkers();
+
+      return updatedJob;
+    }
+  } catch (error) {
+    console.error("Error fetching single job:", error);
+  }
+  return null;
+}
+
+function initializeStatusFilters() {
+  const statusFilters = document.getElementById("statusFilters");
+  const statuses = [
+    ...new Set(AppState.allJobs.map((job) => job.status).filter(Boolean)),
+  ];
+
+  // Clear existing filters (except "All")
+  const allButton = statusFilters.querySelector('[data-status="all"]');
+  statusFilters.innerHTML = "";
+  statusFilters.appendChild(allButton);
+
+  // Add status filters
+  statuses.forEach((status) => {
+    const button = document.createElement("button");
+    button.className = "filter-btn";
+    button.dataset.status = status;
+    button.onclick = () => toggleStatusFilter(button);
+
+    const color = EPIC_COLORS[status] || "#999";
+    const name = STATUS_NAMES[status] || status;
+
+    button.innerHTML = `
+      <span class="status-dot" style="background-color: ${color}"></span>
+      <span>${name}</span>
+    `;
+
+    statusFilters.appendChild(button);
+  });
+}
+
+function toggleStatusFilter(button) {
+  const status = button.dataset.status;
+
+  if (status === "all") {
+    // Clear all filters and show all
+    AppState.activeFilters.clear();
+    AppState.activeFilters.add("all");
+    document
+      .querySelectorAll(".filter-btn")
+      .forEach((btn) => btn.classList.remove("active"));
+    button.classList.add("active");
+  } else {
+    // Toggle specific status
+    AppState.activeFilters.delete("all");
+    document.querySelector('[data-status="all"]').classList.remove("active");
+
+    if (AppState.activeFilters.has(status)) {
+      AppState.activeFilters.delete(status);
+      button.classList.remove("active");
+    } else {
+      AppState.activeFilters.add(status);
+      button.classList.add("active");
+    }
+
+    // If no filters active, show all
+    if (AppState.activeFilters.size === 0) {
+      AppState.activeFilters.add("all");
+      document.querySelector('[data-status="all"]').classList.add("active");
+    }
+  }
+
+  applyFilters();
+}
+
+function applyFilters() {
+  const searchTerm = document.getElementById("jobSearch").value.toLowerCase();
+
+  AppState.filteredJobs = AppState.allJobs.filter((job) => {
+    // Status filter
+    const statusMatch =
+      AppState.activeFilters.has("all") ||
+      AppState.activeFilters.has(job.status);
+
+    // Search filter
+    const searchMatch =
+      !searchTerm ||
+      job.job_number.toLowerCase().includes(searchTerm) ||
+      job.client.toLowerCase().includes(searchTerm) ||
+      job.address.toLowerCase().includes(searchTerm);
+
+    return statusMatch && searchMatch;
+  });
+
+  updateMapMarkers();
+  updateStats();
+  updateSearchResults();
+}
+
+const filterJobs = debounce(applyFilters, 300);
+
+function updateMapMarkers() {
+  // Clear existing markers
+  if (AppState.markerCluster) {
+    AppState.map.removeLayer(AppState.markerCluster);
+  }
+
+  // Create new cluster with filtered jobs
+  AppState.markerCluster = L.markerClusterGroup({
+    maxClusterRadius: 50,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+  });
+
+  AppState.filteredJobs.forEach((job) => {
+    if (job.latitude && job.longitude) {
+      const lat = parseFloat(job.latitude);
+      const lng = parseFloat(job.longitude);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const isSelected = AppState.selectedJobs.has(job.job_number);
+        const marker = L.marker([lat, lng], {
+          icon: getStatusIcon(job.status, isSelected),
+        });
+
+        // Store job data on marker
+        marker.jobData = job;
+
+        // Enhanced click handler with multi-select
+        marker.on("click", function (e) {
+          e.originalEvent.stopPropagation();
+
+          if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+            // Multi-select mode
+            toggleJobSelection(job);
+          } else {
+            // Single select mode
+            showJobDetails(job);
+          }
+        });
+
+        AppState.markerCluster.addLayer(marker);
+      }
+    }
+  });
+
+  AppState.map.addLayer(AppState.markerCluster);
+}
+
+// Multi-select Job Management
+function toggleJobSelection(job) {
+  if (AppState.selectedJobs.has(job.job_number)) {
+    AppState.selectedJobs.delete(job.job_number);
+  } else {
+    AppState.selectedJobs.add(job.job_number);
+  }
+
+  updateMapMarkers(); // Refresh to show selection state
+  updateSelectedJobsPanel();
+  updateStats();
+}
+
+function updateSelectedJobsPanel() {
+  const panel = document.getElementById("selectedJobs");
+  const routeBtn = document.getElementById("routeBtn");
+
+  if (AppState.selectedJobs.size === 0) {
+    panel.innerHTML = `
+      <div class="selection-help">
+        Hold Ctrl/Cmd + Click markers to select multiple jobs
+      </div>
+    `;
+    routeBtn.style.display = "none";
+  } else {
+    const selectedJobsData = AppState.allJobs.filter((job) =>
+      AppState.selectedJobs.has(job.job_number),
+    );
+
+    panel.innerHTML = selectedJobsData
+      .map(
+        (job) => `
+        <div class="selected-job">
+          <span class="job-info">${job.job_number} - ${job.client}</span>
+          <button class="remove-job" onclick="toggleJobSelection({job_number: '${job.job_number}'})" title="Remove from selection">
+            ×
+          </button>
+        </div>
+      `,
+      )
+      .join("");
+
+    routeBtn.style.display = AppState.selectedJobs.size >= 2 ? "block" : "none";
+  }
+}
+
+function clearSelection() {
+  AppState.selectedJobs.clear();
+  updateMapMarkers();
+  updateSelectedJobsPanel();
+  updateStats();
+}
+
+// Enhanced Address Search
+function handleSearchKeypress(event) {
+  if (event.key === "Enter") {
+    searchAddress();
+  }
+}
+
+async function searchAddress() {
+  const address = document.getElementById("addressSearch").value.trim();
+  if (!address) {
+    alert("Please enter an address to search");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/geocode?address=${encodeURIComponent(address)}`,
+    );
+    const data = await response.json();
+
+    if (data.error) {
+      alert(`Could not find address: ${data.error}`);
+      return;
+    }
+
+    // Remove previous search marker
+    if (AppState.searchMarker) {
+      AppState.map.removeLayer(AppState.searchMarker);
+    }
+
+    // Add new search marker with enhanced popup
+    AppState.searchMarker = L.marker([data.lat, data.lng], {
+      icon: L.divIcon({
+        html: '<div class="search-result-marker-dot"></div>',
+        className: "search-result-marker",
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      }),
+    }).addTo(AppState.map);
+
+    AppState.searchMarker
+      .bindPopup(
+        `
+        <div class="search-result-popup">
+          <h4>📍 Search Result</h4>
+          <div class="address-info">
+            ${data.formatted_address}<br>
+            ${data.county ? `<em>${data.county} County</em>` : ""}
+          </div>
+          <div class="popup-actions">
+            <button onclick="createJobAtLocation(${data.lat}, ${data.lng}, '${data.formatted_address}')" 
+                    class="spa-btn spa-btn-small spa-btn-primary">
+              Create Job Here
+            </button>
+          </div>
+        </div>
+      `,
+      )
+      .openPopup();
+
+    // Enhanced fly animation
+    AppState.map.flyTo([data.lat, data.lng], 16, {
+      animate: true,
+      duration: 1.5,
+      easeLinearity: 0.25,
+    });
+  } catch (error) {
+    console.error("Search error:", error);
+    alert("Search failed. Please try again.");
+  }
+}
+
+// Create Job at Location
+async function createJobAtLocation(lat, lng, address = "") {
+  const modal = document.getElementById("createJobModal");
+  const addressInput = document.getElementById("job-address");
+
+  if (address) {
+    // Address was provided from search
+    addressInput.value = address;
+  } else {
+    // No address - reverse geocode the coordinates
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${lat}&lng=${lng}`,
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        addressInput.value = data.formatted_address;
+      } else {
+        // Fallback to coordinates if reverse geocoding fails
+        addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      }
+    } catch (error) {
+      // Fallback to coordinates if request fails
+      addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  }
+
+  openModal("createJobModal");
+}
+
+// Enhanced Stats Updates
+function updateStats() {
+  document.getElementById("totalJobs").textContent =
+    `Total: ${AppState.allJobs.length} jobs`;
+  document.getElementById("visibleJobs").textContent =
+    `Visible: ${AppState.filteredJobs.length} jobs`;
+  document.getElementById("selectedCount").textContent =
+    `Selected: ${AppState.selectedJobs.size} jobs`;
+}
+
+function updateSearchResults() {
+  const resultsDiv = document.getElementById("searchResults");
+  const total = AppState.allJobs.length;
+  const visible = AppState.filteredJobs.length;
+
+  if (visible === total) {
+    resultsDiv.textContent = `Showing all ${total} jobs`;
+    resultsDiv.classList.remove("filtered");
+  } else {
+    resultsDiv.textContent = `Showing ${visible} of ${total} jobs`;
+    resultsDiv.classList.add("filtered");
+  }
+}
+
+// Route Planning (Google Maps Integration)
+function planRoute() {
+  if (AppState.selectedJobs.size < 2) {
+    alert("Please select at least 2 jobs to plan a route");
+    return;
+  }
+
+  const selectedJobsData = AppState.allJobs.filter((job) =>
+    AppState.selectedJobs.has(job.job_number),
+  );
+
+  // Create Google Maps URL with waypoints
+  const baseUrl = "https://www.google.com/maps/dir/";
+  const waypoints = selectedJobsData
+    .map((job) => `${job.latitude},${job.longitude}`)
+    .join("/");
+
+  const googleMapsUrl = baseUrl + waypoints;
+
+  // Open in new tab
+  window.open(googleMapsUrl, "_blank");
+
+  // Also show route summary
+  showRouteSummary(selectedJobsData);
+}
+
+function showRouteSummary(jobs) {
+  const summary = jobs
+    .map(
+      (job, index) =>
+        `${index + 1}. ${job.job_number} - ${job.client} (${job.address})`,
+    )
+    .join("\n");
+
+  alert(
+    `Route planned for ${jobs.length} jobs:\n\n${summary}\n\nOpening Google Maps...`,
+  );
+}
+
+// Enhanced Job Details (keep existing functionality)
+function showJobDetails(job) {
+  AppState.selectedJobNumber = job.job_number;
+  document.getElementById("visited-count").textContent = job.visited || 0;
+  document.getElementById("total-time-spent").textContent = Number(
+    job.total_time_spent || 0,
+  ).toFixed(2);
+
+  const panel = document.getElementById("info-panel");
+  const content = document.getElementById("info-content");
+
+  content.innerHTML = `
+    <div class="job-header">
+      <h3>Job #${job.job_number}</h3>
+      <div class="job-meta">
+        <div class="meta-item">
+          <strong>Client:</strong> ${job.client}
+        </div>
+        <div class="meta-item">
+          <strong>Address:</strong> ${job.address}
+        </div>
+        ${
+          job.status
+            ? `
+          <div class="meta-item">
+            <strong>Status:</strong> 
+            <span class="status-badge" style="background-color: ${EPIC_COLORS[job.status] || "#999"}">
+              ${job.status}
+            </span>
+          </div>
+        `
+            : ""
+        }
+        ${
+          job.county
+            ? `
+          <div class="meta-item">
+            <strong>County:</strong> ${job.county}
+          </div>
+        `
+            : ""
+        }
+      </div>
+    </div>
+    
+    ${
+      job.notes
+        ? `
+      <div class="job-notes">
+        <h4>Notes</h4>
+        <p>${job.notes}</p>
+      </div>
+    `
+        : ""
+    }
+    
+    <div class="job-actions">
+      <button onclick="openModal('editJobModal')" class="spa-btn spa-btn-primary spa-btn-small">
+        ✏️ Edit Job
+      </button>
+      <button onclick="openModal('addFieldworkModal')" class="spa-btn spa-btn-success spa-btn-small">
+        ➕ Add Fieldwork
+      </button>
+      <button onclick="toggleJobSelection({job_number: '${job.job_number}'})" class="spa-btn spa-btn-secondary spa-btn-small">
+        ${AppState.selectedJobs.has(job.job_number) ? "✓ Selected" : "+ Select"}
+      </button>
+    </div>
+    
+    ${
+      job.created_at
+        ? `
+        <div class="job-footer">
+          <small><strong>Created:</strong> ${new Date(job.created_at).toLocaleDateString()}</small>
+        </div>
+      `
+        : ""
+    }
+  `;
+
+  // Load fieldwork entries
+  loadFieldworkForJob(job.job_number);
+  panel.classList.add("visible");
+}
+
+async function loadFieldworkForJob(jobNumber) {
+  try {
+    const response = await fetch(`/api/jobs/${jobNumber}/fieldwork`);
+    const entries = await response.json();
+
+    const list = document.getElementById("fieldwork-list");
+    if (!entries || !entries.length) {
+      list.innerHTML = "<li class='empty-state'>No entries yet.</li>";
+      return;
+    }
+
+    list.innerHTML = entries
+      .map(
+        (entry) => `
+        <li class="fieldwork-entry">
+          <div class="entry-content">
+            <div class="entry-header">
+              <strong>${entry.work_date}</strong>
+              <span class="entry-time">${entry.start_time}–${entry.end_time}</span>
+            </div>
+            ${entry.crew ? `<div class="entry-detail">Crew: ${entry.crew}</div>` : ""}
+            ${entry.drone_card ? `<div class="entry-detail">Drone: ${entry.drone_card}</div>` : ""}
+          </div>
+          <button onclick="openEditFieldworkModal(${entry.id}, '${entry.work_date}', '${entry.start_time}', '${entry.end_time}', '${entry.crew || ""}', '${entry.drone_card || ""}')" 
+                  class="spa-btn spa-btn-primary spa-btn-small edit-entry-btn">
+            ✏️
+          </button>
+        </li>
+      `,
+      )
+      .join("");
+  } catch (error) {
+    console.error("Error loading fieldwork:", error);
+    document.getElementById("fieldwork-list").innerHTML =
+      "<li class='error-state'>Failed to load fieldwork entries</li>";
+  }
+}
+
+// Modal Functions (keep existing ones)
 function openModal(id) {
-  // Handle special modal population
   if (id === "editJobModal") {
     populateEditJobModal();
   }
-
   const modal = document.getElementById(id);
   modal.style.display = "block";
   setTimeout(() => modal.classList.add("show"), 10);
@@ -79,305 +759,8 @@ function closeModal(id) {
   setTimeout(() => (modal.style.display = "none"), 300);
 }
 
-// Click outside to close modals - Updated for spa-modal
-window.onclick = function (event) {
-  const modals = document.querySelectorAll(".spa-modal");
-  modals.forEach((m) => {
-    if (event.target === m) {
-      closeModal(m.id);
-    }
-  });
-};
-
-// SVG Marker Functions
-function createEpicMarkerSVG(status) {
-  const color = EPIC_COLORS[status] || EPIC_COLORS["To Be Printed/Packaged"];
-
-  return `
-    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="marker-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="1" dy="2" stdDeviation="1" flood-opacity="0.3"/>
-        </filter>
-      </defs>
-      
-      <!-- Drop shadow -->
-      <ellipse cx="12.5" cy="38" rx="8" ry="3" fill="rgba(0,0,0,0.3)"/>
-      
-      <!-- Main marker shape -->
-      <path d="M12.5 2C6.7 2 2 6.7 2 12.5c0 7.3 10.5 26.5 10.5 26.5s10.5-19.2 10.5-26.5C23 6.7 18.3 2 12.5 2z" 
-            fill="${color}" 
-            stroke="#333" 
-            stroke-width="1.5"
-            filter="url(#marker-shadow)"/>
-      
-      <!-- Inner circle -->
-      <circle cx="12.5" cy="12.5" r="6" fill="white" stroke="#333" stroke-width="1"/>
-      
-      <!-- Inner dot -->
-      <circle cx="12.5" cy="12.5" r="3" fill="${color}"/>
-    </svg>
-  `;
-}
-
-function getStatusIcon(status) {
-  return L.divIcon({
-    html: createEpicMarkerSVG(status),
-    className: "epic-svg-marker",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  });
-}
-
-// Map Setup
-const baseMaps = {
-  "Esri Satellite": L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { attribution: "Tiles © Esri" },
-  ),
-  OpenStreetMap: L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { attribution: "© OpenStreetMap contributors" },
-  ),
-};
-
-const countiesLayer = L.geoJSON(null, {
-  style: { color: "#f00", weight: 1, fillOpacity: 0 },
-});
-
-const countyLabelsLayer = L.layerGroup();
-
-// Initialize Map
-AppState.map = L.map("map", {
-  center: INITIAL_CENTER,
-  zoom: INITIAL_ZOOM,
-  layers: [baseMaps["Esri Satellite"]],
-});
-
-L.control
-  .layers(baseMaps, {
-    "Florida Counties": L.layerGroup([countiesLayer, countyLabelsLayer]),
-  })
-  .addTo(AppState.map);
-const referenceLocations = [
-  {
-    id: "epic-office",
-    name: "Epicenter",
-    lat: 28.5401,
-    lng: -81.3791,
-  },
-  {
-    id: "it",
-    name: "Island Title",
-    lat: 28.5502,
-    lng: -81.4004,
-  },
-
-  {
-    id: "hubbard",
-    name: "Hubbard",
-    lat: 28.5502,
-    lng: -81.4004,
-  },
-];
-
-referenceLocations.forEach((loc) => {
-  const marker = L.marker([loc.lat, loc.lng], {
-    icon: getStatusIcon("Ongoing Site Plan"),
-  }).addTo(AppState.map);
-  marker.bindTooltip(loc.name, { permanent: false });
-
-  marker.on("click", () => {
-    toggleTraySelection(loc);
-  });
-});
-
-// Load Counties
-fetch("/static/data/florida_counties.geojson")
-  .then((res) => res.json())
-  .then((data) => {
-    countiesLayer.addData(data);
-    data.features.forEach((feature) => {
-      const name = feature.properties.NAME;
-      const center = turf.center(feature).geometry.coordinates;
-      const label = L.marker([center[1], center[0]], {
-        icon: L.divIcon({
-          className: "county-label",
-          html: name,
-          iconSize: [100, 20],
-          iconAnchor: [50, 10],
-        }),
-        interactive: false,
-      });
-      countyLabelsLayer.addLayer(label);
-    });
-  })
-  .catch((err) => console.error("County load failed:", err));
-
-// Job Management Functions
-function fetchJobs(params = {}) {
-  if (AppState.markerCluster) {
-    AppState.map.removeLayer(AppState.markerCluster);
-  }
-
-  const query = new URLSearchParams(params).toString();
-  return fetch(`/jobs?${query}`)
-    .then((res) => res.json())
-    .then((data) => {
-      AppState.lastFetchedJobs = data;
-      const cluster = renderMarkers(data);
-      AppState.markerCluster = cluster;
-      AppState.map.addLayer(cluster);
-    });
-}
-
-function renderMarkers(jobs) {
-  const cluster = L.markerClusterGroup();
-  jobs.forEach((job) => {
-    // Use correct field names from to_dict() method
-    if (job.latitude && job.longitude) {
-      const lat = parseFloat(job.latitude);
-      const lng = parseFloat(job.longitude);
-
-      // Validate coordinates
-      if (!isNaN(lat) && !isNaN(lng)) {
-        const marker = L.marker([lat, lng], {
-          icon: getStatusIcon(job.status),
-        });
-        marker.on("click", () => showJobDetails(job));
-        cluster.addLayer(marker);
-      }
-    }
-  });
-  return cluster;
-}
-
-function refreshSidebarJob(job_number) {
-  fetch(`/jobs?job_number=${job_number}`)
-    .then((res) => res.json())
-    .then((data) => {
-      const updatedJob = data[0];
-      if (updatedJob) {
-        AppState.lastFetchedJobs = AppState.lastFetchedJobs.map((j) =>
-          j.job_number === job_number ? updatedJob : j,
-        );
-        showJobDetails(updatedJob);
-      }
-    });
-}
-
-// Job Details & Editing - Updated for unified styling
-function showJobDetails(job) {
-  AppState.selectedJobNumber = job.job_number;
-  document.getElementById("visited-count").textContent = job.visited || 0;
-  document.getElementById("total-time-spent").textContent = Number(
-    job.total_time_spent || 0,
-  ).toFixed(2);
-
-  const panel = document.getElementById("info-panel");
-  const content = document.getElementById("info-content");
-
-  // Enhanced content with better styling
-  content.innerHTML = `
-    <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 1rem; margin-bottom: 1rem;">
-      <h3 style="margin: 0 0 0.5rem 0; color: #2196f3; font-size: 1.2rem;">Job #${job.job_number}</h3>
-      <p style="margin: 0.25rem 0; color: #666;"><strong>Client:</strong> ${job.client}</p>
-      <p style="margin: 0.25rem 0; color: #666;"><strong>Address:</strong> ${job.address}</p>
-      ${job.status ? `<p style="margin: 0.25rem 0;"><strong>Status:</strong> <span style="padding: 2px 8px; background: #e3f2fd; color: #1976d2; border-radius: 4px; font-size: 0.8rem;">${job.status}</span></p>` : ""}
-      ${job.county ? `<p style="margin: 0.25rem 0; color: #666;"><strong>County:</strong> ${job.county}</p>` : ""}
-    </div>
-    
-    ${job.notes ? `<div style="margin: 1rem 0;"><strong>Notes:</strong><br><p style="color: #666; font-style: italic; margin: 0.5rem 0;">${job.notes}</p></div>` : ""}
-    
-    <div style="display: flex; gap: 8px; margin: 1rem 0; flex-wrap: wrap;">
-      <button onclick="openModal('editJobModal')" class="spa-btn spa-btn-primary spa-btn-small">✏️ Edit Job</button>
-      <button onclick="openModal('addFieldworkModal')" class="spa-btn spa-btn-success spa-btn-small">➕ Add Fieldwork</button>
-    </div>
-    
-    ${
-      job.prop_appr_link || job.plat_link || job.fema_link || job.document_url
-        ? `
-      <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
-        <strong style="color: #333;">Resources:</strong>
-        <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 4px;">
-          ${job.prop_appr_link ? `<a href="${job.prop_appr_link}" target="_blank" style="color: #2196f3; text-decoration: none; font-size: 0.9rem;">📄 Property Appraiser</a>` : ""}
-          ${job.plat_link ? `<a href="${job.plat_link}" target="_blank" style="color: #2196f3; text-decoration: none; font-size: 0.9rem;">📋 Plat Document</a>` : ""}
-          ${job.fema_link ? `<a href="${job.fema_link}" target="_blank" style="color: #2196f3; text-decoration: none; font-size: 0.9rem;">🗺️ FEMA Map</a>` : ""}
-          ${job.document_url ? `<a href="${job.document_url}" target="_blank" style="color: #2196f3; text-decoration: none; font-size: 0.9rem;">📁 Document</a>` : ""}
-        </div>
-      </div>
-    `
-        : ""
-    }
-    
-    ${job.created_at ? `<p style="font-size: 0.8rem; color: #999; margin-top: 1rem;"><strong>Created:</strong> ${new Date(job.created_at).toLocaleDateString()}</p>` : ""}
-  `;
-
-  // Load fieldwork entries with enhanced styling
-  fetch(`/jobs/${job.job_number}/fieldwork`)
-    .then((res) => res.json())
-    .then((entries) => {
-      const list = document.getElementById("fieldwork-list");
-      if (!entries.length) {
-        list.innerHTML =
-          "<li style='color: #666; font-style: italic; padding: 0.5rem; text-align: center;'>No entries yet.</li>";
-        return;
-      }
-      list.innerHTML = entries
-        .map(
-          (entry) => `
-          <li style="
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            background: #f8f9fa;
-            border-radius: 6px;
-            border-left: 3px solid #2196f3;
-          ">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <strong style="color: #333;">${entry.work_date}</strong><br>
-                <span style="color: #666; font-size: 0.9rem;">${entry.start_time}–${entry.end_time}</span>
-                ${entry.crew ? `<br><span style="color: #666; font-size: 0.8rem;">Crew: ${entry.crew}</span>` : ""}
-                ${entry.drone_card ? `<br><span style="color: #666; font-size: 0.8rem;">Drone: ${entry.drone_card}</span>` : ""}
-              </div>
-              <button onclick="openEditFieldworkModal(${entry.id}, '${entry.work_date}', '${entry.start_time}', '${entry.end_time}', '${entry.crew || ""}', '${entry.drone_card || ""}')" 
-                      class="spa-btn spa-btn-primary spa-btn-small">
-                ✏️
-              </button>
-            </div>
-          </li>
-        `,
-        )
-        .join("");
-    });
-
-  panel.classList.add("visible");
-}
-
-// Function to open edit fieldwork modal with data
-function openEditFieldworkModal(
-  id,
-  workDate,
-  startTime,
-  endTime,
-  crew,
-  droneCard,
-) {
-  // Populate the edit fieldwork form
-  document.getElementById("edit-fieldwork-id").value = id;
-  document.getElementById("edit-work-date").value = workDate;
-  document.getElementById("edit-start-time").value = startTime;
-  document.getElementById("edit-end-time").value = endTime;
-  document.getElementById("edit-crew").value = crew;
-  document.getElementById("edit-drone-card").value = droneCard;
-
-  openModal("editFieldworkModal");
-}
-
-// Function to populate edit job modal
 function populateEditJobModal() {
-  const job = AppState.lastFetchedJobs.find(
+  const job = AppState.allJobs.find(
     (j) => j.job_number === AppState.selectedJobNumber,
   );
   if (!job) return;
@@ -394,295 +777,198 @@ function populateEditJobModal() {
   document.getElementById("edit-fema-link").value = job.fema_link || "";
   document.getElementById("edit-document-url").value = job.document_url || "";
 }
+function openEditFieldworkModal(
+  id,
+  workDate,
+  startTime,
+  endTime,
+  crew,
+  droneCard,
+) {
+  document.getElementById("edit-fieldwork-id").value = id;
+  document.getElementById("edit-fieldwork-date").value = workDate;
+  document.getElementById("edit-fieldwork-start-time").value = startTime;
+  document.getElementById("edit-fieldwork-end-time").value = endTime;
+  document.getElementById("edit-fieldwork-crew").value = crew || "";
+  document.getElementById("edit-fieldwork-drone-card").value = droneCard || "";
 
-// Legacy function for compatibility
-function editJob(job_number) {
-  const job = AppState.lastFetchedJobs.find((j) => j.job_number === job_number);
-  if (!job) return;
-
-  const content = document.getElementById("info-content");
-  content.innerHTML = `
-    <div id="job-edit-form">
-      <h3>Edit Job #${job.job_number}</h3>
-      <form id="edit-form" class="spa-form">
-        <input name="client" value="${job.client || ""}" placeholder="Client" class="spa-input" />
-        <input name="address" value="${job.address || ""}" placeholder="Address" class="spa-input" />
-        <input name="county" value="${job.county || ""}" placeholder="County" class="spa-input" />
-        <select name="status" class="spa-input">
-          <option value="">Select Status</option>
-          ${Object.keys(statusIcons)
-            .map(
-              (status) =>
-                `<option value="${status}" ${status === job.status ? "selected" : ""}>${status}</option>`,
-            )
-            .join("")}
-        </select>
-        <textarea name="notes" rows="3" placeholder="Notes" class="spa-input">${job.notes || ""}</textarea>
-        <input name="prop_appr_link" value="${job.prop_appr_link || ""}" placeholder="Property Appraiser Link" class="spa-input" />
-        <input name="plat_link" value="${job.plat_link || ""}" placeholder="Plat Link" class="spa-input" />
-        <input name="fema_link" value="${job.fema_link || ""}" placeholder="FEMA Link" class="spa-input" />
-        <input name="document_url" value="${job.document_url || ""}" placeholder="Document URL" class="spa-input" />
-        <div style="display: flex; gap: 10px; margin-top: 1rem;">
-          <button type="submit" class="spa-btn spa-btn-success">Save</button>
-          <button type="button" id="cancel-edit" class="spa-btn spa-btn-secondary">Cancel</button>
-        </div>
-      </form>
-    </div>
-  `;
-
-  document.getElementById("edit-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const form = this;
-    const updated = {};
-
-    // Collect all form fields
-    if (form.client.value.trim()) updated.client = form.client.value.trim();
-    if (form.county.value.trim()) updated.county = form.county.value.trim();
-    if (form.status.value.trim()) updated.status = form.status.value.trim();
-    if (form.notes.value.trim()) updated.notes = form.notes.value.trim();
-    if (form.prop_appr_link.value.trim())
-      updated.prop_appr_link = form.prop_appr_link.value.trim();
-    if (form.plat_link.value.trim())
-      updated.plat_link = form.plat_link.value.trim();
-    if (form.fema_link.value.trim())
-      updated.fema_link = form.fema_link.value.trim();
-    if (form.document_url.value.trim())
-      updated.document_url = form.document_url.value.trim();
-
-    const newAddress = form.address.value.trim();
-    const oldAddress = job.address;
-
-    if (newAddress && newAddress !== oldAddress) {
-      updated.address = newAddress;
-      fetch(`/geocode?address=${encodeURIComponent(newAddress)}`)
-        .then((res) => res.json())
-        .then((geo) => {
-          if (!geo.lat || !geo.lon) {
-            alert("Geocoding failed. Address not updated.");
-            return;
-          }
-          updated.address = geo.formatted_address;
-          updated.lat = geo.lat.toString();
-          updated.long = geo.lon.toString();
-          updated.county = geo.county;
-          submitUpdate(updated);
-        })
-        .catch((err) => {
-          console.error("Geocode error:", err);
-          alert("Could not geocode address.");
-        });
-    } else {
-      submitUpdate(updated);
-    }
-  });
-
-  document.getElementById("cancel-edit").addEventListener("click", () => {
-    showJobDetails(job);
-  });
+  openModal("editFieldworkModal");
 }
 
-function submitUpdate(updated) {
-  fetch(`/jobs/${AppState.selectedJobNumber}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updated),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
-      alert("Job updated!");
-      fetchJobs();
-      Object.assign(
-        AppState.lastFetchedJobs.find(
-          (j) => j.job_number === AppState.selectedJobNumber,
-        ),
-        data,
-      );
-      showJobDetails(data);
-    });
-}
-
-// Address Search & Geocoding
-function processGeocodeResult(data) {
-  if (!data.lat || !data.lon) {
-    alert("Address not found.");
-    return;
-  }
-
-  if (AppState.searchMarker) AppState.map.removeLayer(AppState.searchMarker);
-  AppState.searchMarker = L.marker([data.lat, data.lon])
-    .addTo(AppState.map)
-    .bindPopup(`<b>Result</b><br>${data.formatted_address}`)
-    .openPopup();
-
-  AppState.map.flyTo([data.lat, data.lon], 18, {
-    animate: true,
-    duration: 1.5,
-  });
-}
-
-function setupAddressAutocomplete() {
-  const addressInput = document.getElementById("job-address");
-  const suggestionsDiv = document.getElementById("address-suggestions");
-
-  if (!addressInput) return;
-
-  const debouncedGeocode = debounce(async (address) => {
-    if (address.length < 5) {
-      suggestionsDiv.style.display = "none";
-      return;
-    }
-
-    // Check cache first
-    if (addressCache.has(address)) {
-      const cached = addressCache.get(address);
-      showAddressSuggestion(cached, suggestionsDiv);
-      return;
-    }
-
-    // Limit API calls
-    if (geocodeCallCount >= MAX_GEOCODE_CALLS) {
-      console.log("Geocoding limit reached for this session");
-      return;
-    }
-
-    try {
-      geocodeCallCount++;
-      const response = await fetch(
-        `/geocode?address=${encodeURIComponent(address)}`,
-      );
-      const data = await response.json();
-
-      if (data.error) {
-        console.log("Geocoding error:", data.error);
-        return;
-      }
-
-      addressCache.set(address, data);
-      showAddressSuggestion(data, suggestionsDiv);
-    } catch (error) {
-      console.error("Geocoding failed:", error);
-    }
-  }, 300);
-
-  addressInput.addEventListener("input", (e) => {
-    debouncedGeocode(e.target.value);
-  });
-}
-
-function showAddressSuggestion(geocodeData, container) {
-  if (!geocodeData.formatted_address) return;
-
-  container.innerHTML = `
-    <div style="padding: 8px; background: #f0f0f0; border: 1px solid #ccc; cursor: pointer;" 
-         onclick="selectSuggestedAddress('${geocodeData.formatted_address}')">
-      📍 ${geocodeData.formatted_address}
-      ${geocodeData.county ? ` (${geocodeData.county} County)` : ""}
-    </div>
-  `;
-  container.style.display = "block";
-}
-
-function selectSuggestedAddress(address) {
-  document.getElementById("job-address").value = address;
-  document.getElementById("address-suggestions").style.display = "none";
-}
-
-// Event Handlers
-const filterFormHandler = debounce(function (e) {
-  e.preventDefault();
-  const client = document.getElementById("client").value;
-  const job_number = document.getElementById("job_number").value;
-  const status = document.getElementById("status").value;
-  fetchJobs({ client, job_number, status });
-}, 300);
-
-const searchFormHandler = function (e) {
-  e.preventDefault();
-  console.log("Search form submitted - handler working!");
-
-  const address = document.getElementById("search").value.trim();
-  console.log("Searching for:", address);
-
-  if (!address) {
-    alert("Please enter an address to search");
-    return;
-  }
-
-  // Check cache first
-  if (geocodeCache.has(address)) {
-    console.log("Using cached result");
-    processGeocodeResult(geocodeCache.get(address));
-    return;
-  }
-
-  console.log("Making geocoding request...");
-  showLoading(true);
-
-  fetch(`/geocode?address=${encodeURIComponent(address)}`)
-    .then((res) => {
-      console.log("Geocode response received, status:", res.status);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      console.log("Geocode data:", data);
-      showLoading(false);
-
-      if (data.error) {
-        alert(`Geocoding error: ${data.error}`);
-        return;
-      }
-
-      geocodeCache.set(address, data);
-      processGeocodeResult(data);
-    })
-    .catch((err) => {
-      showLoading(false);
-      console.error("Geocoding error:", err);
-      alert(`Could not geocode address: ${err.message}`);
-    });
-};
-
-function clearFilters() {
-  document.getElementById("filterForm").reset();
-  fetchJobs();
-}
-
-// Initialize Event Listeners
+// Enhanced Initialization
 document.addEventListener("DOMContentLoaded", function () {
-  setupAddressAutocomplete();
+  // Initialize the enhanced map
+  fetchAllJobs();
 
-  // Filter form
-  document
-    .getElementById("filterForm")
-    .addEventListener("submit", filterFormHandler);
+  // Set initial mode
+  setMapMode("pan");
 
-  // Search form
-  const searchForm = document.getElementById("searchForm");
-  if (searchForm) {
-    console.log("Attaching search form listener");
-    searchForm.addEventListener("submit", searchFormHandler);
-  } else {
-    console.error("Search form not found!");
-  }
-
-  // Close panel
+  // Close panel handler
   document.getElementById("close-panel").addEventListener("click", () => {
     document.getElementById("info-panel").classList.remove("visible");
   });
+  const editJobForm = document.getElementById("editJobForm");
+  if (editJobForm) {
+    editJobForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const jobNumber = formData.get("job_number");
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
 
-  // Reset map
-  document.getElementById("reset-map").addEventListener("click", () => {
-    AppState.map.flyTo(INITIAL_CENTER, INITIAL_ZOOM);
-  });
+      submitButton.textContent = "Updating...";
+      submitButton.disabled = true;
 
-  // Job creation form
+      // Convert FormData to JSON
+      const data = {};
+      for (let [key, value] of formData.entries()) {
+        data[key] = value.trim();
+      }
+
+      try {
+        const response = await fetch(`/api/jobs/${jobNumber}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Job updated successfully!");
+          closeModal("editJobModal");
+
+          // Fetch the updated job and refresh the panel
+          const updatedJob = await fetchSingleJob(jobNumber);
+          if (
+            updatedJob &&
+            document.getElementById("info-panel").classList.contains("visible")
+          ) {
+            showJobDetails(updatedJob);
+          }
+        } else {
+          alert(result.error || "Failed to update job");
+        }
+      } catch (error) {
+        console.error("Error updating job:", error);
+        alert("Failed to update job. Please try again.");
+      } finally {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
+    });
+  }
+
+  // Replace your Add Fieldwork Form Handler with this:
+  const addFieldworkForm = document.getElementById("addFieldworkForm");
+  if (addFieldworkForm) {
+    addFieldworkForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+
+      submitButton.textContent = "Adding...";
+      submitButton.disabled = true;
+
+      // Convert FormData to JSON
+      const data = {};
+      for (let [key, value] of formData.entries()) {
+        data[key] = value.trim();
+      }
+
+      try {
+        const response = await fetch(
+          `/api/jobs/${AppState.selectedJobNumber}/fieldwork`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          },
+        );
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Fieldwork added successfully!");
+          closeModal("addFieldworkModal");
+          this.reset();
+
+          // Fetch the updated job (with new visit count and time)
+          const updatedJob = await fetchSingleJob(AppState.selectedJobNumber);
+          if (updatedJob) {
+            // Refresh the job details panel
+            showJobDetails(updatedJob);
+          }
+        } else {
+          alert(result.error || "Failed to add fieldwork");
+        }
+      } catch (error) {
+        console.error("Error adding fieldwork:", error);
+        alert("Failed to add fieldwork. Please try again.");
+      } finally {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
+    });
+  }
+
+  // Replace your Edit Fieldwork Form Handler with this:
+  const editFieldworkForm = document.getElementById("editFieldworkForm");
+  if (editFieldworkForm) {
+    editFieldworkForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const fieldworkId = document.getElementById("edit-fieldwork-id").value;
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+
+      submitButton.textContent = "Updating...";
+      submitButton.disabled = true;
+
+      // Convert FormData to JSON
+      const data = {};
+      for (let [key, value] of formData.entries()) {
+        if (key !== "fieldwork_id") {
+          // Skip the hidden ID field
+          data[key] = value.trim();
+        }
+      }
+
+      try {
+        const response = await fetch(`/api/fieldwork/${fieldworkId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Fieldwork updated successfully!");
+          closeModal("editFieldworkModal");
+
+          // Fetch the updated job (time totals may have changed)
+          const updatedJob = await fetchSingleJob(AppState.selectedJobNumber);
+          if (updatedJob) {
+            // Refresh the job details panel
+            showJobDetails(updatedJob);
+          }
+        } else {
+          alert(result.error || "Failed to update fieldwork");
+        }
+      } catch (error) {
+        console.error("Error updating fieldwork:", error);
+        alert("Failed to update fieldwork. Please try again.");
+      } finally {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
+    });
+  } // Enhanced job creation form
   const createJobForm = document.getElementById("createJobForm");
   if (createJobForm) {
     createJobForm.addEventListener("submit", async function (e) {
@@ -693,21 +979,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
       submitButton.textContent = "Creating...";
       submitButton.disabled = true;
+      console.log(formData);
 
       try {
-        const response = await fetch("/", {
+        const response = await fetch("/api/jobs", {
           method: "POST",
           body: formData,
         });
         const result = await response.json();
 
-        if (result.success) {
+        if (response.ok) {
+          // Check the HTTP status instead
           alert("Job created successfully!");
           closeModal("createJobModal");
           this.reset();
-          fetchJobs();
-          geocodeCallCount = 0;
+          fetchAllJobs(); // This should refresh the map
+          clearTempMarkers();
         } else {
+          const result = await response.json();
           alert(result.error || "Failed to create job");
         }
       } catch (error) {
@@ -720,108 +1009,32 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Edit job form
-  const editJobForm = document.getElementById("editJobForm");
-  if (editJobForm) {
-    editJobForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const updated = Object.fromEntries(formData.entries());
-
-      try {
-        const response = await fetch(`/jobs/${AppState.selectedJobNumber}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updated),
-        });
-
-        const result = await response.json();
-        if (result.error) {
-          alert(result.error);
-          return;
-        }
-
-        alert("Job updated!");
-        closeModal("editJobModal");
-        fetchJobs();
-        refreshSidebarJob(AppState.selectedJobNumber);
-      } catch (error) {
-        console.error("Error updating job:", error);
-        alert("Failed to update job. Please try again.");
+  // Add keyboard shortcuts
+  document.addEventListener("keydown", function (e) {
+    // Escape key to clear selection or exit click mode
+    if (e.key === "Escape") {
+      if (AppState.selectedJobs.size > 0) {
+        clearSelection();
+      } else if (AppState.mapMode === "click") {
+        setMapMode("pan");
       }
-    });
-  }
+    }
 
-  // Add fieldwork form
-  const addFieldworkForm = document.getElementById("addFieldworkForm");
-  if (addFieldworkForm) {
-    addFieldworkForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      if (!AppState.selectedJobNumber) {
-        alert("Select a job first.");
-        return;
+    // Delete key to clear temporary markers
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (AppState.tempMarkers.length > 0) {
+        clearTempMarkers();
       }
-
-      const formData = new FormData(this);
-      const payload = Object.fromEntries(formData.entries());
-
-      try {
-        const res = await fetch(
-          `/jobs/${AppState.selectedJobNumber}/fieldwork`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-        );
-
-        const result = await res.json();
-        if (res.ok) {
-          alert("Field work added!");
-          closeModal("addFieldworkModal");
-          this.reset();
-          refreshSidebarJob(AppState.selectedJobNumber);
-        } else {
-          alert(result.error || "Failed to save field work.");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Server error.");
-      }
-    });
-  }
-
-  // Edit fieldwork form
-  const editFieldworkForm = document.getElementById("editFieldworkForm");
-  if (editFieldworkForm) {
-    editFieldworkForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const updated = Object.fromEntries(formData.entries());
-      const fieldworkId = document.getElementById("edit-fieldwork-id").value;
-
-      try {
-        const response = await fetch(`/fieldwork/${fieldworkId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updated),
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-          alert("Field work updated!");
-          closeModal("editFieldworkModal");
-          refreshSidebarJob(AppState.selectedJobNumber);
-        } else {
-          alert(result.error || "Failed to update field work.");
-        }
-      } catch (error) {
-        console.error("Error updating fieldwork:", error);
-        alert("Failed to update field work. Please try again.");
-      }
-    });
-  }
+    }
+  });
 });
 
-// Load initial jobs
-fetchJobs();
+// Click outside to close modals
+window.onclick = function (event) {
+  const modals = document.querySelectorAll(".spa-modal");
+  modals.forEach((m) => {
+    if (event.target === m) {
+      closeModal(m.id);
+    }
+  });
+};

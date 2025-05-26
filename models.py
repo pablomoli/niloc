@@ -59,37 +59,66 @@ class Job(db.Model):
 
     field_work = db.relationship("FieldWork", back_populates="job", lazy=True)
 
-    def to_dict(self):
-        return {
-            "job_number": self.job_number,
+    def to_dict(self, include_fieldwork=False):
+        """
+        Convert job to dictionary with consistent field names
+
+        Args:
+            include_fieldwork (bool): Whether to include fieldwork entries
+
+        Returns:
+            dict: Job data with standardized field names
+        """
+        # Convert coordinates to float if they exist, otherwise None
+        latitude = float(self.lat) if self.lat else None
+        longitude = float(self.long) if self.long else None
+
+        job_dict = {
             "id": self.id,
+            "job_number": self.job_number,
             "client": self.client,
             "address": self.address,
             "county": self.county,
-            "latitude": self.lat,
-            "lat": self.lat,
-            "longitude": self.long,
-            "long": self.long,
-            "property_link": self.prop_appr_link,
+            "status": self.status,
+            # Consistent coordinate field names - no more duplicates!
+            "latitude": latitude,
+            "longitude": longitude,
+            # Links
+            "prop_appr_link": self.prop_appr_link,
             "plat_link": self.plat_link,
             "fema_link": self.fema_link,
+            "document_url": self.document_url,
+            # Content
             "notes": self.notes,
-            "document_URL": self.document_url,
-            "status": self.status,
-            "visited": self.visited,
-            "total_time_spent": self.total_time_spent,
-            "tags": self.tags,
+            # Metrics
+            "visited": self.visited or 0,
+            "total_time_spent": float(self.total_time_spent or 0),
+            "tags": self.tags or [],
+            # Metadata
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by": self.created_by.name if self.created_by else None,
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
         }
+
+        if include_fieldwork:
+            try:
+                # Import here to avoid circular imports
+                fieldwork_entries = (
+                    db.session.query(FieldWork).filter_by(job_id=self.id).all()
+                )
+                job_dict["fieldwork"] = [fw.to_dict() for fw in fieldwork_entries]
+            except Exception as e:
+                # If there's an issue loading fieldwork, just return empty list
+                job_dict["fieldwork"] = []
+        return job_dict
 
     @classmethod
     def active(cls):
-        return cls.query.filter(cls.deleted_at == None)
+        return cls.query.filter(cls.deleted_at.is_(None))
 
     @classmethod
     def deleted(cls):
-        return cls.query.filter(cls.deleted_at != None)
+        return cls.query.filter(cls.deleted_at._isnot(None))
 
     @classmethod
     def by_user(cls, user_id):
