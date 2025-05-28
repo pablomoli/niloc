@@ -3,11 +3,12 @@ from flask import Blueprint, request, jsonify, session
 from datetime import datetime, timezone
 import os
 import requests
-
 from models import db, Job, FieldWork, User
 from auth_utils import login_required, hash_password
 from utils import get_county_from_coords, get_brevard_property_link
-from sqlalchemy import text
+import re
+from sqlalchemy import text, or_, case, func
+from functools import wraps
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -81,52 +82,150 @@ def geocode_address(address):
 @login_required
 def get_jobs():
     """
-    GET /api/jobs - List/filter jobs
-    Query params: job_number, client, status, page, per_page
+    ENHANCED: GET /api/jobs - Unified endpoint with fuzzy search and pagination
+
+    Query params:
+    - q: search term (triggers fuzzy search across all jobs)
+    - search: legacy search param (for backward compatibility)
+    - job_number, client, status: individual field filters
+    - page, per_page: pagination controls
+    - include_deleted: include soft-deleted jobs
+
+    Returns: All matching jobs (no pagination when searching) or paginated results
     """
-    # Get query parameters
-    job_number = request.args.get("job_number", "").strip()
-    client = request.args.get("client", "").strip()
-    status = request.args.get("status", "").strip()
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", type=int)
-
-    if per_page is None:
-        per_page = 10000
-
-    # Build query - Start with all active jobs
-    query = Job.active()
-
-    # Apply filters if provided
-    if job_number:
-        query = query.filter(Job.job_number.ilike(f"%{job_number}%"))
-    if client:
-        query = query.filter(Job.client.ilike(f"%{client}%"))
-    if status:
-        query = query.filter(Job.status == status)
-
-    # Order by newest first
-    query = query.order_by(Job.created_at.desc())
-
-    if request.args.get("per_page") is not None:
-        # Paginate results for admin
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-
-        return jsonify(
-            {
-                "jobs": [job.to_dict() for job in pagination.items],
-                "total": pagination.total,
-                "pages": pagination.pages,
-                "current_page": page,
-                "per_page": per_page,
-                "has_next": pagination.has_next,
-                "has_prev": pagination.has_prev,
-            }
+    try:
+        # Get all possible search and filter parameters
+        search_term = (
+            request.args.get("q", "").strip() or request.args.get("search", "").strip()
         )
-    else:
-        # Return all jobs for map (no pagination)
-        jobs = query.all()
-        return jsonify({"jobs": [job.to_dict() for job in jobs], "total": len(jobs)})
+        job_number_filter = request.args.get("job_number", "").strip()
+        client_filter = request.args.get("client", "").strip()
+        status_filter = request.args.get("status", "").strip()
+        include_deleted = request.args.get("include_deleted", "false").lower() == "true"
+
+        # Pagination parameters
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", type=int)
+        if per_page is None:
+            per_page = 10000  # Default to large number for backward compatibility
+
+        # Start with base query
+        if include_deleted:
+            query = Job.query
+        else:
+            query = Job.active()
+
+        # Check if this is a comprehensive search request
+        if search_term:
+            # Use fuzzy search logic - search ALL jobs, no pagination
+            search_fields = [Job.job_number, Job.client, Job.address]
+            # Add parcel_id when we add that field in Sprint 1c
+            # search_fields.append(Job.parcel_id)
+
+            search_condition = create_fuzzy_search_conditions(
+                search_term, search_fields
+            )
+            if search_condition is not None:
+                query = query.filter(search_condition)
+
+            # Apply additional filters if provided
+            if status_filter:
+                query = query.filter(Job.status == status_filter)
+
+            # Order by relevance for search results - SIMPLIFIED
+            search_lower = search_term.lower()
+            query = query.order_by(
+                func.lower(Job.job_number)
+                .like(f"{search_lower}%")
+                .desc(),  # Job number starts with search
+                func.lower(Job.client)
+                .like(f"{search_lower}%")
+                .desc(),  # Client starts with search
+                Job.created_at.desc(),  # Then by newest
+            )
+
+            # Execute search query (no pagination for search results)
+            jobs = query.all()
+
+            return jsonify(
+                {
+                    "jobs": [job.to_dict() for job in jobs],
+                    "total": len(jobs),
+                    "search_term": search_term,
+                    "fuzzy_search": True,
+                    "status_filter": status_filter,
+                    "include_deleted": include_deleted,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
+        else:
+            # Use traditional filtering with pagination (backward compatibility)
+
+            # Apply individual field filters
+            if job_number_filter:
+                # Use fuzzy matching even for individual fields
+                fuzzy_condition = create_fuzzy_search_conditions(
+                    job_number_filter, [Job.job_number]
+                )
+                if fuzzy_condition is not None:
+                    query = query.filter(fuzzy_condition)
+                else:
+                    query = query.filter(Job.job_number.ilike(f"%{job_number_filter}%"))
+
+            if client_filter:
+                fuzzy_condition = create_fuzzy_search_conditions(
+                    client_filter, [Job.client]
+                )
+                if fuzzy_condition is not None:
+                    query = query.filter(fuzzy_condition)
+                else:
+                    query = query.filter(Job.client.ilike(f"%{client_filter}%"))
+
+            if status_filter:
+                query = query.filter(Job.status == status_filter)
+
+            # Standard ordering
+            query = query.order_by(Job.created_at.desc())
+
+            # Apply pagination if requested
+            if request.args.get("per_page") is not None and per_page < 10000:
+                pagination = query.paginate(
+                    page=page, per_page=per_page, error_out=False
+                )
+
+                return jsonify(
+                    {
+                        "jobs": [job.to_dict() for job in pagination.items],
+                        "total": pagination.total,
+                        "pages": pagination.pages,
+                        "current_page": page,
+                        "per_page": per_page,
+                        "has_next": pagination.has_next,
+                        "has_prev": pagination.has_prev,
+                        "filtered": bool(
+                            job_number_filter or client_filter or status_filter
+                        ),
+                        "fuzzy_matching": True,
+                    }
+                )
+            else:
+                # Return all jobs (for map view or large per_page)
+                jobs = query.all()
+                return jsonify(
+                    {
+                        "jobs": [job.to_dict() for job in jobs],
+                        "total": len(jobs),
+                        "filtered": bool(
+                            job_number_filter or client_filter or status_filter
+                        ),
+                        "fuzzy_matching": True,
+                    }
+                )
+
+    except Exception as e:
+        print(f"Jobs endpoint error: {e}")
+        return jsonify({"error": "Failed to fetch jobs", "jobs": [], "total": 0}), 500
 
 
 @api_bp.route("/jobs/<job_number>", methods=["GET"])
@@ -700,3 +799,332 @@ def health_check():
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ), 503
+
+
+def normalize_search_term(term):
+    """
+    Normalize search term for comprehensive fuzzy matching
+    Handles: case, spaces, punctuation, common abbreviations
+    """
+    if not term:
+        return ""
+
+    # Convert to lowercase
+    normalized = term.lower().strip()
+
+    # Remove common punctuation and replace with spaces
+    normalized = re.sub(r"[-_.,/#!$%^&*;:{}=`~()]", " ", normalized)
+
+    # Replace multiple spaces with single space
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+
+    # Common abbreviations and variations
+    abbreviations = {
+        "st": "street",
+        "ave": "avenue",
+        "rd": "road",
+        "dr": "drive",
+        "ln": "lane",
+        "ct": "court",
+        "blvd": "boulevard",
+        "n": "north",
+        "s": "south",
+        "e": "east",
+        "w": "west",
+        "ne": "northeast",
+        "nw": "northwest",
+        "se": "southeast",
+        "sw": "southwest",
+    }
+
+    # Replace abbreviations (as whole words only)
+    for abbr, full in abbreviations.items():
+        normalized = re.sub(r"\b" + abbr + r"\b", full, normalized)
+
+    return normalized
+
+
+def create_fuzzy_search_conditions(search_term, fields):
+    """
+    Create comprehensive fuzzy search conditions
+    Returns multiple OR conditions for maximum match capability
+    """
+    if not search_term or not fields:
+        return None
+
+    conditions = []
+
+    # Original term variations
+    original = search_term.strip()
+    normalized = normalize_search_term(original)
+    no_spaces = original.replace(" ", "").lower()
+
+    # Create search patterns
+    patterns = [
+        f"%{original.lower()}%",  # Exact case-insensitive
+        f"%{normalized}%",  # Normalized version
+        f"%{no_spaces}%",  # No spaces version
+    ]
+
+    # Add individual word patterns for multi-word searches
+    words = normalized.split()
+    if len(words) > 1:
+        for word in words:
+            if len(word) > 2:  # Skip very short words
+                patterns.append(f"%{word}%")
+
+    # Remove duplicates while preserving order
+    unique_patterns = []
+    for pattern in patterns:
+        if pattern not in unique_patterns:
+            unique_patterns.append(pattern)
+
+    # Create conditions for each field and pattern combination
+    for field in fields:
+        for pattern in unique_patterns:
+            # Basic ILIKE search
+            conditions.append(field.ilike(pattern))
+
+            # Remove punctuation from field for matching (simplified version)
+            try:
+                conditions.append(
+                    func.regexp_replace(
+                        field, r"[-_.,/#!$%^&*;:{}=`~()]", " ", "g"
+                    ).ilike(pattern)
+                )
+            except:
+                # If regexp_replace fails, just use basic ilike
+                pass
+
+    if conditions:
+        return or_(*conditions)
+    return None
+
+
+def monitor_search_performance(f):
+    """Decorator to monitor search performance"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        import time  # Import time inside the function
+
+        start_time = time.time()
+        result = f(*args, **kwargs)
+        end_time = time.time()
+
+        # Log slow searches (> 500ms)
+        duration = (end_time - start_time) * 1000
+        if duration > 500:
+            search_term = request.args.get("q", "")
+            print(f"SLOW SEARCH: {duration:.2f}ms for term: '{search_term}'")
+
+        return result
+
+    return decorated_function
+
+
+@api_bp.route("/jobs/search", methods=["GET"])
+@login_required
+@monitor_search_performance
+def search_jobs():
+    """
+    GET /api/jobs/search - Real-time fuzzy search across ALL jobs
+    Query params: q (search term), status, include_deleted
+    Returns all matching jobs without pagination
+    """
+    try:
+        # Get search parameters
+        search_term = request.args.get("q", "").strip()
+        status_filter = request.args.get("status", "").strip()
+        include_deleted = request.args.get("include_deleted", "false").lower() == "true"
+
+        # Start with base query
+        if include_deleted:
+            query = Job.query  # Include deleted jobs
+        else:
+            query = Job.active()  # Only active jobs (existing method)
+
+        # Apply comprehensive fuzzy search
+        if search_term:
+            search_fields = [Job.job_number, Job.client, Job.address]
+            # Add parcel_id when we add that field in Sprint 1c
+            # search_fields.append(Job.parcel_id)
+
+            search_condition = create_fuzzy_search_conditions(
+                search_term, search_fields
+            )
+            if search_condition is not None:
+                query = query.filter(search_condition)
+
+        # Apply status filter if provided
+        if status_filter:
+            query = query.filter(Job.status == status_filter)
+
+        # Order by relevance, then by newest first
+        if search_term:
+            # Score results by relevance (exact matches first) - SIMPLIFIED VERSION
+            search_lower = search_term.lower()
+
+            # Create ordering that works with your SQLAlchemy version
+            query = query.order_by(
+                func.lower(Job.job_number)
+                .like(f"{search_lower}%")
+                .desc(),  # Job number starts with search
+                func.lower(Job.client)
+                .like(f"{search_lower}%")
+                .desc(),  # Client starts with search
+                Job.created_at.desc(),  # Then by newest
+            )
+        else:
+            query = query.order_by(Job.created_at.desc())
+
+        # Execute query and get all results (no pagination)
+        jobs = query.all()
+
+        # Return results with metadata
+        return jsonify(
+            {
+                "jobs": [job.to_dict() for job in jobs],
+                "total": len(jobs),
+                "search_term": search_term,
+                "status_filter": status_filter,
+                "include_deleted": include_deleted,
+                "fuzzy_matching": True,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+
+    except Exception as e:
+        print(f"Search error: {e}")
+        return jsonify({"error": "Search failed", "jobs": [], "total": 0}), 500
+
+
+@api_bp.route("/jobs/search/autocomplete", methods=["GET"])
+@login_required
+@monitor_search_performance
+def search_autocomplete():
+    """
+    GET /api/jobs/search/autocomplete - Get intelligent search suggestions
+    Query params: q (partial search term), limit (default 10)
+    Returns suggestions for job numbers, clients, and addresses with fuzzy matching
+    """
+    try:
+        search_term = request.args.get("q", "").strip()
+        limit = min(int(request.args.get("limit", 10)), 50)  # Cap at 50 results
+
+        if len(search_term) < 2:  # Don't search for very short terms
+            return jsonify({"suggestions": []})
+
+        # Create fuzzy search patterns
+        normalized = normalize_search_term(search_term)
+        patterns = [
+            f"%{search_term.lower()}%",
+            f"%{normalized}%",
+            f"{search_term.lower()}%",  # Starts with
+            f"{normalized}%",  # Normalized starts with
+        ]
+
+        suggestions = []
+
+        # Search job numbers with fuzzy matching - SIMPLIFIED
+        for pattern in patterns[:2]:  # Use first 2 patterns for job numbers
+            try:
+                job_numbers = (
+                    db.session.query(Job.job_number)
+                    .filter(Job.deleted_at.is_(None), Job.job_number.ilike(pattern))
+                    .distinct()
+                    .limit(limit // 3)
+                    .all()
+                )
+
+                for (job_number,) in job_numbers:
+                    if not any(s["value"] == job_number for s in suggestions):
+                        suggestions.append(
+                            {
+                                "value": job_number,
+                                "type": "job_number",
+                                "label": f"Job: {job_number}",
+                                "priority": 1
+                                if job_number.lower().startswith(search_term.lower())
+                                else 2,
+                            }
+                        )
+            except Exception as e:
+                print(f"Job number autocomplete error: {e}")
+
+        # Search clients with fuzzy matching - SIMPLIFIED
+        for pattern in patterns:
+            try:
+                clients = (
+                    db.session.query(Job.client)
+                    .filter(Job.deleted_at.is_(None), Job.client.ilike(pattern))
+                    .distinct()
+                    .limit(limit // 3)
+                    .all()
+                )
+
+                for (client,) in clients:
+                    if not any(s["value"] == client for s in suggestions):
+                        suggestions.append(
+                            {
+                                "value": client,
+                                "type": "client",
+                                "label": f"Client: {client}",
+                                "priority": 1
+                                if client.lower().startswith(search_term.lower())
+                                else 2,
+                            }
+                        )
+            except Exception as e:
+                print(f"Client autocomplete error: {e}")
+
+        # Search addresses with fuzzy matching - SIMPLIFIED
+        for pattern in patterns:
+            try:
+                addresses = (
+                    db.session.query(Job.address)
+                    .filter(Job.deleted_at.is_(None), Job.address.ilike(pattern))
+                    .distinct()
+                    .limit(limit // 3)
+                    .all()
+                )
+
+                for (address,) in addresses:
+                    if not any(s["value"] == address for s in suggestions):
+                        # Truncate long addresses
+                        display_address = (
+                            address[:50] + "..." if len(address) > 50 else address
+                        )
+                        suggestions.append(
+                            {
+                                "value": address,
+                                "type": "address",
+                                "label": f"Address: {display_address}",
+                                "priority": 1
+                                if address.lower().startswith(search_term.lower())
+                                else 2,
+                            }
+                        )
+            except Exception as e:
+                print(f"Address autocomplete error: {e}")
+
+        # Sort by priority (exact matches first), then by type, then alphabetically
+        suggestions.sort(
+            key=lambda x: (
+                x["priority"],
+                0 if x["type"] == "job_number" else 1 if x["type"] == "client" else 2,
+                x["value"].lower(),
+            )
+        )
+
+        return jsonify(
+            {
+                "suggestions": suggestions[:limit],
+                "search_term": search_term,
+                "fuzzy_matching": True,
+            }
+        )
+
+    except Exception as e:
+        print(f"Autocomplete error: {e}")
+        return jsonify({"suggestions": []})
