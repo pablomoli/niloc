@@ -3,7 +3,10 @@
   <head>
     <title>Admin Dashboard - Epic Surveying</title>
     <link rel="stylesheet" href="/static/css/style.css" />
-    <style></style>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>"
+    />
   </head>
   <body>
     <div class="spa-container">
@@ -23,6 +26,12 @@
             Dashboard
           </a>
           <a href="#jobs" class="spa-nav-item" data-section="jobs"> Jobs </a>
+          <a
+            href="#deleted-jobs"
+            class="spa-nav-item"
+            data-section="deleted-jobs"
+            >Deleted Jobs</a
+          >
           <a href="#users" class="spa-nav-item" data-section="users">Users </a>
         </nav>
       </header>
@@ -45,6 +54,13 @@
           <h2>Job Management</h2>
           <div id="jobs-content">
             <!-- Jobs content will be loaded here -->
+          </div>
+        </section>
+
+        <section id="deleted-jobs-section" class="content-section">
+          <h2>Deleted Jobs Management</h2>
+          <div id="deleted-jobs-content">
+            <!-- Deleted jobs content will be loaded here -->
           </div>
         </section>
 

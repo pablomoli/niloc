@@ -1,14 +1,17 @@
 # api_routes.py - New consolidated API endpoints
-from flask import Blueprint, request, jsonify, session
-from datetime import datetime, timezone
 import os
-import requests
-from models import db, Job, FieldWork, User
-from auth_utils import login_required, hash_password
-from utils import get_county_from_coords, get_brevard_property_link
 import re
-from sqlalchemy import text, or_, case, func
+from datetime import datetime, timezone
 from functools import wraps
+
+import requests
+from flask import Blueprint, jsonify, request, session
+from sqlalchemy import and_, func, or_, text
+from sqlalchemy.orm import aliased
+
+from auth_utils import hash_password, login_required
+from models import FieldWork, Job, User, db
+from utils import get_brevard_property_link, get_county_from_coords
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -232,7 +235,13 @@ def get_jobs():
 @login_required
 def get_job(job_number):
     """GET /api/jobs/JOB123 - Get specific job"""
-    job = Job.active().filter_by(job_number=job_number).first()
+
+    include_deleted = request.args.get("include_deleted", "false").lower() == "true"
+
+    if include_deleted:
+        job = Job.find_by_number(job_number, include_deleted=True)
+    else:
+        job = Job.active().filter_by(job_number=job_number).first()
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -355,25 +364,123 @@ def update_job(job_number):
 @api_bp.route("/jobs/<job_number>", methods=["DELETE"])
 @login_required
 def delete_job(job_number):
-    """DELETE /api/jobs/JOB123 - Soft delete job"""
+    """DELETE /api/jobs/JOB123 - Enhanced soft delete with timestamped job number"""
     admin_check = require_admin()
     if admin_check:
         return admin_check
 
+    # Find active job by job number
     job = Job.active().filter_by(job_number=job_number).first()
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
     try:
-        # Soft delete - set deleted timestamp instead of removing
-        job.deleted_at = datetime.now(timezone.utc)
+        # Store original number for response
+        original_number = job.job_number
+
+        # Perform enhanced soft delete
+        job.soft_delete()
         job.deleted_by_id = session.get("user_id")
+
         db.session.commit()
 
-        return jsonify({"message": f"Job {job_number} deleted successfully"})
+        return jsonify(
+            {
+                "message": f"Job {original_number} deleted successfully",
+                "original_job_number": original_number,
+                "deleted_job_number": job.job_number,
+                "deleted_at": job.deleted_at.isoformat(),
+            }
+        )
+
     except Exception as e:
         db.session.rollback()
+        print(f"Delete job error: {e}")
         return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/restore", methods=["POST"])
+@login_required
+def restore_job(job_number):
+    """POST /api/jobs/JOB123/restore - Restore deleted job"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    # Find deleted job by either current job_number or original_job_number
+    job = (
+        Job.query.filter(
+            or_(Job.job_number == job_number, Job.original_job_number == job_number)
+        )
+        .filter(Job.deleted_at.isnot(None))
+        .first()
+    )
+
+    if not job:
+        return jsonify({"error": "Deleted job not found"}), 404
+
+    try:
+        # Restore the job (includes validation)
+        restored_number = job.restore()
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "message": f"Job {restored_number} restored successfully",
+                "job_number": restored_number,
+                "job": job.to_dict(),
+            }
+        )
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409
+    except Exception as e:
+        db.session.rollback()
+        print(f"Restore job error: {e}")
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/deleted", methods=["GET"])
+@login_required
+def get_deleted_jobs():
+    """GET /api/jobs/deleted - List all deleted jobs"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    try:
+        # Get search parameter for filtering deleted jobs
+        search_term = request.args.get("q", "").strip()
+
+        # Start with deleted jobs query
+        query = Job.deleted().order_by(Job.deleted_at.desc())
+
+        # Apply search filter if provided
+        if search_term:
+            search_condition = create_fuzzy_search_conditions(
+                search_term,
+                [Job.job_number, Job.original_job_number, Job.client, Job.address],
+            )
+            if search_condition is not None:
+                query = query.filter(search_condition)
+
+        deleted_jobs = query.all()
+
+        return jsonify(
+            {
+                "jobs": [job.to_dict() for job in deleted_jobs],
+                "total": len(deleted_jobs),
+                "search_term": search_term if search_term else None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+
+    except Exception as e:
+        print(f"Get deleted jobs error: {e}")
+        return jsonify(
+            {"error": "Failed to fetch deleted jobs", "jobs": [], "total": 0}
+        ), 500
 
 
 # =============================================================================
@@ -1128,3 +1235,31 @@ def search_autocomplete():
     except Exception as e:
         print(f"Autocomplete error: {e}")
         return jsonify({"suggestions": []})
+
+
+@api_bp.route("/jobs/<job_number>/permanent-delete", methods=["DELETE"])
+@login_required
+def permanent_delete_job(job_number):
+    """Permanently delete a job and all related data"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    # Find deleted job only
+    job = Job.deleted().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Deleted job not found"}), 404
+
+    try:
+        # Delete related fieldwork first
+        FieldWork.query.filter_by(job_id=job.id).delete()
+
+        # Delete the job permanently
+        db.session.delete(job)
+        db.session.commit()
+
+        return jsonify({"message": "Job permanently deleted"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Database error occurred"}), 500
