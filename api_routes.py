@@ -16,10 +16,6 @@ from utils import get_brevard_property_link, get_county_from_coords
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
-# =============================================================================
-# HELPER FUNCTIONS - These make our code DRY (Don't Repeat Yourself)
-# =============================================================================
-
 
 def require_admin():
     """Helper to check admin permissions"""
@@ -97,7 +93,7 @@ def get_jobs():
     Returns: All matching jobs (no pagination when searching) or paginated results
     """
     try:
-        # Get all possible search and filter parameters
+        # all possible search and filter parameters
         search_term = (
             request.args.get("q", "").strip() or request.args.get("search", "").strip()
         )
@@ -110,7 +106,7 @@ def get_jobs():
         page = request.args.get("page", 1, type=int)
         per_page = request.args.get("per_page", type=int)
         if per_page is None:
-            per_page = 10000  # Default to large number for backward compatibility
+            per_page = 10000
 
         # Start with base query
         if include_deleted:
