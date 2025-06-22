@@ -1,990 +1,582 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Epic Map - Enhanced Survey Job Management</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>"
-    />
-
-    <!-- Base Leaflet -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-    />
-
-    <!-- Fullscreen Control -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.css"
-    />
-
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="/static/css/style.css" />
-  </head>
-
-  <body>
-    <header class="spa-header">
-      <div>
-        <h1>Epic Map</h1>
-      </div>
-      <nav class="spa-nav">
-        <a href="/admin" class="spa-nav-item">Admin Panel</a>
-        <a href="/logout" class="spa-nav-item">Logout</a>
-      </nav>
-    </header>
-
-    <!-- Controls Panel -->
-    <div class="map-controls-panel" id="controlsPanel">
-      <!-- Mode Selection -->
-      <div class="control-section">
-        <h4><i class="fas fa-mouse-pointer"></i> Mode</h4>
-        <div class="mode-toggle">
-          <button
-            class="mode-btn active"
-            id="panMode"
-            onclick="setMapMode('pan')"
-          >
-            <i class="fas fa-hand-paper"></i> Pan
-          </button>
-          <button class="mode-btn" id="clickMode" onclick="setMapMode('click')">
-            <i class="fas fa-map-pin"></i> Add Marker
-          </button>
-        </div>
-        <div id="modeStatus" class="mode-status">
-          Click mode: Click map to place temporary markers
-        </div>
-      </div>
-
-      <!-- Address Search -->
-      <div class="control-section">
-        <h4><i class="fas fa-search"></i> Address Search</h4>
-        <input
-          type="text"
-          class="search-input"
-          id="addressSearch"
-          placeholder="123 Main St, Orlando FL..."
-          onkeypress="handleSearchKeypress(event)"
-        />
-        <button class="search-btn" onclick="searchAddress()">
-          <i class="fas fa-crosshairs"></i> Find & Fly To
-        </button>
-      </div>
-
-      <!-- Job Filters -->
-      <div class="control-section">
-        <h4><i class="fas fa-filter"></i> Filter by Status</h4>
-        <div class="filter-group" id="statusFilters">
-          <button
-            class="filter-btn active"
-            data-status="all"
-            onclick="toggleStatusFilter(this)"
-          >
-            <span>All</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Job Search -->
-      <div class="control-section">
-        <h4><i class="fas fa-briefcase"></i> Find Jobs</h4>
-        <input
-          type="text"
-          class="search-input"
-          id="jobSearch"
-          placeholder="Job # or Client name..."
-          oninput="filterJobs(this.value)"
-        />
-        <div id="searchResults" class="search-results">
-          <!-- Search results summary -->
-        </div>
-      </div>
-
-      <!-- Multi-Select Jobs -->
-      <div class="control-section">
-        <h4><i class="fas fa-check-square"></i> Selected Jobs</h4>
-        <div id="selectedJobs" class="selected-jobs">
-          <div class="selection-help">
-            Hold Ctrl/Cmd + Click markers to select multiple jobs
-          </div>
-        </div>
-        <button
-          class="search-btn route-btn"
-          id="routeBtn"
-          onclick="planRoute()"
-        >
-          <i class="fas fa-route"></i> Plan Route
-        </button>
-        <button class="search-btn clear-btn" onclick="clearSelection()">
-          <i class="fas fa-times"></i> Clear Selection
-        </button>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="control-section">
-        <h4><i class="fas fa-chart-bar"></i> Map Stats</h4>
-        <div class="stats-grid">
-          <div id="totalJobs" class="stat-item">Total: 0 jobs</div>
-          <div id="visibleJobs" class="stat-item">Visible: 0 jobs</div>
-          <div id="selectedCount" class="stat-item">Selected: 0 jobs</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Map Container -->
-    <div id="main-container">
-      <!-- Enhanced Job Details Sidebar -->
-      <div id="info-panel" class="info-panel">
-        <div class="panel-header">
-          <h2>Job Details</h2>
-          <button
-            id="close-panel"
-            class="spa-btn spa-btn-small spa-btn-secondary close-panel-btn"
-          >
-            ×
-          </button>
-        </div>
-
-        <div id="info-content" class="info-content">
-          <p class="empty-state">Click a job marker to view details.</p>
-        </div>
-
-        <!-- Job Stats -->
-        <div class="job-stats-grid">
-          <div class="stat-card">
-            <div class="stat-number" id="visited-count">0</div>
-            <div class="stat-label">Site Visits</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="total-time-spent">0.0</div>
-            <div class="stat-label">Hours Spent</div>
-          </div>
-        </div>
-
-        <!-- Fieldwork Section -->
-        <div id="fieldwork-form" class="fieldwork-section">
-          <h4>Past Field Work</h4>
-          <ul id="fieldwork-list" class="fieldwork-list">
-            <li class="loading-item">Loading...</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Map -->
-      <div id="map" class="map-container"></div>
-    </div>
-
-    <!-- Create Job Modal -->
-    <div id="createJobModal" class="spa-modal">
-      <div class="spa-modal-content">
-        <span class="spa-close" onclick="closeModal('createJobModal')"
-          >&times;</span
-        >
-        <h2>Create New Job</h2>
-        <form id="createJobForm" class="spa-form">
-          <input
-            type="text"
-            name="job_number"
-            placeholder="Job Number"
-            required
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="client"
-            placeholder="Client"
-            required
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="address"
-            id="job-address"
-            placeholder="Address"
-            required
-            class="spa-input"
-          />
-          <div id="address-suggestions" class="address-suggestions"></div>
-          <select name="status" class="spa-input">
-            <option value="">-- Select Status --</option>
-            <option value="On Hold/Pending">On Hold/Pending</option>
-            <option value="Needs Fieldwork">Needs Fieldwork</option>
-            <option value="Fieldwork Complete/Needs Office Work">
-              Fieldwork Complete/Needs Office Work
-            </option>
-            <option value="To Be Printed/Packaged">
-              To Be Printed/Packaged
-            </option>
-            <option value="Survey Complete/Invoice Sent/Unpaid">
-              Survey Complete/Invoice Sent/Unpaid
-            </option>
-            <option value="Set/Flag Pins">Set/Flag Pins</option>
-            <option value="Completed/To Be Filed">Completed/To Be Filed</option>
-            <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-          </select>
-          <div class="modal-actions">
-            <button type="submit" class="spa-btn spa-btn-success">
-              Create Job
-            </button>
-            <button
-              type="button"
-              onclick="closeModal('createJobModal')"
-              class="spa-btn spa-btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div id="editJobModal" class="spa-modal">
-      <div class="spa-modal-content">
-        <span class="spa-close" onclick="closeModal('editJobModal')"
-          >&times;</span
-        >
-        <h2>Edit Job</h2>
-        <form id="editJobForm" class="spa-form">
-          <input
-            type="text"
-            name="job_number"
-            id="edit-job-number"
-            placeholder="Job Number"
-            readonly
-            class="spa-input"
-            style="background-color: #f5f5f5"
-          />
-          <input
-            type="text"
-            name="client"
-            id="edit-client"
-            placeholder="Client"
-            required
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="address"
-            id="edit-address"
-            placeholder="Address"
-            required
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="county"
-            id="edit-county"
-            placeholder="County"
-            class="spa-input"
-          />
-          <select name="status" id="edit-status" class="spa-input">
-            <option value="">-- Select Status --</option>
-            <option value="On Hold/Pending">On Hold/Pending</option>
-            <option value="Needs Fieldwork">Needs Fieldwork</option>
-            <option value="Fieldwork Complete/Needs Office Work">
-              Fieldwork Complete/Needs Office Work
-            </option>
-            <option value="To Be Printed/Packaged">
-              To Be Printed/Packaged
-            </option>
-            <option value="Survey Complete/Invoice Sent/Unpaid">
-              Survey Complete/Invoice Sent/Unpaid
-            </option>
-            <option value="Set/Flag Pins">Set/Flag Pins</option>
-            <option value="Completed/To Be Filed">Completed/To Be Filed</option>
-            <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-          </select>
-          <textarea
-            name="notes"
-            id="edit-notes"
-            placeholder="Notes"
-            class="spa-input"
-            rows="3"
-          ></textarea>
-          <input
-            type="url"
-            name="prop_appr_link"
-            id="edit-prop-appr-link"
-            placeholder="Property Appraiser Link"
-            class="spa-input"
-          />
-          <input
-            type="url"
-            name="plat_link"
-            id="edit-plat-link"
-            placeholder="Plat Link"
-            class="spa-input"
-          />
-          <input
-            type="url"
-            name="fema_link"
-            id="edit-fema-link"
-            placeholder="FEMA Link"
-            class="spa-input"
-          />
-          <input
-            type="url"
-            name="document_url"
-            id="edit-document-url"
-            placeholder="Document URL"
-            class="spa-input"
-          />
-          <div class="modal-actions">
-            <button type="submit" class="spa-btn spa-btn-success">
-              Update Job
-            </button>
-            <button
-              type="button"
-              onclick="closeModal('editJobModal')"
-              class="spa-btn spa-btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Add Fieldwork Modal -->
-    <div id="addFieldworkModal" class="spa-modal">
-      <div class="spa-modal-content">
-        <span class="spa-close" onclick="closeModal('addFieldworkModal')"
-          >&times;</span
-        >
-        <h2>Add Fieldwork Entry</h2>
-        <form id="addFieldworkForm" class="spa-form">
-          <input
-            type="date"
-            name="work_date"
-            id="fieldwork-date"
-            required
-            class="spa-input"
-          />
-          <div class="time-inputs">
-            <input
-              type="time"
-              name="start_time"
-              id="fieldwork-start-time"
-              placeholder="Start Time"
-              required
-              class="spa-input"
-            />
-            <input
-              type="time"
-              name="end_time"
-              id="fieldwork-end-time"
-              placeholder="End Time"
-              required
-              class="spa-input"
-            />
-          </div>
-          <input
-            type="text"
-            name="crew"
-            id="fieldwork-crew"
-            placeholder="Crew (optional)"
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="drone_card"
-            id="fieldwork-drone-card"
-            placeholder="Drone Card (optional)"
-            class="spa-input"
-          />
-          <textarea
-            name="notes"
-            id="fieldwork-notes"
-            placeholder="Notes (optional)"
-            class="spa-input"
-            rows="3"
-          ></textarea>
-          <div class="modal-actions">
-            <button type="submit" class="spa-btn spa-btn-success">
-              Add Fieldwork
-            </button>
-            <button
-              type="button"
-              onclick="closeModal('addFieldworkModal')"
-              class="spa-btn spa-btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Edit Fieldwork Modal -->
-    <div id="editFieldworkModal" class="spa-modal">
-      <div class="spa-modal-content">
-        <span class="spa-close" onclick="closeModal('editFieldworkModal')"
-          >&times;</span
-        >
-        <h2>Edit Fieldwork Entry</h2>
-        <form id="editFieldworkForm" class="spa-form">
-          <input type="hidden" id="edit-fieldwork-id" />
-          <input
-            type="date"
-            name="work_date"
-            id="edit-fieldwork-date"
-            required
-            class="spa-input"
-          />
-          <div class="time-inputs">
-            <input
-              type="time"
-              name="start_time"
-              id="edit-fieldwork-start-time"
-              required
-              class="spa-input"
-            />
-            <input
-              type="time"
-              name="end_time"
-              id="edit-fieldwork-end-time"
-              required
-              class="spa-input"
-            />
-          </div>
-          <input
-            type="text"
-            name="crew"
-            id="edit-fieldwork-crew"
-            placeholder="Crew (optional)"
-            class="spa-input"
-          />
-          <input
-            type="text"
-            name="drone_card"
-            id="edit-fieldwork-drone-card"
-            placeholder="Drone Card (optional)"
-            class="spa-input"
-          />
-          <textarea
-            name="notes"
-            id="edit-fieldwork-notes"
-            placeholder="Notes (optional)"
-            class="spa-input"
-            rows="3"
-          ></textarea>
-          <div class="modal-actions">
-            <button type="submit" class="spa-btn spa-btn-success">
-              Update Fieldwork
-            </button>
-            <button
-              type="button"
-              onclick="closeModal('editFieldworkModal')"
-              class="spa-btn spa-btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
-
-    <!-- Enhanced Plugins -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.min.js"></script>
-
-    <!-- Font Awesome for icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-
-    <!-- Enhanced Map JavaScript -->
-    <script src="/static/js/map.js"></script>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Map</title>
+    
+    <!-- Google Fonts - Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <!-- Leaflet MarkerCluster CSS (optional for clustering) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fab-menu.css') }}">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <style>
-      .mode-status {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: var(--space-xs);
-      }
-
-      .search-results {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: var(--space-xs);
-      }
-
-      .selection-help {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-align: center;
-        padding: var(--space-md);
-      }
-
-      .route-btn {
-        display: none;
-        margin-bottom: var(--space-sm);
-      }
-
-      .clear-btn {
-        background: var(--color-danger);
-      }
-
-      .clear-btn:hover {
-        background: var(--color-danger-hover);
-      }
-
-      .stats-grid {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-      }
-
-      .stat-item {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-      }
-
-      .info-panel {
-        width: 20rem;
-        height: calc(100vh - 12.5rem);
-        position: fixed;
-        right: -21rem;
-        top: 12.5rem;
-        transition: right var(--transition-slow);
-        overflow-y: auto;
-        z-index: 200;
-        margin: 0;
-        background: var(--bg-primary);
-        border-left: 1px solid var(--border-color);
-        box-shadow: var(--shadow-lg);
-      }
-
-      .info-panel.visible {
-        right: 0;
-      }
-
-      .panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--space-lg);
-        padding-bottom: var(--space-md);
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      .panel-header h2 {
-        margin: 0;
-        color: var(--text-primary);
-      }
-
-      .close-panel-btn {
-        width: 2rem;
-        height: 2rem;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-      }
-
-      .info-content {
-        margin-bottom: var(--space-xl);
-      }
-
-      .empty-state {
-        color: var(--text-muted);
-        text-align: center;
-        font-style: italic;
-      }
-
-      .job-stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-lg);
-        margin: var(--space-lg) 0;
-        padding: var(--space-lg);
-        background: var(--bg-secondary);
-        border-radius: var(--radius-lg);
-      }
-
-      .stat-card {
-        text-align: center;
-      }
-
-      .stat-number {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-primary);
-        line-height: 1;
-      }
-
-      .stat-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: var(--space-xs);
-      }
-
-      .fieldwork-section h4 {
-        margin: var(--space-lg) 0 var(--space-sm) 0;
-        color: var(--text-primary);
-      }
-
-      .fieldwork-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .loading-item {
-        color: var(--text-muted);
-        font-style: italic;
-        padding: var(--space-sm);
-        text-align: center;
-      }
-
-      .map-container {
-        height: calc(100vh - 5rem);
-      }
-
-      .modal-actions {
-        display: flex;
-        gap: var(--space-md);
-        margin-top: var(--space-xl);
-      }
-
-      .address-suggestions {
-        display: none;
-      }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        [x-cloak] { display: none !important; }
+        
+        /* Mobile-First Control Panel */
+        .fab-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .fab-button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .fab-button:active {
+            transform: scale(0.95);
+        }
+        
+        .fab-button.active {
+            background: #dc3545;
+            transform: rotate(45deg);
+        }
+        
+        /* Bottom Sheet Control Panel */
+        .control-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 999;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-sheet.active {
+            transform: translateY(0);
+        }
+        
+        /* Sheet Handle */
+        .sheet-handle {
+            padding: 12px;
+            text-align: center;
+            cursor: grab;
+        }
+        
+        .sheet-handle::before {
+            content: '';
+            display: inline-block;
+            width: 40px;
+            height: 4px;
+            background: #dee2e6;
+            border-radius: 2px;
+        }
+        
+        /* Sheet Content */
+        .sheet-content {
+            padding: 0 20px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Search Section */
+        .search-section {
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 16px; /* Prevents zoom on iOS */
+            transition: border-color 0.2s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #0d6efd;
+        }
+        
+        .search-box button {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 8px;
+            color: #6c757d;
+            cursor: pointer;
+        }
+        
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-pill.active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .filter-pill .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        /* Results Info */
+        .results-info {
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        /* Desktop Adaptations */
+        @media (min-width: 768px) {
+            .control-sheet {
+                left: auto;
+                right: 0;
+                width: 380px;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                transform: translateX(100%);
+            }
+            
+            .control-sheet.active {
+                transform: translateX(0);
+            }
+            
+            .sheet-handle {
+                display: none;
+            }
+            
+            .sheet-content {
+                padding: 20px;
+            }
+        }
+        
+        /* Keep top bar visible but adjust for mobile */
+        @media (max-width: 767px) {
+            .top-bar {
+                padding: 8px;
+                font-size: 14px;
+            }
+            .top-bar h4 {
+                font-size: 18px;
+            }
+            .top-bar .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 12px;
+            }
+        }
+        
+        /* Move Leaflet controls below top bar */
+        .leaflet-control-container .leaflet-top.leaflet-left {
+            top: 60px; /* Push zoom control below top bar */
+        }
+        
+        /* Adjust for mobile */
+        @media (max-width: 767px) {
+            .leaflet-control-container .leaflet-top.leaflet-left {
+                top: 50px; /* Slightly less on mobile since top bar is smaller */
+            }
+        }
+        
+        /* Ensure modal appears above map */
+        .modal {
+            z-index: 999999 !important;
+            position: fixed !important;
+            display: none;
+        }
+        
+        /* Force modal visibility when Alpine shows it */
+        .modal[x-show="true"],
+        .modal[style*="display: block"],
+        .modal[style*="display:block"] {
+            display: block !important;
+        }
+        
+        /* Modal backdrop styling */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999998 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: none;
+        }
+        
+        .modal-backdrop[x-show="true"],
+        .modal-backdrop[style*="display: block"],
+        .modal-backdrop[style*="display:block"] {
+            display: block !important;
+        }
+        
+        /* Force modal to be visible when shown */
+        [x-show="true"] {
+            display: block !important;
+        }
+        
+        /* Ensure modal dialog is centered */
+        .modal.show {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Modal Mobile Optimization */
+        @media (max-width: 767px) {
+            .modal-dialog {
+                margin: 0;
+                max-width: 100%;
+                height: 100%;
+            }
+            
+            .modal-content {
+                height: 100%;
+                border-radius: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .modal-header {
+                padding: 1rem;
+                flex-shrink: 0;
+            }
+            
+            .modal-body {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+                padding: 1rem;
+            }
+            
+            .modal-footer {
+                flex-shrink: 0;
+                padding: 1rem;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            
+            /* Larger touch targets for mobile */
+            .btn-close {
+                padding: 0.75rem;
+                margin: -0.5rem -0.5rem -0.5rem auto;
+            }
+            
+            .nav-tabs .nav-link {
+                padding: 0.75rem 1rem;
+                font-size: 14px;
+            }
+            
+            /* Full width buttons on mobile */
+            .btn-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+                border-radius: 0.375rem !important;
+                margin-bottom: 0.5rem;
+            }
+            
+            /* Form inputs optimization */
+            .modal input[type="date"],
+            .modal input[type="time"],
+            .modal input[type="text"] {
+                font-size: 16px; /* Prevent zoom on iOS */
+                padding: 0.75rem;
+            }
+        }
+        
+        /* Modal styling improvements */
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        }
+        
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 0.5rem 1rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            background-color: transparent;
+            border-color: transparent transparent #0d6efd;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25em 0.6em;
+            font-weight: 500;
+        }
+        
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        /* Mobile-specific improvements */
+        @media (max-width: 767px) {
+            /* Prevent double-tap zoom on buttons */
+            button, .btn, .nav-link {
+                touch-action: manipulation;
+            }
+            
+            /* Improve marker touch targets */
+            .leaflet-marker-icon {
+                margin-left: -20px !important;
+                margin-top: -45px !important;
+            }
+            
+            /* Modal animation improvements */
+            .modal.show .modal-dialog {
+                animation: slideUp 0.3s ease-out;
+            }
+            
+            @keyframes slideUp {
+                from {
+                    transform: translateY(100%);
+                }
+                to {
+                    transform: translateY(0);
+                }
+            }
+            
+            
+            /* Improve tap feedback */
+            .btn:active, .filter-pill:active, .nav-link:active {
+                transform: scale(0.98);
+                opacity: 0.8;
+            }
+        }
     </style>
+</head>
+<body x-data>
+    
+    <!-- Simple Top Bar -->
+    <div class="top-bar">
+        <h4 class="mb-0">Epic Map</h4>
+        <div class="controls">
+            <a href="/admin" class="btn btn-sm btn-primary">Admin</a>
+            <a href="/logout" class="btn btn-sm btn-outline-secondary">Logout</a>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- FAB Button with Arc Menu -->
+    <div class="fab-container" x-data="fabMenu()">
+        <!-- Secondary Action Buttons (hidden by default) -->
+        <div class="fab-actions" :class="{ 'open': menuOpen }">
+            <!-- Search Button -->
+            <button class="fab-action-btn search-btn"
+                    @click="openSearch()">
+                <i class="bi bi-search"></i>
+            </button>
+            
+            <!-- Create Job Button -->
+            <button class="fab-action-btn create-btn"
+                    @click="openCreateJob()">
+                <i class="bi bi-plus-circle"></i>
+            </button>
+            
+            <!-- Status Filter Button -->
+            <button class="fab-action-btn status-btn"
+                    @click="openStatusFilter()">
+                <i class="bi bi-funnel"></i>
+            </button>
+        </div>
+        
+        <!-- Main FAB Button -->
+        <button class="fab-button" 
+                :class="{ 'active': menuOpen }"
+                @click="toggleMenu()"
+                :style="`background-color: ${menuOpen ? '#dc3545' : '#0d6efd'}; transform: ${menuOpen ? 'rotate(180deg)' : 'rotate(0deg)'}`">
+            <i class="bi" :class="menuOpen ? 'bi-x' : 'bi-three-dots-vertical'"></i>
+        </button>
+        
+        <!-- Address Search Overlay -->
+        <div class="search-overlay" 
+             x-show="searchOpen"
+             x-transition:enter.duration.300ms
+             x-transition:leave.duration.200ms
+             @click.self="closeSearch()"
+             style="display: none;">
+            <div class="search-container">
+                <h5>address search</h5>
+                <input type="text" 
+                       placeholder="Enter address..."
+                       x-model="addressSearch"
+                       @keyup.enter="performAddressSearch()"
+                       x-ref="searchInput">
+                <div class="search-actions">
+                    <button class="btn btn-secondary" 
+                            @click="closeSearch()"
+                            :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Cancel</button>
+                    <button class="btn btn-primary" 
+                            @click="performAddressSearch()"
+                            :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Search</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Selection Overlay -->
+        <div class="status-overlay"
+             x-show="statusOpen"
+             x-transition:enter.duration.300ms
+             x-transition:leave.duration.200ms
+             @click.self="closeStatusFilter()"
+             style="display: none;">
+            <div class="status-container">
+                <h5>Status Selection</h5>
+                <div class="status-grid">
+                    <!-- All option -->
+                    <button class="status-item"
+                            :class="{ 'active': isStatusActive('all') }"
+                            @click="toggleStatus('all')">
+                        <span class="status-dot" style="background-color: #6c757d"></span>
+                        <span>All</span>
+                    </button>
+                    
+                    <!-- Individual status options -->
+                    <template x-for="status in availableStatuses" :key="status">
+                        <button class="status-item"
+                                :class="{ 'active': isStatusActive(status) }"
+                                @click="toggleStatus(status)">
+                            <span class="status-dot" 
+                                  :style="`background-color: ${getStatusColor(status)}`"></span>
+                            <span x-text="getStatusName(status)"></span>
+                        </button>
+                    </template>
+                </div>
+                <div class="status-actions">
+                    <button class="btn btn-secondary" 
+                            @click="clearAllStatuses()"
+                            :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Clear All</button>
+                    <button class="btn btn-primary" 
+                            @click="applyStatusFilter()"
+                            :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster (optional for clustering) -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="{{ url_for('static', filename='js/marker-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/simple-modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/fab-menu.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    
+    <!-- Initialize Alpine data on body for global access -->
     <script>
-      // FIXED: Enhanced Collapsible Panel Controller
-      class CollapsiblePanel {
-        constructor() {
-          this.panel = null;
-          this.toggleBtn = null;
-          this.closeBtn = null;
-          this.isCollapsed = false;
-          this.isAnimating = false;
-
-          this.init();
-        }
-
-        init() {
-          // Wait for DOM to be ready
-          if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", () => this.setup());
-          } else {
-            this.setup();
-          }
-        }
-
-        setup() {
-          this.panel =
-            document.getElementById("controlsPanel") ||
-            document.querySelector(".map-controls-panel");
-
-          if (!this.panel) {
-            console.warn("Controls panel not found");
-            return;
-          }
-
-          this.createToggleButton();
-          this.createCloseButton();
-          this.bindEvents();
-          this.handleInitialState();
-        }
-
-        createToggleButton() {
-          // Create the floating toggle button
-          this.toggleBtn = document.createElement("button");
-          this.toggleBtn.className = "panel-toggle-btn";
-          this.toggleBtn.innerHTML = `
-      <span class="panel-toggle-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-    `;
-          this.toggleBtn.setAttribute("aria-label", "Toggle controls panel");
-          this.toggleBtn.setAttribute("title", "Show Controls");
-
-          document.body.appendChild(this.toggleBtn);
-
-          console.log("Toggle button created:", this.toggleBtn);
-        }
-
-        createCloseButton() {
-          if (this.panel) {
-            this.closeBtn = document.createElement("button");
-            this.closeBtn.className = "panel-close-btn";
-            this.closeBtn.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      `;
-            this.closeBtn.setAttribute("aria-label", "Close controls panel");
-            this.closeBtn.setAttribute("title", "Close Panel");
-
-            this.panel.appendChild(this.closeBtn);
-
-            console.log("Close button created:", this.closeBtn);
-          }
-        }
-
-        bindEvents() {
-          // Toggle button click - FIXED: Better event handling
-          if (this.toggleBtn) {
-            this.toggleBtn.addEventListener("click", (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log(
-                "Toggle button clicked, current state:",
-                this.isCollapsed,
-              );
-              this.toggle();
-            });
-          }
-
-          // Close button click
-          if (this.closeBtn) {
-            this.closeBtn.addEventListener("click", (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log("Close button clicked");
-              this.collapse();
-            });
-          }
-
-          // Keyboard shortcuts
-          document.addEventListener("keydown", (e) => {
-            // Press 'C' to toggle controls (when not in input)
-            if (
-              e.key.toLowerCase() === "c" &&
-              !e.ctrlKey &&
-              !e.metaKey &&
-              !this.isInputFocused()
-            ) {
-              console.log("Keyboard shortcut C pressed");
-              this.toggle();
-            }
-
-            // Press Escape to close panel
-            if (e.key === "Escape" && !this.isCollapsed) {
-              console.log("Escape pressed, closing panel");
-              this.collapse();
-            }
-          });
-
-          // Auto-collapse on mobile when clicking outside
-          document.addEventListener("click", (e) => {
-            if (
-              window.innerWidth <= 768 &&
-              !this.isCollapsed &&
-              this.panel &&
-              !this.panel.contains(e.target) &&
-              !this.toggleBtn.contains(e.target)
-            ) {
-              this.collapse();
-            }
-          });
-
-          // Handle window resize
-          window.addEventListener("resize", () => {
-            this.handleResize();
-          });
-
-          // Animation event handlers
-          if (this.panel) {
-            this.panel.addEventListener("transitionstart", () => {
-              this.isAnimating = true;
-              console.log("Animation started");
-            });
-
-            this.panel.addEventListener("transitionend", () => {
-              this.isAnimating = false;
-              this.updateAriaStates();
-              console.log("Animation ended, collapsed:", this.isCollapsed);
-            });
-          }
-        }
-
-        handleInitialState() {
-          // Check if user prefers collapsed state (localStorage)
-          const savedState = localStorage.getItem("mapControlsPanelCollapsed");
-          console.log("Initial state from localStorage:", savedState);
-
-          if (savedState === "true") {
-            this.collapse(false); // No animation on page load
-          } else {
-            this.expand(false);
-          }
-        }
-
-        toggle() {
-          if (this.isAnimating) {
-            console.log("Already animating, ignoring toggle");
-            return;
-          }
-
-          console.log("Toggling panel, current state:", this.isCollapsed);
-
-          if (this.isCollapsed) {
-            this.expand();
-          } else {
-            this.collapse();
-          }
-        }
-
-        expand(animate = true) {
-          if (!this.panel) return;
-
-          console.log("Expanding panel, animate:", animate);
-
-          this.isCollapsed = false;
-
-          if (animate) {
-            // Add expanding class for staggered animations
-            this.panel.classList.add("expanded");
-            setTimeout(() => {
-              this.panel.classList.remove("expanded");
-            }, 800);
-          }
-
-          // Remove collapsed state and hide toggle button
-          this.panel.classList.remove("collapsed");
-          if (this.toggleBtn) {
-            this.toggleBtn.classList.remove("collapsed");
-            this.toggleBtn.classList.add("hidden");
-          }
-
-          // Update aria attributes
-          this.updateAriaStates();
-
-          // Save state
-          localStorage.setItem("mapControlsPanelCollapsed", "false");
-
-          // Dispatch custom event
-          this.dispatchEvent("panelExpanded");
-        }
-
-        collapse(animate = true) {
-          if (!this.panel) return;
-
-          console.log("Collapsing panel, animate:", animate);
-
-          this.isCollapsed = true;
-
-          // Add collapsed state and show toggle button
-          this.panel.classList.add("collapsed");
-          if (this.toggleBtn) {
-            this.toggleBtn.classList.add("collapsed");
-            this.toggleBtn.classList.remove("hidden");
-          }
-
-          // Update aria attributes
-          this.updateAriaStates();
-
-          // Save state
-          localStorage.setItem("mapControlsPanelCollapsed", "true");
-
-          // Dispatch custom event
-          this.dispatchEvent("panelCollapsed");
-        }
-
-        updateAriaStates() {
-          if (this.panel && this.toggleBtn) {
-            this.panel.setAttribute("aria-hidden", this.isCollapsed.toString());
-            this.toggleBtn.setAttribute(
-              "aria-expanded",
-              (!this.isCollapsed).toString(),
-            );
-
-            // Update title text
-            this.toggleBtn.setAttribute(
-              "title",
-              this.isCollapsed ? "Show Controls Panel" : "Hide Controls Panel",
-            );
-          }
-        }
-
-        handleResize() {
-          // Ensure proper state on resize
-          if (window.innerWidth <= 768) {
-            // Mobile: ensure proper z-index
-            if (this.panel) {
-              this.panel.style.zIndex = "9999";
-            }
-          } else {
-            // Desktop: reset z-index
-            if (this.panel) {
-              this.panel.style.zIndex = "1000";
-            }
-          }
-        }
-
-        isInputFocused() {
-          const activeElement = document.activeElement;
-          return (
-            activeElement &&
-            (activeElement.tagName === "INPUT" ||
-              activeElement.tagName === "TEXTAREA" ||
-              activeElement.tagName === "SELECT" ||
-              activeElement.isContentEditable)
-          );
-        }
-
-        dispatchEvent(eventName) {
-          const event = new CustomEvent(eventName, {
-            detail: {
-              isCollapsed: this.isCollapsed,
-              panel: this.panel,
-            },
-          });
-          document.dispatchEvent(event);
-        }
-
-        // Public API methods
-        show() {
-          this.expand();
-        }
-        hide() {
-          this.collapse();
-        }
-        isVisible() {
-          return !this.isCollapsed;
-        }
-
-        // Debug method
-        getState() {
-          return {
-            isCollapsed: this.isCollapsed,
-            isAnimating: this.isAnimating,
-            panelElement: this.panel,
-            toggleButton: this.toggleBtn,
-          };
-        }
-      }
-
-      // Initialize the collapsible panel
-      let collapsiblePanel;
-
-      // Auto-initialize when DOM is ready
-      document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOM ready, initializing collapsible panel");
-        collapsiblePanel = new CollapsiblePanel();
-
-        // Global access for debugging
-        window.collapsiblePanel = collapsiblePanel;
-      });
-
-      // EMERGENCY X: If the panel gets stuck, you can run this in console:
-      // collapsiblePanel.expand() or collapsiblePanel.collapse()
+        document.addEventListener('alpine:init', () => {
+            console.log('Alpine initialized');
+        });
     </script>
-  </body>
+</body>
 </html>

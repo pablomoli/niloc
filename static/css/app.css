@@ -1,0 +1,389 @@
+/* 
+Epic Map - Clean CSS Implementation
+Bootstrap 5 + Custom Styles
+*/
+
+:root {
+  /* Epic Map Brand Colors */
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+
+  /* Map specific colors */
+  --map-bg: #f8f9fa;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --marker-selected: #ff6b35;
+
+  /* Layout */
+  --header-height: 60px;
+  --sidebar-width: 320px;
+  --panel-width: 300px;
+}
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  height: var(--header-height);
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.app-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  color: var(--secondary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.app-nav a:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Main Layout */
+.app-container {
+  height: calc(100vh - var(--header-height));
+  display: flex;
+  position: relative;
+}
+
+/* Map Container */
+.map-container {
+  flex: 1;
+  position: relative;
+  background: var(--map-bg);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Control Panel (Left Sidebar) */
+.control-panel {
+  width: var(--panel-width);
+  background: var(--panel-bg);
+  border-right: 1px solid #dee2e6;
+  padding: 1rem;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.control-panel.collapsed {
+  transform: translateX(-100%);
+}
+
+.control-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.control-section:last-child {
+  border-bottom: none;
+}
+
+.control-section h5 {
+  margin: 0 0 0.75rem 0;
+  color: var(--secondary-color);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Info Panel (Right Sidebar) */
+.info-panel {
+  width: var(--sidebar-width);
+  background: white;
+  border-left: 1px solid #dee2e6;
+  padding: 1rem;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.info-panel.active {
+  transform: translateX(0);
+}
+
+/* Panel Toggle Button */
+.panel-toggle {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 200;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.panel-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.btn-secondary {
+  background: var(--secondary-color);
+  color: white;
+  border-color: var(--secondary-color);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: transparent;
+}
+
+.btn-outline-primary:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Filter Buttons */
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #ced4da;
+  background: white;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--secondary-color);
+  margin-top: 0.25rem;
+}
+
+/* Custom modals (simple-modal.js and create-job-modal.js) use inline styles */
+/* Bootstrap modals will use Bootstrap's own CSS */
+
+/* Notifications */
+.notifications {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  max-width: 400px;
+}
+
+.notification {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.notification.success {
+  border-left: 4px solid var(--success-color);
+}
+
+.notification.error {
+  border-left: 4px solid var(--danger-color);
+}
+
+.notification.warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.notification.info {
+  border-left: 4px solid var(--info-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .control-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 300;
+  }
+
+  .info-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 90vw;
+    z-index: 300;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Utility Classes */
+.d-none {
+  display: none !important;
+}
+.d-block {
+  display: block !important;
+}
+.d-flex {
+  display: flex !important;
+}
+.text-center {
+  text-align: center !important;
+}
+.text-muted {
+  color: var(--secondary-color) !important;
+}
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+.mb-2 {
+  margin-bottom: 0.5rem !important;
+}
+.mb-3 {
+  margin-bottom: 1rem !important;
+}
+.mt-2 {
+  margin-top: 0.5rem !important;
+}
+.mt-3 {
+  margin-top: 1rem !important;
+}
+
+.leaflet-control-zoom-in {
+  margin-top: 50px;
+}

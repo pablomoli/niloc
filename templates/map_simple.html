@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Map</title>
+    
+    <!-- Google Fonts - Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Simple Top Bar -->
+    <div class="top-bar">
+        <h4 class="mb-0">Epic Map</h4>
+        <div class="controls">
+            <a href="/admin" class="btn btn-sm btn-primary">Admin</a>
+            <a href="/logout" class="btn btn-sm btn-outline-secondary">Logout</a>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([28.5383, -81.3792], 10); // Orlando, FL
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Load and display jobs
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/jobs');
+                const data = await response.json();
+                const jobs = Array.isArray(data) ? data : data.jobs || [];
+                
+                jobs.forEach(job => {
+                    const lat = job.latitude || job.lat;
+                    const lng = job.longitude || job.long;
+                    
+                    if (lat && lng) {
+                        L.marker([lat, lng])
+                            .bindPopup(`
+                                <strong>${job.job_number}</strong><br>
+                                ${job.client}<br>
+                                ${job.address}
+                            `)
+                            .addTo(map);
+                    }
+                });
+                
+                console.log(`Loaded ${jobs.length} jobs`);
+            } catch (error) {
+                console.error('Failed to load jobs:', error);
+            }
+        }
+        
+        // Load jobs when page loads
+        loadJobs();
+    </script>
+</body>
+</html>
