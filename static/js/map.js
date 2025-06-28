@@ -518,14 +518,14 @@ async function searchAddress(address) {
     if (!searchQuery) return;
     
     try {
-        // Use Nominatim (OpenStreetMap) for geocoding
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
-        const results = await response.json();
+        // Use the same geocoding API that job creation uses
+        const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchQuery)}`);
+        const result = await response.json();
         
-        if (results.length > 0) {
-            const lat = parseFloat(results[0].lat);
-            const lng = parseFloat(results[0].lon);
-            const displayName = results[0].display_name;
+        if (response.ok && result.lat && result.lng) {
+            const lat = parseFloat(result.lat);
+            const lng = parseFloat(result.lng);
+            const displayName = result.formatted_address || searchQuery;
             
             // Remove any existing search markers
             if (window.currentSearchMarker) {
