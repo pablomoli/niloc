@@ -74,7 +74,11 @@ const AppState = {
     allJobs: [],
     filteredJobs: [],
     selectedJobs: new Set(),
-    markers: new Map() // Store marker references by job_number
+    markers: new Map(), // Store marker references by job_number
+    userLocationMarker: null,
+    userAccuracyCircle: null,
+    watchPositionId: null,
+    userLocation: null
 };
 
 // Initialize map
@@ -84,6 +88,137 @@ AppState.map = L.map('map').setView([28.5383, -81.3792], 10); // Orlando, FL
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles © Esri'
 }).addTo(AppState.map);
+
+// Initialize user location tracking
+function initUserLocation() {
+    if (!navigator.geolocation) {
+        showNotification('Location services not available', 'error');
+        return;
+    }
+    
+    // Request initial position
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            
+            // Store user location
+            AppState.userLocation = { lat: latitude, lng: longitude, accuracy };
+            
+            // Center map on user location
+            AppState.map.setView([latitude, longitude], 15);
+            
+            // Create or update user location marker
+            updateUserLocationMarker(latitude, longitude, accuracy);
+            
+            // Start watching position
+            startWatchingPosition();
+            
+            showNotification('Location found', 'success');
+        },
+        (error) => {
+            console.error('Geolocation error:', error);
+            let message = 'Unable to get your location';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Location permission denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Location information unavailable';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Location request timed out';
+                    break;
+            }
+            
+            showNotification(message, 'error');
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+// Update user location marker and accuracy circle
+function updateUserLocationMarker(lat, lng, accuracy) {
+    // Remove existing marker and circle
+    if (AppState.userLocationMarker) {
+        AppState.map.removeLayer(AppState.userLocationMarker);
+    }
+    if (AppState.userAccuracyCircle) {
+        AppState.map.removeLayer(AppState.userAccuracyCircle);
+    }
+    
+    // Create accuracy circle
+    AppState.userAccuracyCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        className: 'user-accuracy-circle',
+        interactive: false
+    }).addTo(AppState.map);
+    
+    // Create user location marker
+    if (window.MarkerUtils) {
+        AppState.userLocationMarker = MarkerUtils.createUserLocationMarker(lat, lng);
+    } else {
+        // Fallback marker
+        AppState.userLocationMarker = L.marker([lat, lng], {
+            icon: L.divIcon({
+                html: '<div style="width: 12px; height: 12px; background: #4285F4; border: 2px solid white; border-radius: 50%;"></div>',
+                className: 'user-location-fallback',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            })
+        });
+    }
+    
+    AppState.userLocationMarker.addTo(AppState.map);
+}
+
+// Start watching user position
+function startWatchingPosition() {
+    if (!navigator.geolocation) return;
+    
+    // Clear any existing watch
+    if (AppState.watchPositionId) {
+        navigator.geolocation.clearWatch(AppState.watchPositionId);
+    }
+    
+    AppState.watchPositionId = navigator.geolocation.watchPosition(
+        (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            
+            // Update stored location
+            AppState.userLocation = { lat: latitude, lng: longitude, accuracy };
+            
+            // Update marker position
+            updateUserLocationMarker(latitude, longitude, accuracy);
+        },
+        (error) => {
+            console.error('Watch position error:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 1000
+        }
+    );
+}
+
+// Center map on user location
+function centerOnUserLocation() {
+    if (AppState.userLocation) {
+        AppState.map.setView([AppState.userLocation.lat, AppState.userLocation.lng], 16);
+        showNotification('Centered on your location', 'info');
+    } else {
+        showNotification('Location not available', 'error');
+        initUserLocation(); // Try to get location again
+    }
+}
+
+// Initialize user location after map loads
+setTimeout(initUserLocation, 1000);
 
 // Remove legend - we're using the control panel instead
 // if (window.MarkerUtils) {
@@ -481,6 +616,7 @@ window.searchAddress = searchAddress;
 window.toggleStatusFilter = toggleStatusFilter;
 window.applyStatusFilter = applyStatusFilter;
 window.loadJobs = loadJobs; // Export loadJobs for create job modal
+window.centerOnUserLocation = centerOnUserLocation; // Export for FAB menu
 
 // Create job at location function
 window.createJobAtLocation = function(lat, lng, address) {

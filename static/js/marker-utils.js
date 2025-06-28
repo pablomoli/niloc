@@ -146,6 +146,29 @@ function createSearchMarker(lat, lng) {
 }
 
 /**
+ * Create a user location marker (blue dot like Google Maps)
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {L.Marker} Leaflet marker object
+ */
+function createUserLocationMarker(lat, lng) {
+  return L.marker([lat, lng], {
+    icon: L.divIcon({
+      html: `
+        <div class="user-location-marker">
+          <div class="user-location-pulse"></div>
+          <div class="user-location-dot"></div>
+        </div>
+      `,
+      className: "user-location-icon",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+    zIndexOffset: 1000, // Keep above other markers
+  });
+}
+
+/**
  * Create status filter buttons
  * @param {Array} jobs - Array of job objects
  * @param {Element} container - DOM element to append filters to
@@ -293,6 +316,64 @@ function addMarkerStyles() {
         .filter-btn.active .status-dot {
             border-color: rgba(255, 255, 255, 0.5);
         }
+        
+        /* User Location Marker Styles */
+        .user-location-icon {
+            background: transparent;
+            border: none;
+        }
+        
+        .user-location-marker {
+            position: relative;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .user-location-dot {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 12px;
+            height: 12px;
+            background-color: #4285F4;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        
+        .user-location-pulse {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            background-color: #4285F4;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: userLocationPulse 2s ease-out infinite;
+            z-index: 1;
+        }
+        
+        @keyframes userLocationPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
+        /* Accuracy Circle */
+        .user-accuracy-circle {
+            fill: #4285F4;
+            fill-opacity: 0.15;
+            stroke: #4285F4;
+            stroke-width: 1;
+            stroke-opacity: 0.3;
+        }
     `;
   document.head.appendChild(style);
 }
@@ -309,6 +390,7 @@ window.MarkerUtils = {
   createJobMarker,
   createTempMarker,
   createSearchMarker,
+  createUserLocationMarker,
   createStatusFilters,
   createStatusLegend,
   isLightColor,

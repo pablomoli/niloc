@@ -79,6 +79,16 @@ function fabMenu() {
             window.CreateJobModal.show(null, null, '');
         },
         
+        centerOnLocation() {
+            this.menuOpen = false;
+            // Call the global centerOnUserLocation function
+            if (window.centerOnUserLocation) {
+                window.centerOnUserLocation();
+            } else {
+                console.error('centerOnUserLocation function not available');
+            }
+        },
+        
         openStatusFilter() {
             // Refresh available statuses when opening the filter
             this.updateAvailableStatuses();
