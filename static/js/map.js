@@ -1,3 +1,72 @@
+// Mobile-First Notification System
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notification-container');
+    if (!container) return;
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    // Icon based on type
+    const icons = {
+        success: '<i class="bi bi-check-circle-fill"></i>',
+        error: '<i class="bi bi-exclamation-circle-fill"></i>',
+        info: '<i class="bi bi-info-circle-fill"></i>'
+    };
+    
+    notification.innerHTML = `
+        <span class="notification-icon">${icons[type] || icons.info}</span>
+        <span class="notification-message">${message}</span>
+    `;
+    
+    // Add to container
+    container.appendChild(notification);
+    
+    // Remove notification after delay
+    const removeNotification = () => {
+        notification.classList.add('hiding');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    };
+    
+    // Auto-dismiss after 3 seconds
+    const timeout = setTimeout(removeNotification, 3000);
+    
+    // Click/tap to dismiss
+    notification.addEventListener('click', () => {
+        clearTimeout(timeout);
+        removeNotification();
+    });
+    
+    // Touch swipe to dismiss
+    let startY = 0;
+    notification.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+    });
+    
+    notification.addEventListener('touchmove', (e) => {
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+        if (diff > 0) {
+            notification.style.transform = `translateY(${diff}px)`;
+            notification.style.opacity = 1 - (diff / 100);
+        }
+    });
+    
+    notification.addEventListener('touchend', (e) => {
+        const currentY = e.changedTouches[0].clientY;
+        const diff = currentY - startY;
+        if (diff > 50) {
+            clearTimeout(timeout);
+            removeNotification();
+        } else {
+            notification.style.transform = '';
+            notification.style.opacity = '';
+        }
+    });
+}
+
 // Application State
 const AppState = {
     map: null,
@@ -361,16 +430,12 @@ async function searchAddress(address) {
             AppState.map.setView([lat, lng], 15);
         } else {
             // Use notification for error
-            if (window.Alpine && window.Alpine.store) {
-                window.Alpine.store('notifications').add('Address not found', 'error');
-            }
+            showNotification('Address not found', 'error');
         }
     } catch (error) {
         console.error('Geocoding error:', error);
         // Use notification for error
-        if (window.Alpine && window.Alpine.store) {
-            window.Alpine.store('notifications').add('Error searching for address', 'error');
-        }
+        showNotification('Error searching for address', 'error');
     }
 }
 
@@ -426,8 +491,6 @@ window.createJobAtLocation = function(lat, lng, address) {
         window.CreateJobModal.show(lat, lng, address);
     } else {
         // Use notification for error
-        if (window.Alpine && window.Alpine.store) {
-            window.Alpine.store('notifications').add('Create job functionality not available', 'error');
-        }
+        showNotification('Create job functionality not available', 'error');
     }
 };

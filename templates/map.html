@@ -449,6 +449,85 @@
                 opacity: 0.8;
             }
         }
+        
+        /* Mobile-First Notifications */
+        .notification {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 56px; /* Good touch target */
+            pointer-events: all;
+            cursor: pointer;
+            animation: slideUp 0.3s ease-out;
+            transition: all 0.3s ease-out;
+            margin: 0 auto;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .notification.hiding {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .notification-message {
+            flex: 1;
+            font-size: 16px; /* Prevent iOS zoom */
+            line-height: 1.4;
+            color: #212529;
+        }
+        
+        .notification.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .notification.success .notification-icon {
+            color: #28a745;
+        }
+        
+        .notification.error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .notification.error .notification-icon {
+            color: #dc3545;
+        }
+        
+        .notification.info {
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .notification.info .notification-icon {
+            color: #17a2b8;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Desktop adjustments */
+        @media (min-width: 768px) {
+            #notification-container {
+                bottom: 20px;
+                padding: 0 20px;
+            }
+        }
     </style>
 </head>
 <body x-data>
@@ -464,6 +543,20 @@
     
     <!-- Map Container -->
     <div id="map"></div>
+    
+    <!-- Mobile-First Notification Container -->
+    <div id="notification-container" style="
+        position: fixed;
+        bottom: 100px; /* Above FAB menu */
+        left: 0;
+        right: 0;
+        z-index: 10000;
+        pointer-events: none;
+        padding: 0 15px;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 10px;
+    "></div>
     
     <!-- FAB Button with Arc Menu -->
     <div class="fab-container" x-data="fabMenu()">

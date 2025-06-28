@@ -111,8 +111,8 @@ window.CreateJobModal = {
         
         if (!addressInput) {
             // Use notification instead of alert for better UX
-            if (window.Alpine && window.Alpine.store) {
-                window.Alpine.store('notifications').add('Please enter an address', 'error');
+            if (window.showNotification) {
+                window.showNotification('Please enter an address', 'error');
             }
             return;
         }
@@ -185,8 +185,8 @@ window.CreateJobModal = {
                 }
                 
                 // Show success notification
-                if (window.Alpine && window.Alpine.store) {
-                    window.Alpine.store('notifications').add('Job created successfully!', 'success');
+                if (window.showNotification) {
+                    window.showNotification('Job created successfully!', 'success');
                 }
             } else {
                 // Try to parse error message
@@ -197,14 +197,14 @@ window.CreateJobModal = {
                 } catch (e) {
                     errorMessage = responseText;
                 }
-                if (window.Alpine && window.Alpine.store) {
-                    window.Alpine.store('notifications').add('Error creating job: ' + errorMessage, 'error');
+                if (window.showNotification) {
+                    window.showNotification('Error creating job: ' + errorMessage, 'error');
                 }
             }
         } catch (error) {
             console.error('Error:', error);
-            if (window.Alpine && window.Alpine.store) {
-                window.Alpine.store('notifications').add(error.message || 'Error creating job', 'error');
+            if (window.showNotification) {
+                window.showNotification(error.message || 'Error creating job', 'error');
             }
         } finally {
             // Restore button state
