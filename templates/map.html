@@ -528,6 +528,41 @@
                 padding: 0 20px;
             }
         }
+        
+        /* Fix white borders between tiles on mobile */
+        .leaflet-tile {
+            outline: 1px solid transparent !important;
+            border: none !important;
+        }
+        
+        .leaflet-tile-loaded {
+            outline: 1px solid transparent !important;
+        }
+        
+        /* Mobile-specific tile rendering fixes */
+        @media only screen and (max-width: 768px) {
+            .leaflet-tile {
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
+                will-change: transform;
+                transform: translateZ(0);
+            }
+            
+            .leaflet-tile-container {
+                will-change: transform;
+                transform: translateZ(0);
+            }
+        }
+        
+        /* High-DPI display fixes */
+        @media only screen and (-webkit-min-device-pixel-ratio: 2),
+               only screen and (min-resolution: 192dpi) {
+            .leaflet-tile {
+                outline: 1px solid transparent !important;
+                transform: translateZ(0);
+                backface-visibility: hidden;
+            }
+        }
     </style>
 </head>
 <body x-data>
