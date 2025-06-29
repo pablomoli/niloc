@@ -9,9 +9,12 @@ function fabMenu() {
         menuOpen: false,
         searchOpen: false,
         statusOpen: false,
+        layerOpen: false,
         addressSearch: '',
         availableStatuses: [],
         selectedStatuses: new Set(['all']), // Local reactive state for UI
+        currentBaseLayer: 'satellite',
+        countiesVisible: false,
         
         init() {
             // Store reference to this component for event handlers
@@ -50,6 +53,7 @@ function fabMenu() {
             if (!this.menuOpen) {
                 this.searchOpen = false;
                 this.statusOpen = false;
+                this.layerOpen = false;
             }
         },
         
@@ -79,16 +83,6 @@ function fabMenu() {
             window.CreateJobModal.show(null, null, '');
         },
         
-        centerOnLocation() {
-            this.menuOpen = false;
-            // Call the global centerOnUserLocation function
-            if (window.centerOnUserLocation) {
-                window.centerOnUserLocation();
-            } else {
-                console.error('centerOnUserLocation function not available');
-            }
-        },
-        
         openStatusFilter() {
             // Refresh available statuses when opening the filter
             this.updateAvailableStatuses();
@@ -98,6 +92,35 @@ function fabMenu() {
         
         closeStatusFilter() {
             this.statusOpen = false;
+        },
+        
+        openLayerControl() {
+            // Sync layer state from global AppState
+            if (window.AppState) {
+                this.currentBaseLayer = window.AppState.currentBaseLayer;
+                this.countiesVisible = window.AppState.countiesVisible;
+            }
+            this.layerOpen = true;
+            this.menuOpen = false;
+        },
+        
+        closeLayerControl() {
+            this.layerOpen = false;
+        },
+        
+        switchToBaseLayer(layerName) {
+            if (window.switchBaseLayer) {
+                window.switchBaseLayer(layerName);
+                this.currentBaseLayer = layerName;
+            }
+        },
+        
+        toggleCountiesLayer() {
+            if (window.toggleCounties) {
+                window.toggleCounties();
+                // Update local state - toggle the value
+                this.countiesVisible = !this.countiesVisible;
+            }
         },
         
         toggleStatus(status) {

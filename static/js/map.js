@@ -78,16 +78,28 @@ const AppState = {
     userLocationMarker: null,
     userAccuracyCircle: null,
     watchPositionId: null,
-    userLocation: null
+    userLocation: null,
+    baseLayers: {},
+    overlayLayers: {},
+    currentBaseLayer: 'satellite',
+    countiesVisible: false
 };
 
 // Initialize map
 AppState.map = L.map('map').setView([28.5383, -81.3792], 10); // Orlando, FL
 
-// Add tile layer - ESRI Satellite imagery
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles © Esri'
-}).addTo(AppState.map);
+// Create base layers
+AppState.baseLayers = {
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+    }),
+    streets: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+    })
+};
+
+// Add default satellite layer
+AppState.baseLayers.satellite.addTo(AppState.map);
 
 // Initialize user location tracking
 function initUserLocation() {
@@ -216,6 +228,102 @@ function centerOnUserLocation() {
         initUserLocation(); // Try to get location again
     }
 }
+
+// Load Florida Counties GeoJSON layer
+async function loadFloridaCounties() {
+    try {
+        const response = await fetch('/static/data/florida_counties.geojson');
+        const countiesData = await response.json();
+        
+        AppState.overlayLayers.counties = L.geoJSON(countiesData, {
+            style: {
+                color: '#ff0000',
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0
+            },
+            onEachFeature: function(feature, layer) {
+                if (feature.properties && feature.properties.NAME) {
+                    // Create county label
+                    const bounds = layer.getBounds();
+                    const center = bounds.getCenter();
+                    
+                    const label = L.marker(center, {
+                        icon: L.divIcon({
+                            className: 'county-label',
+                            html: `<div class="county-name">${feature.properties.NAME}</div>`,
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        }),
+                        interactive: false
+                    });
+                    
+                    // Store label reference on the layer
+                    layer.countyLabel = label;
+                }
+            }
+        });
+        
+        console.log('Florida counties loaded');
+    } catch (error) {
+        console.error('Failed to load Florida counties:', error);
+        showNotification('Failed to load county boundaries', 'error');
+    }
+}
+
+// Toggle base layer (satellite/streets)
+function switchBaseLayer(layerName) {
+    if (AppState.baseLayers[layerName] && layerName !== AppState.currentBaseLayer) {
+        // Remove current base layer
+        AppState.map.removeLayer(AppState.baseLayers[AppState.currentBaseLayer]);
+        
+        // Add new base layer
+        AppState.baseLayers[layerName].addTo(AppState.map);
+        
+        // Update state
+        AppState.currentBaseLayer = layerName;
+        
+        const layerNames = {
+            satellite: 'Satellite',
+            streets: 'Street Map'
+        };
+        
+        showNotification(`Switched to ${layerNames[layerName]}`, 'info');
+    }
+}
+
+// Toggle Florida counties overlay
+function toggleCounties() {
+    if (!AppState.overlayLayers.counties) {
+        showNotification('Counties not loaded yet', 'error');
+        return;
+    }
+    
+    if (AppState.countiesVisible) {
+        // Hide counties and labels
+        AppState.map.removeLayer(AppState.overlayLayers.counties);
+        AppState.overlayLayers.counties.eachLayer(function(layer) {
+            if (layer.countyLabel) {
+                AppState.map.removeLayer(layer.countyLabel);
+            }
+        });
+        AppState.countiesVisible = false;
+        showNotification('County boundaries hidden', 'info');
+    } else {
+        // Show counties and labels
+        AppState.overlayLayers.counties.addTo(AppState.map);
+        AppState.overlayLayers.counties.eachLayer(function(layer) {
+            if (layer.countyLabel) {
+                layer.countyLabel.addTo(AppState.map);
+            }
+        });
+        AppState.countiesVisible = true;
+        showNotification('County boundaries shown', 'info');
+    }
+}
+
+// Initialize layers
+loadFloridaCounties();
 
 // Initialize user location after map loads
 setTimeout(initUserLocation, 1000);
@@ -518,8 +626,8 @@ async function searchAddress(address) {
     if (!searchQuery) return;
     
     try {
-        // Use the same geocoding API that job creation uses
-        const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchQuery)}`);
+        // Use the same geocoding API that job creation uses (append Florida for better accuracy)
+        const response = await fetch(`/api/geocode?address=${encodeURIComponent(searchQuery + ', Florida')}`);
         const result = await response.json();
         
         if (response.ok && result.lat && result.lng) {
@@ -617,6 +725,8 @@ window.toggleStatusFilter = toggleStatusFilter;
 window.applyStatusFilter = applyStatusFilter;
 window.loadJobs = loadJobs; // Export loadJobs for create job modal
 window.centerOnUserLocation = centerOnUserLocation; // Export for FAB menu
+window.switchBaseLayer = switchBaseLayer; // Export for layer controls
+window.toggleCounties = toggleCounties; // Export for layer controls
 
 // Create job at location function
 window.createJobAtLocation = function(lat, lng, address) {

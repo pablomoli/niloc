@@ -124,8 +124,8 @@ window.CreateJobModal = {
         submitButton.disabled = true;
         
         try {
-            // Geocode the address
-            const geocodeResponse = await fetch(`/api/geocode?address=${encodeURIComponent(addressInput)}`);
+            // Geocode the address (append Florida for better accuracy)
+            const geocodeResponse = await fetch(`/api/geocode?address=${encodeURIComponent(addressInput + ', Florida')}`);
             
             if (!geocodeResponse.ok) {
                 throw new Error('Could not geocode address');

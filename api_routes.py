@@ -60,11 +60,19 @@ def geocode_address(address):
             if geo_data.get("status") == "OK" and geo_data["results"]:
                 result = geo_data["results"][0]
                 location = result["geometry"]["location"]
+                
+                # Extract county from Google's address components
+                county = None
+                for component in result.get("address_components", []):
+                    if "administrative_area_level_2" in component.get("types", []):
+                        county = component.get("long_name", "").replace(" County", "")
+                        break
+                
                 return {
                     "lat": str(location["lat"]),
                     "lng": str(location["lng"]),
                     "formatted_address": result["formatted_address"],
-                    "county": get_county_from_coords(location["lat"], location["lng"]),
+                    "county": county,
                 }
     except Exception as e:
         print(f"Geocoding error: {e}")

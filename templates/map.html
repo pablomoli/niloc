@@ -41,19 +41,24 @@
             width: 100%;
         }
         
-        .top-bar {
+        .top-controls {
             position: absolute;
             top: 10px;
-            left: 10px;
             right: 10px;
             z-index: 1000;
             background: white;
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: space-between;
+            gap: 8px;
             align-items: center;
+        }
+        
+        .logout-btn:hover {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+            color: white !important;
         }
         
         [x-cloak] { display: none !important; }
@@ -241,30 +246,26 @@
             }
         }
         
-        /* Keep top bar visible but adjust for mobile */
+        /* Adjust top controls for mobile */
         @media (max-width: 767px) {
-            .top-bar {
-                padding: 8px;
-                font-size: 14px;
+            .top-controls {
+                padding: 6px 8px;
             }
-            .top-bar h4 {
-                font-size: 18px;
-            }
-            .top-bar .btn-sm {
+            .top-controls .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 12px;
             }
         }
         
-        /* Move Leaflet controls below top bar */
+        /* Move Leaflet controls below top controls */
         .leaflet-control-container .leaflet-top.leaflet-left {
-            top: 60px; /* Push zoom control below top bar */
+            top: 50px; /* Push zoom control below top controls */
         }
         
         /* Adjust for mobile */
         @media (max-width: 767px) {
             .leaflet-control-container .leaflet-top.leaflet-left {
-                top: 50px; /* Slightly less on mobile since top bar is smaller */
+                top: 45px; /* Slightly less on mobile */
             }
         }
         
@@ -563,17 +564,146 @@
                 backface-visibility: hidden;
             }
         }
+        
+        /* County Labels */
+        .county-label {
+            background: transparent;
+            border: none;
+            pointer-events: none;
+        }
+        
+        .county-name {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid #ff0000;
+        }
+        
+        /* Mobile county labels */
+        @media (max-width: 768px) {
+            .county-name {
+                font-size: 10px;
+                padding: 1px 4px;
+            }
+        }
+        
+        /* Layer Control Overlay */
+        .layer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .layer-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-width: 300px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .layer-container h5 {
+            margin: 0 0 20px 0;
+            text-align: center;
+            color: #333;
+        }
+        
+        .layer-section {
+            margin-bottom: 20px;
+        }
+        
+        .layer-section h6 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .layer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .layer-option, .layer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .layer-option:hover, .layer-toggle:hover {
+            border-color: #0d6efd;
+            background: #f8f9ff;
+        }
+        
+        .layer-option.active {
+            border-color: #0d6efd;
+            background: #0d6efd;
+            color: white;
+        }
+        
+        .layer-toggle.active {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+        
+        .layer-toggle i:last-child {
+            margin-left: auto;
+            font-size: 18px;
+        }
+        
+        .layer-toggle.active i:last-child {
+            color: #28a745;
+        }
+        
+        .layer-actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        /* Mobile layer control */
+        @media (max-width: 768px) {
+            .layer-container {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .layer-option, .layer-toggle {
+                padding: 15px;
+                font-size: 16px; /* Prevent iOS zoom */
+            }
+        }
     </style>
 </head>
 <body x-data>
     
-    <!-- Simple Top Bar -->
-    <div class="top-bar">
-        <h4 class="mb-0">Epic Map</h4>
-        <div class="controls">
-            <a href="/admin" class="btn btn-sm btn-primary">Admin</a>
-            <a href="/logout" class="btn btn-sm btn-outline-secondary">Logout</a>
-        </div>
+    <!-- Top Right Controls -->
+    <div class="top-controls">
+        <a href="/admin" class="btn btn-sm btn-primary">Admin</a>
+        <a href="/logout" class="btn btn-sm btn-outline-secondary logout-btn">Logout</a>
     </div>
     
     <!-- Map Container -->
@@ -593,33 +723,43 @@
         gap: 10px;
     "></div>
     
+    <!-- Standalone Location Button (bottom left) -->
+    <button class="location-fab" 
+            onclick="centerOnUserLocation()">
+        <i class="bi bi-crosshair"></i>
+        <span class="fab-label location-label">Center</span>
+    </button>
+    
     <!-- FAB Button with Arc Menu -->
     <div class="fab-container" x-data="fabMenu()">
         <!-- Secondary Action Buttons (hidden by default) -->
         <div class="fab-actions" :class="{ 'open': menuOpen }">
-            <!-- Search Button -->
-            <button class="fab-action-btn search-btn"
-                    @click="openSearch()">
-                <i class="bi bi-search"></i>
+            <!-- Map Settings Button (180°) -->
+            <button class="fab-action-btn layers-btn"
+                    @click="openLayerControl()">
+                <i class="bi bi-layers"></i>
+                <span class="fab-label">Map Settings</span>
             </button>
             
-            <!-- Create Job Button -->
-            <button class="fab-action-btn create-btn"
-                    @click="openCreateJob()">
-                <i class="bi bi-plus-circle"></i>
-            </button>
-            
-            <!-- Status Filter Button -->
+            <!-- Filters Button (150°) -->
             <button class="fab-action-btn status-btn"
                     @click="openStatusFilter()">
                 <i class="bi bi-funnel"></i>
+                <span class="fab-label">Filters</span>
             </button>
             
-            <!-- Location Button -->
-            <button class="fab-action-btn location-btn"
-                    @click="centerOnLocation()"
-                    title="Center on my location">
-                <i class="bi bi-crosshair"></i>
+            <!-- Search Button (120°) -->
+            <button class="fab-action-btn search-btn"
+                    @click="openSearch()">
+                <i class="bi bi-search"></i>
+                <span class="fab-label">Search</span>
+            </button>
+            
+            <!-- Create Job Button (90°) -->
+            <button class="fab-action-btn create-btn"
+                    @click="openCreateJob()">
+                <i class="bi bi-plus-circle"></i>
+                <span class="fab-label">Create</span>
             </button>
         </div>
         
@@ -692,6 +832,57 @@
                     <button class="btn btn-primary" 
                             @click="applyStatusFilter()"
                             :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Apply</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Layer Control Overlay -->
+        <div class="layer-overlay"
+             x-show="layerOpen"
+             x-transition:enter.duration.300ms
+             x-transition:leave.duration.200ms
+             @click.self="closeLayerControl()"
+             style="display: none;">
+            <div class="layer-container">
+                <h5>Map Layers</h5>
+                
+                <!-- Base Layers -->
+                <div class="layer-section">
+                    <h6>Base Map</h6>
+                    <div class="layer-options">
+                        <button class="layer-option"
+                                :class="{ 'active': currentBaseLayer === 'satellite' }"
+                                @click="switchToBaseLayer('satellite')">
+                            <i class="bi bi-globe"></i>
+                            <span>Satellite</span>
+                        </button>
+                        <button class="layer-option"
+                                :class="{ 'active': currentBaseLayer === 'streets' }"
+                                @click="switchToBaseLayer('streets')">
+                            <i class="bi bi-map"></i>
+                            <span>Street Map</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Overlay Layers -->
+                <div class="layer-section">
+                    <h6>Overlays</h6>
+                    <div class="layer-options">
+                        <button class="layer-toggle"
+                                :class="{ 'active': countiesVisible }"
+                                @click="toggleCountiesLayer()">
+                            <i class="bi bi-boundaries"></i>
+                            <span>Florida Counties</span>
+                            <i class="bi" :class="countiesVisible ? 'bi-toggle-on' : 'bi-toggle-off'"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="layer-actions">
+                    <button class="btn btn-primary" 
+                            @click="closeLayerControl()"
+                            :style="`transform: scale(${$el.matches(':hover') ? '1.05' : '1'})`">Done</button>
                 </div>
             </div>
         </div>
