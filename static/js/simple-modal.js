@@ -25,7 +25,19 @@ window.SimpleModal = {
                     
                     <div style="margin-bottom: 20px;">
                         <h4>Address</h4>
-                        <p>${job.address || 'N/A'}</p>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <p style="margin: 0; flex: 1;">${job.address || 'N/A'}</p>
+                            ${job.address && job.address !== 'N/A' ? `
+                                <button 
+                                    id="copyAddressBtn"
+                                    onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')" 
+                                    style="background: #0d6efd; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; font-size: 14px;"
+                                    title="Copy address to clipboard">
+                                    <i class="bi bi-clipboard"></i>
+                                    <span id="copyBtnText">Copy</span>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
@@ -83,6 +95,96 @@ window.SimpleModal = {
             modal.remove();
         }
         document.body.style.overflow = '';
+    },
+    
+    async copyAddress(address) {
+        const btn = document.getElementById('copyAddressBtn');
+        const btnText = document.getElementById('copyBtnText');
+        
+        try {
+            // Modern clipboard API (works on HTTPS and localhost)
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(address);
+            } else {
+                // Fallback for older browsers or non-secure contexts
+                const textArea = document.createElement('textarea');
+                textArea.value = address;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    throw new Error('Copy failed');
+                } finally {
+                    textArea.remove();
+                }
+            }
+            
+            // Visual feedback
+            if (btn && btnText) {
+                const originalBg = btn.style.background;
+                btn.style.background = '#28a745';
+                btnText.textContent = 'Copied!';
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    btn.style.background = originalBg;
+                    btnText.textContent = 'Copy';
+                }, 2000);
+            }
+            
+            // Show notification
+            SimpleModal.showNotification('Address copied to clipboard!', 'success');
+            
+        } catch (err) {
+            console.error('Failed to copy address:', err);
+            SimpleModal.showNotification('Failed to copy address', 'error');
+        }
+    },
+    
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000000;
+            animation: slideUp 0.3s ease-out;
+        `;
+        notification.textContent = message;
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translate(-50%, 100%); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.3s ease-out reverse';
+            setTimeout(() => {
+                notification.remove();
+                style.remove();
+            }, 300);
+        }, 3000);
     }
 };
 

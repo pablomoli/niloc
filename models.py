@@ -32,6 +32,10 @@ class Job(db.Model):
     total_time_spent = db.Column(db.Float, default=0.0)
     # Remove tags field - it's causing database type mismatch
     # tags = db.Column(db.JSON, default=list)
+    
+    # Parcel geocoding fields
+    is_parcel_job = db.Column(db.Boolean, default=False)
+    parcel_data = db.Column(db.JSON, nullable=True)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -180,6 +184,8 @@ class Job(db.Model):
             "document_url": self.document_url,
             "visited": self.visited,
             "total_time_spent": self.total_time_spent,
+            "is_parcel_job": self.is_parcel_job,
+            "parcel_data": self.parcel_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
             "deleted_by_id": self.deleted_by_id,

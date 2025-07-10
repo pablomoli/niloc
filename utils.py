@@ -1,7 +1,27 @@
+import os
+import pandas as pd
 import requests
 from sqlalchemy import text
 from flask import current_app as app
 from models import db
+from pyproj import Transformer
+
+# Load CSV data once when module loads
+_brevard_parcels_df = None
+
+def _load_brevard_parcels():
+    """Load Brevard parcels CSV data once and cache it"""
+    global _brevard_parcels_df
+    if _brevard_parcels_df is None:
+        try:
+            csv_path = os.path.join(os.path.dirname(__file__), 'static', 'data', 'brevard_parcels.csv')
+            _brevard_parcels_df = pd.read_csv(csv_path)
+            # Convert TaxAcct to integer for exact matching
+            _brevard_parcels_df['TaxAcct'] = pd.to_numeric(_brevard_parcels_df['TaxAcct'], errors='coerce')
+        except Exception as e:
+            print(f"Error loading Brevard parcels CSV: {e}")
+            _brevard_parcels_df = pd.DataFrame()  # Empty dataframe as fallback
+    return _brevard_parcels_df
 
 def get_county_from_coords(lat, lon):
     sql = text("""
@@ -27,3 +47,132 @@ def get_brevard_property_link(address):
     except:
         pass
     return None
+
+def geocode_brevard_parcel(tax_account=None, parcel_id=None):
+    """
+    Geocode a Brevard County parcel by tax account or parcel ID using CSV lookup.
+    Returns coordinates and parcel information from local CSV file.
+    """
+    if not tax_account and not parcel_id:
+        return None
+    
+    try:
+        # Load CSV data
+        df = _load_brevard_parcels()
+        if df.empty:
+            return None
+        
+        # Search for the parcel
+        result = None
+        if tax_account:
+            # Convert tax_account to integer for exact matching
+            try:
+                tax_account_int = int(tax_account)
+                matches = df[df['TaxAcct'] == tax_account_int]
+            except (ValueError, TypeError):
+                return None
+        else:
+            # Search by parcel_id (Name column) - exact string match
+            matches = df[df['Name'] == parcel_id]
+        
+        if matches.empty:
+            return None
+        
+        # Get first match if multiple results exist
+        result = matches.iloc[0]
+        
+        # Extract data from CSV
+        lat = result['latitude']
+        lng = result['longitude']
+        acres = result['Acres']
+        tax_acct = result['TaxAcct']
+        parcel_name = result['Name']
+        
+        # Build notes string
+        notes = f"Brevard Parcel - Tax Account: {tax_acct} | Parcel: {parcel_name} | Acres: {acres:.2f}"
+        
+        return {
+            "lat": str(lat),
+            "lng": str(lng),
+            "formatted_address": "No Address Available",
+            "county": "Brevard",
+            "parcel_id": parcel_name,
+            "tax_account": str(tax_acct),
+            "acres": float(acres),
+            "notes": notes
+        }
+        
+    except Exception as e:
+        print(f"Brevard parcel CSV lookup error: {e}")
+        return None
+
+def geocode_orange_parcel(parcel_id):
+    """
+    Geocode an Orange County parcel by parcel ID using their ArcGIS REST API.
+    
+    Args:
+        parcel_id: Parcel ID in format "13-23-32-7600-00-070" (with dashes)
+    
+    Returns:
+        Dictionary with lat, lng, and parcel info, or None if not found
+    """
+    if not parcel_id or '-' not in parcel_id:
+        return None
+    
+    try:
+        # Strip dashes and rearrange parcel ID for API
+        # From: 13-23-32-7600-00-070 
+        # To: 322313760000070
+        parts = parcel_id.split('-')
+        if len(parts) != 6:
+            print(f"Invalid Orange County parcel ID format: {parcel_id}")
+            return None
+        
+        # Rearrange: parts[2] + parts[1] + parts[0] + parts[3] + parts[4] + parts[5]
+        api_parcel_id = parts[2] + parts[1] + parts[0] + parts[3] + parts[4] + parts[5]
+        
+        # Query Orange County ArcGIS REST API
+        url = "https://vgispublic.ocpafl.org/server/rest/services/DynamicForJs/PARCEL/MapServer/4/query"
+        params = {
+            'where': f"PARCEL='{api_parcel_id}'",
+            'outFields': 'PARCEL,LATITUDE,LONGITUDE,SITUS',
+            'returnGeometry': 'false',
+            'f': 'json'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('features') or len(data['features']) == 0:
+            print(f"No results found for Orange County parcel: {parcel_id}")
+            return None
+        
+        # Extract coordinates from first feature
+        feature = data['features'][0]
+        attributes = feature.get('attributes', {})
+        
+        latitude = attributes.get('LATITUDE')
+        longitude = attributes.get('LONGITUDE')
+        situs = attributes.get('SITUS', 'No Address Available')
+        
+        if latitude is None or longitude is None:
+            print(f"Missing coordinates for Orange County parcel: {parcel_id}")
+            return None
+        
+        # Return in the same format as Brevard parcels
+        return {
+            "lat": str(latitude),
+            "lng": str(longitude),
+            "formatted_address": situs if situs != 'No Address Available' else "No Address Available",
+            "county": "Orange",
+            "parcel_id": parcel_id,  # Keep original format with dashes
+            "notes": f"Orange County Parcel - Parcel ID: {parcel_id}"
+        }
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Orange County API request error: {e}")
+        return None
+    except Exception as e:
+        print(f"Orange County parcel lookup error: {e}")
+        return None

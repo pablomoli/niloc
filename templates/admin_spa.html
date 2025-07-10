@@ -263,10 +263,15 @@
                 <div class="col-md-6">
                     <select class="form-control" x-model="statusFilter" @change="filterJobs()">
                         <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="On Hold/Pending">On Hold/Pending</option>
+                        <option value="Needs Fieldwork">Needs Fieldwork</option>
+                        <option value="Fieldwork Complete/Needs Office Work">Fieldwork Complete/Needs Office Work</option>
+                        <option value="To Be Printed/Packaged">To Be Printed/Packaged</option>
+                        <option value="Survey Complete/Invoice Sent/Unpaid">Survey Complete/Invoice Sent/Unpaid</option>
+                        <option value="Set/Flag Pins">Set/Flag Pins</option>
+                        <option value="Completed/To Be Filed">Completed/To Be Filed</option>
+                        <option value="Ongoing Site Plan">Ongoing Site Plan</option>
+                        <option value="Estimate/Quote Available">Estimate/Quote Available</option>
                     </select>
                 </div>
             </div>
@@ -287,7 +292,14 @@
                     <tbody>
                         <template x-for="job in filteredJobs" :key="job.id">
                             <tr>
-                                <td x-text="job.job_number"></td>
+                                <td>
+                                    <span x-text="job.job_number"></span>
+                                    <template x-if="job.is_parcel_job">
+                                        <span class="badge bg-info ms-1" title="Created from parcel lookup">
+                                            <i class="bi bi-geo-alt"></i> Parcel
+                                        </span>
+                                    </template>
+                                </td>
                                 <td x-text="job.client"></td>
                                 <td x-text="job.address"></td>
                                 <td>
@@ -295,9 +307,16 @@
                                 </td>
                                 <td x-text="formatDate(job.created_at)"></td>
                                 <td>
-                                    <button @click="editJob(job)" class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
+                                    <template x-if="!job.is_parcel_job">
+                                        <button @click="editJob(job)" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </template>
+                                    <template x-if="job.is_parcel_job">
+                                        <button disabled class="btn btn-sm btn-outline-secondary me-1" title="Parcel jobs cannot be edited">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    </template>
                                     <button @click="deleteJob(job)" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -870,13 +889,19 @@
                 },
                 
                 getStatusColor(status) {
-                    const colors = {
-                        'pending': 'warning',
-                        'in-progress': 'info',
-                        'completed': 'success',
-                        'cancelled': 'danger'
+                    // Epic status to Bootstrap color mapping
+                    const statusColors = {
+                        "On Hold/Pending": "secondary",
+                        "Needs Fieldwork": "warning", 
+                        "Fieldwork Complete/Needs Office Work": "primary",
+                        "To Be Printed/Packaged": "info",
+                        "Survey Complete/Invoice Sent/Unpaid": "warning",
+                        "Set/Flag Pins": "danger",
+                        "Completed/To Be Filed": "success",
+                        "Ongoing Site Plan": "info",
+                        "Estimate/Quote Available": "secondary"
                     };
-                    return colors[status] || 'secondary';
+                    return statusColors[status] || 'secondary';
                 },
                 
                 formatDate(dateString) {
@@ -900,6 +925,12 @@
                 },
                 
                 editJob(job) {
+                    // Prevent editing parcel jobs
+                    if (job.is_parcel_job) {
+                        Alpine.store('notifications').add('Parcel jobs cannot be edited', 'warning');
+                        return;
+                    }
+                    
                     // Copy job data for editing
                     this.editingJob = {
                         job_number: job.job_number,

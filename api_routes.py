@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased
 
 from auth_utils import hash_password, login_required
 from models import FieldWork, Job, User, db
-from utils import get_brevard_property_link, get_county_from_coords
+from utils import get_brevard_property_link, get_county_from_coords, geocode_brevard_parcel
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -52,7 +52,7 @@ def geocode_address(address):
 
     try:
         geo_url = "https://maps.googleapis.com/maps/api/geocode/json"
-        params = {"address": address, "key": api_key}
+        params = {"address": address + " , Florida", "key": api_key}
         res = requests.get(geo_url, params=params, timeout=10)
 
         if res.status_code == 200:
@@ -60,14 +60,14 @@ def geocode_address(address):
             if geo_data.get("status") == "OK" and geo_data["results"]:
                 result = geo_data["results"][0]
                 location = result["geometry"]["location"]
-                
+
                 # Extract county from Google's address components
                 county = None
                 for component in result.get("address_components", []):
                     if "administrative_area_level_2" in component.get("types", []):
                         county = component.get("long_name", "").replace(" County", "")
                         break
-                
+
                 return {
                     "lat": str(location["lat"]),
                     "lng": str(location["lng"]),
@@ -260,7 +260,7 @@ def create_job():
     data = request.get_json()
     if not data:
         data = request.form.to_dict()
-    
+
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
@@ -274,35 +274,47 @@ def create_job():
     if existing:
         return jsonify({"error": "Job number already exists"}), 409
 
-    # Geocode address
+    # Handle geocoding based on job type
     address = data["address"].strip()
-    geocode_result = geocode_address(address)
+    
+    if data.get("is_parcel_job"):
+        # For parcel jobs, use the coordinates provided from frontend
+        parcel_info = data.get("parcel_data", {})
+        print(f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}")
+        
+        # Don't re-geocode parcel jobs - use provided coordinates
+        geocode_result = None
+        lat = data.get("latitude")
+        lng = data.get("longitude")
+        county = parcel_info.get("county", "").title() if parcel_info else None
+    else:
+        # For regular address jobs, geocode the address
+        geocode_result = geocode_address(address)
+        lat = geocode_result["lat"] if geocode_result else None
+        lng = geocode_result["lng"] if geocode_result else None
+        county = geocode_result["county"] if geocode_result else None
 
     # Create job object
     job_data = {
         "job_number": job_number,
         "client": data["client"].strip(),
-        "address": geocode_result["formatted_address"] if geocode_result else address,
+        "address": address,
         "status": data.get("status", "").strip() or None,
         "notes": (data.get("notes") or "").strip() or None,
         "created_at": datetime.now(timezone.utc),
         "created_by_id": session.get("user_id"),
         "visited": 0,
         "total_time_spent": 0.0,
+        "is_parcel_job": data.get("is_parcel_job", False),
+        "parcel_data": data.get("parcel_data", None),
+        "lat": str(lat) if lat else None,
+        "long": str(lng) if lng else None,
+        "county": county,
     }
 
-    # Add geocoded data if successful
-    if geocode_result:
-        job_data.update(
-            {
-                "lat": geocode_result["lat"],
-                "long": geocode_result["lng"],
-                "county": geocode_result["county"],
-                "prop_appr_link": get_brevard_property_link(
-                    geocode_result["formatted_address"]
-                ),
-            }
-        )
+    # Add property appraiser link for Brevard County
+    if county and county.lower() == "brevard":
+        job_data["prop_appr_link"] = get_brevard_property_link(address)
 
     # Save to database
     try:
@@ -328,6 +340,10 @@ def update_job(job_number):
     job = Job.active().filter_by(job_number=job_number).first()
     if not job:
         return jsonify({"error": "Job not found"}), 404
+    
+    # Prevent editing parcel jobs
+    if job.is_parcel_job:
+        return jsonify({"error": "Parcel jobs cannot be edited"}), 403
 
     data = request.get_json()
     if not data:
@@ -682,7 +698,7 @@ def get_users():
         return admin_check
 
     # Hide "pablo" user from admin panel
-    users = User.query.filter(User.username != 'pablo').all()
+    users = User.query.filter(User.username != "pablo").all()
     return jsonify([user.to_dict() for user in users])
 
 
@@ -759,15 +775,14 @@ def update_user(user_id):
         new_username = data["username"].strip()
         if not new_username:
             return jsonify({"error": "Username cannot be empty"}), 400
-        
+
         # Check for duplicate username (excluding current user)
         existing = User.query.filter(
-            User.username == new_username,
-            User.id != user_id
+            User.username == new_username, User.id != user_id
         ).first()
         if existing:
             return jsonify({"error": "Username already exists"}), 409
-        
+
         user.username = new_username
 
     # Update name if provided
@@ -789,10 +804,7 @@ def update_user(user_id):
 
     try:
         db.session.commit()
-        return jsonify({
-            "message": "User updated successfully",
-            "user": user.to_dict()
-        })
+        return jsonify({"message": "User updated successfully", "user": user.to_dict()})
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Database error occurred"}), 500
@@ -813,10 +825,10 @@ def delete_user(user_id):
     # Multiple protection checks
     if user.username == "pablo":
         return jsonify({"error": "Cannot delete this user"}), 403
-    
+
     if user.role == "admin":
         return jsonify({"error": "Cannot delete admin users"}), 403
-        
+
     if user.id == session.get("user_id"):
         return jsonify({"error": "Cannot delete your own account"}), 403
 
@@ -956,6 +968,57 @@ def reverse_geocode():
 
     except Exception as e:
         return jsonify({"error": "Reverse geocoding failed"}), 500
+
+
+@api_bp.route("/geocode/brevard-parcel", methods=["GET"])
+@login_required
+def geocode_brevard_parcel_endpoint():
+    """
+    GET /api/geocode/brevard-parcel - Geocode Brevard County parcel
+    Query params: tax_account OR parcel_id
+    """
+    tax_account = request.args.get("tax_account", "").strip()
+    parcel_id = request.args.get("parcel_id", "").strip()
+    
+    if not tax_account and not parcel_id:
+        return jsonify({"error": "Either tax_account or parcel_id parameter required"}), 400
+    
+    result = geocode_brevard_parcel(
+        tax_account=tax_account if tax_account else None,
+        parcel_id=parcel_id if parcel_id else None
+    )
+    
+    if not result:
+        return jsonify({"error": "Could not geocode parcel"}), 404
+    
+    return jsonify(result)
+
+
+@api_bp.route("/geocode/orange-parcel", methods=["GET"])
+@login_required
+def geocode_orange_parcel_endpoint():
+    """
+    GET /api/geocode/orange-parcel - Geocode Orange County parcel
+    Query params: parcel_id (must include dashes, e.g., "13-23-32-7600-00-070")
+    """
+    parcel_id = request.args.get("parcel_id", "").strip()
+    
+    if not parcel_id:
+        return jsonify({"error": "parcel_id parameter required"}), 400
+    
+    # Validate that parcel ID contains dashes (proper format)
+    if '-' not in parcel_id:
+        return jsonify({"error": "Invalid parcel_id format. Must include dashes (e.g., 13-23-32-7600-00-070)"}), 400
+    
+    # Import at point of use to avoid circular imports
+    from utils import geocode_orange_parcel
+    
+    result = geocode_orange_parcel(parcel_id)
+    
+    if not result:
+        return jsonify({"error": "Could not geocode parcel"}), 404
+    
+    return jsonify(result)
 
 
 @api_bp.route("/health", methods=["GET"])
