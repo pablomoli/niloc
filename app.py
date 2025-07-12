@@ -19,6 +19,18 @@ db_path = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_DATABASE_URI"] = db_path
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Configure connection pooling for better reliability with Supabase
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,  # Test connections before using them
+    "pool_recycle": 300,    # Recycle connections after 5 minutes
+    "pool_size": 5,         # Number of connections to maintain in pool
+    "max_overflow": 10,     # Maximum overflow connections allowed
+    "connect_args": {
+        "connect_timeout": 10,  # Connection timeout in seconds
+        "options": "-c statement_timeout=30000"  # 30 second statement timeout
+    }
+}
+
 app.secret_key = os.getenv("SESSION_KEY")
 app.permanent_session_lifetime = timedelta(days=30)
 

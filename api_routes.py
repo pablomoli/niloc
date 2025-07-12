@@ -12,6 +12,7 @@ from sqlalchemy.orm import aliased
 from auth_utils import hash_password, login_required
 from models import FieldWork, Job, User, db
 from utils import get_brevard_property_link, get_county_from_coords, geocode_brevard_parcel
+from db_utils import with_db_retry, handle_db_error
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -87,6 +88,7 @@ def geocode_address(address):
 
 @api_bp.route("/jobs", methods=["GET"])
 @login_required
+@with_db_retry(max_retries=3, delay=0.5)
 def get_jobs():
     """
     ENHANCED: GET /api/jobs - Unified endpoint with fuzzy search and pagination
@@ -232,11 +234,12 @@ def get_jobs():
 
     except Exception as e:
         print(f"Jobs endpoint error: {e}")
-        return jsonify({"error": "Failed to fetch jobs", "jobs": [], "total": 0}), 500
+        return handle_db_error(e)
 
 
 @api_bp.route("/jobs/<job_number>", methods=["GET"])
 @login_required
+@with_db_retry(max_retries=3, delay=0.5)
 def get_job(job_number):
     """GET /api/jobs/JOB123 - Get specific job"""
 
