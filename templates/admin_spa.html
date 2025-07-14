@@ -1,1306 +1,1782 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Epic Map</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
-    
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>"
+    />
+
     <!-- Google Fonts - Roboto -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/app.css">
-    
+    <link rel="stylesheet" href="/static/css/app.css" />
+
     <!-- Admin Panel Styling -->
     <style>
-        body {
-            font-family: 'Roboto', sans-serif !important;
+      body {
+        font-family: "Roboto", sans-serif !important;
+      }
+
+      /* Logout button specific styling */
+      .app-nav a[href="/logout"]:hover {
+        background: #dc3545 !important;
+        color: white !important;
+        transition: all 0.2s ease;
+      }
+
+      /* Keep Map button blue hover */
+      .app-nav a[href="/"]:hover {
+        background: var(--primary-color) !important;
+        color: white !important;
+      }
+
+      /* Mobile optimizations for iPhone 16 Pro Max */
+      @media (max-width: 768px) {
+        .app-header h1 {
+          font-size: 1.25rem;
         }
-        
-        /* Logout button specific styling */
-        .app-nav a[href="/logout"]:hover {
-            background: #dc3545 !important;
-            color: white !important;
-            transition: all 0.2s ease;
+
+        .nav-tabs .nav-link {
+          font-size: 0.875rem;
+          padding: 0.5rem 0.75rem;
         }
-        
-        /* Keep Map button blue hover */
-        .app-nav a[href="/"]:hover {
-            background: var(--primary-color) !important;
-            color: white !important;
+
+        .card-body {
+          padding: 0.75rem 0.5rem !important;
         }
-        
-        /* Mobile optimizations for iPhone 16 Pro Max */
-        @media (max-width: 768px) {
-            .app-header h1 {
-                font-size: 1.25rem;
-            }
-            
-            .nav-tabs .nav-link {
-                font-size: 0.875rem;
-                padding: 0.5rem 0.75rem;
-            }
-            
-            .card-body {
-                padding: 0.75rem 0.5rem !important;
-            }
-            
-            .card-title {
-                font-size: 0.8rem !important;
-                font-weight: 500;
-            }
-            
-            h2 {
-                font-size: 1.5rem !important;
-            }
-            
-            h3 {
-                font-size: 1.25rem;
-            }
-            
-            /* Ensure proper spacing on mobile */
-            .container-fluid {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-            
-            /* Better touch targets for mobile */
-            .btn {
-                min-height: 44px;
-                font-size: 0.875rem;
-            }
-            
-            /* Table responsiveness */
-            .table-responsive {
-                font-size: 0.875rem;
-            }
+
+        .card-title {
+          font-size: 0.8rem !important;
+          font-weight: 500;
         }
+
+        h2 {
+          font-size: 1.5rem !important;
+        }
+
+        h3 {
+          font-size: 1.25rem;
+        }
+
+        /* Ensure proper spacing on mobile */
+        .container-fluid {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+
+        /* Better touch targets for mobile */
+        .btn {
+          min-height: 44px;
+          font-size: 0.875rem;
+        }
+
+        /* Table responsiveness */
+        .table-responsive {
+          font-size: 0.875rem;
+        }
+      }
     </style>
-</head>
-<body x-data="adminApp()">
-    
+  </head>
+  <body x-data="adminApp()">
     <!-- Header -->
     <header class="app-header">
-        <h1><i class="bi bi-gear"></i> Admin Dashboard</h1>
-        <nav class="app-nav">
-            <a href="/"><i class="bi bi-map"></i> Map</a>
-            <a href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
-        </nav>
+      <h1><i class="bi bi-gear"></i> Admin Dashboard</h1>
+      <nav class="app-nav">
+        <a href="/"><i class="bi bi-map"></i> Map</a>
+        <a href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+      </nav>
     </header>
-    
+
     <!-- Main Container -->
     <div class="container-fluid py-4">
-        
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-tabs mb-4">
-            <li class="nav-item">
-                <button @click="activeTab = 'dashboard'" 
-                        :class="activeTab === 'dashboard' ? 'nav-link active' : 'nav-link'">
-                    <i class="bi bi-bar-chart"></i> Dashboard
-                </button>
-            </li>
-            <li class="nav-item">
-                <button @click="activeTab = 'jobs'" 
-                        :class="activeTab === 'jobs' ? 'nav-link active' : 'nav-link'">
-                    <i class="bi bi-briefcase"></i> Jobs
-                </button>
-            </li>
-            <li class="nav-item">
-                <button @click="activeTab = 'deleted'" 
-                        :class="activeTab === 'deleted' ? 'nav-link active' : 'nav-link'">
-                    <i class="bi bi-trash"></i> Deleted Jobs
-                </button>
-            </li>
-            <li class="nav-item">
-                <button @click="activeTab = 'users'" 
-                        :class="activeTab === 'users' ? 'nav-link active' : 'nav-link'">
-                    <i class="bi bi-people"></i> Users
-                </button>
-            </li>
-        </ul>
-        
-        <!-- Dashboard Tab -->
-        <div x-show="activeTab === 'dashboard'">
-            <!-- Job Status Overview Section -->
-            <div class="mb-4">
-                <h3 class="mb-3">Job Status Overview</h3>
-                
-                <!-- Row 1: High Priority Statuses -->
-                <div class="row mb-3">
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #A8A8A8; border-color: #909090;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">On Hold/Pending</h6>
-                                <h2 class="text-white mb-0" x-text="stats.onHoldPending">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #E09132; border-color: #CC7A1C;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Needs Fieldwork</h6>
-                                <h2 class="text-white mb-0" x-text="stats.needsFieldwork">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #D63384; border-color: #B02A5B;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Set/Flag Pins</h6>
-                                <h2 class="text-white mb-0" x-text="stats.setPins">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #6F42C1; border-color: #59359A;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Office Work</h6>
-                                <h2 class="text-white mb-0" x-text="stats.fieldworkComplete">-</h2>
-                            </div>
-                        </div>
-                    </div>
+      <!-- Navigation Tabs -->
+      <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+          <button
+            @click="activeTab = 'dashboard'"
+            :class="activeTab === 'dashboard' ? 'nav-link active' : 'nav-link'"
+          >
+            <i class="bi bi-bar-chart"></i> Dashboard
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            @click="activeTab = 'jobs'"
+            :class="activeTab === 'jobs' ? 'nav-link active' : 'nav-link'"
+          >
+            <i class="bi bi-briefcase"></i> Jobs
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            @click="activeTab = 'deleted'"
+            :class="activeTab === 'deleted' ? 'nav-link active' : 'nav-link'"
+          >
+            <i class="bi bi-trash"></i> Deleted Jobs
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            @click="activeTab = 'users'"
+            :class="activeTab === 'users' ? 'nav-link active' : 'nav-link'"
+          >
+            <i class="bi bi-people"></i> Users
+          </button>
+        </li>
+      </ul>
+
+      <!-- Dashboard Tab -->
+      <div x-show="activeTab === 'dashboard'">
+        <!-- Job Status Overview Section -->
+        <div class="mb-4">
+          <h3 class="mb-3">Job Status Overview</h3>
+
+          <!-- Row 1: Priority Statuses -->
+          <div class="row mb-3">
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #28a745; border-color: #1e7e34"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Completed</h6>
+                  <h2 class="text-white mb-0" x-text="stats.completed">-</h2>
                 </div>
-                
-                <!-- Row 2: Workflow Statuses -->
-                <div class="row mb-3">
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #0D6EFD; border-color: #0B5ED7;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">To Be Printed</h6>
-                                <h2 class="text-white mb-0" x-text="stats.toBePrinted">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #F5C842; border-color: #F3B300;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-dark mb-2">Invoice Sent</h6>
-                                <h2 class="text-dark mb-0" x-text="stats.invoiceSent">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #20C997; border-color: #1AA179;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Completed</h6>
-                                <h2 class="text-white mb-0" x-text="stats.completed">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #E685B5; border-color: #D1477A;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Site Plan</h6>
-                                <h2 class="text-white mb-0" x-text="stats.ongoingSitePlan">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Row 3: Quote Status -->
-                <div class="row">
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center" style="background-color: #6C757D; border-color: #5A6268;">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-white mb-2">Quote Available</h6>
-                                <h2 class="text-white mb-0" x-text="stats.estimateAvailable">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
             </div>
-            
-            <!-- Business Metrics Section -->
-            <div class="mb-4">
-                <h3 class="mb-3">Business Metrics</h3>
-                <div class="row">
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center border-info">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-muted mb-2">Unique Clients</h6>
-                                <h2 class="text-info mb-0" x-text="stats.uniqueClients">-</h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3 mb-md-0">
-                        <div class="card text-center border-danger">
-                            <div class="card-body py-3">
-                                <h6 class="card-title text-muted mb-2">Deleted Jobs</h6>
-                                <h2 class="text-danger mb-0" x-text="stats.deletedJobs">-</h2>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #e09132; border-color: #cc7a1c"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Needs Fieldwork</h6>
+                  <h2 class="text-white mb-0" x-text="stats.needsFieldwork">
+                    -
+                  </h2>
                 </div>
+              </div>
             </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #dc3545; border-color: #bd2130"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Set/Flag Pins</h6>
+                  <h2 class="text-white mb-0" x-text="stats.setPins">-</h2>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #0d6efd; border-color: #0b5ed7"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">To Be Printed</h6>
+                  <h2 class="text-white mb-0" x-text="stats.toBePrinted">-</h2>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Workflow Statuses -->
+          <div class="row mb-3">
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #6f42c1; border-color: #59359a"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Office Work</h6>
+                  <h2 class="text-white mb-0" x-text="stats.fieldworkComplete">
+                    -
+                  </h2>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #f5c842; border-color: #f3b300"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-dark mb-2">Invoice Sent</h6>
+                  <h2 class="text-dark mb-0" x-text="stats.invoiceSent">-</h2>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #e685b5; border-color: #d1477a"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Site Plan</h6>
+                  <h2 class="text-white mb-0" x-text="stats.ongoingSitePlan">
+                    -
+                  </h2>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #a8a8a8; border-color: #909090"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">On Hold/Pending</h6>
+                  <h2 class="text-white mb-0" x-text="stats.onHoldPending">
+                    -
+                  </h2>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Quote Status -->
+          <div class="row">
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div
+                class="card text-center"
+                style="background-color: #6c757d; border-color: #5a6268"
+              >
+                <div class="card-body py-3">
+                  <h6 class="card-title text-white mb-2">Quote Available</h6>
+                  <h2 class="text-white mb-0" x-text="stats.estimateAvailable">
+                    -
+                  </h2>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <!-- Jobs Tab -->
-        <div x-show="activeTab === 'jobs'">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Job Management</h3>
-                <button @click="openAddJobModal()" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add Job
-                </button>
-            </div>
-            
-            <!-- Job Search and Filters -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <input type="text" class="form-control" 
-                           x-model="jobSearch" 
-                           @input="filterJobs()"
-                           placeholder="Search jobs...">
+
+        <!-- Business Metrics Section -->
+        <div class="mb-4">
+          <h3 class="mb-3">Business Metrics</h3>
+          <div class="row">
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div class="card text-center border-info">
+                <div class="card-body py-3">
+                  <h6 class="card-title text-muted mb-2">Unique Clients</h6>
+                  <h2 class="text-info mb-0" x-text="stats.uniqueClients">-</h2>
                 </div>
-                <div class="col-md-6">
-                    <select class="form-control" x-model="statusFilter" @change="filterJobs()">
-                        <option value="">All Statuses</option>
-                        <option value="On Hold/Pending">On Hold/Pending</option>
-                        <option value="Needs Fieldwork">Needs Fieldwork</option>
-                        <option value="Fieldwork Complete/Needs Office Work">Fieldwork Complete/Needs Office Work</option>
-                        <option value="To Be Printed/Packaged">To Be Printed/Packaged</option>
-                        <option value="Survey Complete/Invoice Sent/Unpaid">Survey Complete/Invoice Sent/Unpaid</option>
-                        <option value="Set/Flag Pins">Set/Flag Pins</option>
-                        <option value="Completed/To Be Filed">Completed/To Be Filed</option>
-                        <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-                        <option value="Estimate/Quote Available">Estimate/Quote Available</option>
-                    </select>
-                </div>
+              </div>
             </div>
-            
-            <!-- Jobs Table -->
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Job Number</th>
-                            <th>Client</th>
-                            <th>Address</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="job in filteredJobs" :key="job.id">
-                            <tr>
-                                <td>
-                                    <span x-text="job.job_number"></span>
-                                    <template x-if="job.is_parcel_job">
-                                        <span class="badge bg-info ms-1" title="Created from parcel lookup">
-                                            <i class="bi bi-geo-alt"></i> Parcel
-                                        </span>
-                                    </template>
-                                </td>
-                                <td x-text="job.client"></td>
-                                <td x-text="job.address"></td>
-                                <td>
-                                    <span :class="`badge bg-${getStatusColor(job.status)}`" x-text="job.status"></span>
-                                </td>
-                                <td x-text="formatDate(job.created_at)"></td>
-                                <td>
-                                    <template x-if="!job.is_parcel_job">
-                                        <button @click="editJob(job)" class="btn btn-sm btn-outline-primary me-1">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    </template>
-                                    <template x-if="job.is_parcel_job">
-                                        <button disabled class="btn btn-sm btn-outline-secondary me-1" title="Parcel jobs cannot be edited">
-                                            <i class="bi bi-lock"></i>
-                                        </button>
-                                    </template>
-                                    <button @click="deleteJob(job)" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-            
-            <template x-if="filteredJobs.length === 0">
-                <div class="text-center py-4">
-                    <p class="text-muted">No jobs found</p>
+            <div class="col-6 col-md-3 mb-3 mb-md-0">
+              <div class="card text-center border-danger">
+                <div class="card-body py-3">
+                  <h6 class="card-title text-muted mb-2">Deleted Jobs</h6>
+                  <h2 class="text-danger mb-0" x-text="stats.deletedJobs">-</h2>
                 </div>
-            </template>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <!-- Users Tab -->
-        <div x-show="activeTab === 'users'">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>User Management</h3>
-                <button @click="openAddUserModal()" class="btn btn-primary">
-                    <i class="bi bi-person-plus"></i> Add User
-                </button>
-            </div>
-            
-            <!-- Users Table -->
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Last Login</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="user in users" :key="user.id">
-                            <tr>
-                                <td x-text="user.username"></td>
-                                <td x-text="user.name"></td>
-                                <td>
-                                    <span :class="`badge bg-${user.role === 'admin' ? 'danger' : 'secondary'}`" x-text="user.role"></span>
-                                </td>
-                                <td x-text="formatDate(user.last_login)"></td>
-                                <td>
-                                    <button @click="editUser(user)" class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button @click="deleteUser(user)" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
+      </div>
+
+      <!-- Jobs Tab -->
+      <div x-show="activeTab === 'jobs'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Job Management</h3>
+          <button @click="openAddJobModal()" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Job
+          </button>
         </div>
-        
-        <!-- Deleted Jobs Tab -->
-        <div x-show="activeTab === 'deleted'">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Deleted Jobs</h3>
-            </div>
-            
-            <!-- Deleted Job Search -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <input type="text" class="form-control" 
-                           x-model="deletedJobSearch" 
-                           @input="filterDeletedJobs()"
-                           placeholder="Search deleted jobs...">
-                </div>
-            </div>
-            
-            <!-- Deleted Jobs Table -->
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Original Job Number</th>
-                            <th>Client</th>
-                            <th>Address</th>
-                            <th>Deleted By</th>
-                            <th>Deleted At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="job in filteredDeletedJobs" :key="job.id">
-                            <tr>
-                                <td x-text="job.display_job_number || job.original_job_number"></td>
-                                <td x-text="job.client"></td>
-                                <td x-text="job.address"></td>
-                                <td x-text="getDeletedByName(job.deleted_by_id)"></td>
-                                <td x-text="formatDate(job.deleted_at)"></td>
-                                <td>
-                                    <button @click="restoreJob(job)" class="btn btn-sm btn-outline-success me-1" title="Restore">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Restore
-                                    </button>
-                                    <button @click="permanentlyDeleteJob(job)" class="btn btn-sm btn-outline-danger" title="Permanently Delete">
-                                        <i class="bi bi-x-circle"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-            
-            <template x-if="filteredDeletedJobs.length === 0">
-                <div class="text-center py-4">
-                    <p class="text-muted">No deleted jobs found</p>
-                </div>
-            </template>
+
+        <!-- Job Search and Filters -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <input
+              type="text"
+              class="form-control"
+              x-model="jobSearch"
+              @input="filterJobs()"
+              placeholder="Search jobs..."
+            />
+          </div>
+          <div class="col-md-6">
+            <select
+              class="form-control"
+              x-model="statusFilter"
+              @change="filterJobs()"
+            >
+              <option value="">All Statuses</option>
+              <option value="On Hold/Pending">On Hold/Pending</option>
+              <option value="Needs Fieldwork">Needs Fieldwork</option>
+              <option value="Fieldwork Complete/Needs Office Work">
+                Fieldwork Complete/Needs Office Work
+              </option>
+              <option value="To Be Printed/Packaged">
+                To Be Printed/Packaged
+              </option>
+              <option value="Survey Complete/Invoice Sent/Unpaid">
+                Survey Complete/Invoice Sent/Unpaid
+              </option>
+              <option value="Set/Flag Pins">Set/Flag Pins</option>
+              <option value="Completed/To Be Filed">
+                Completed/To Be Filed
+              </option>
+              <option value="Ongoing Site Plan">Ongoing Site Plan</option>
+              <option value="Estimate/Quote Available">
+                Estimate/Quote Available
+              </option>
+            </select>
+          </div>
         </div>
+
+        <!-- Jobs Table -->
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Job Number</th>
+                <th>Client</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="job in filteredJobs" :key="job.id">
+                <tr>
+                  <td>
+                    <span x-text="job.job_number"></span>
+                    <template x-if="job.is_parcel_job">
+                      <span
+                        class="badge bg-info ms-1"
+                        title="Created from parcel lookup"
+                      >
+                        <i class="bi bi-geo-alt"></i> Parcel
+                      </span>
+                    </template>
+                  </td>
+                  <td x-text="job.client"></td>
+                  <td x-text="job.address"></td>
+                  <td>
+                    <span
+                      :class="`badge bg-${getStatusColor(job.status)}`"
+                      x-text="job.status"
+                    ></span>
+                  </td>
+                  <td x-text="formatDate(job.created_at)"></td>
+                  <td>
+                    <template x-if="!job.is_parcel_job">
+                      <button
+                        @click="editJob(job)"
+                        class="btn btn-sm btn-outline-primary me-1"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </template>
+                    <template x-if="job.is_parcel_job">
+                      <button
+                        disabled
+                        class="btn btn-sm btn-outline-secondary me-1"
+                        title="Parcel jobs cannot be edited"
+                      >
+                        <i class="bi bi-lock"></i>
+                      </button>
+                    </template>
+                    <button
+                      @click="deleteJob(job)"
+                      class="btn btn-sm btn-outline-danger"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <template x-if="filteredJobs.length === 0">
+          <div class="text-center py-4">
+            <p class="text-muted">No jobs found</p>
+          </div>
+        </template>
+      </div>
+
+      <!-- Users Tab -->
+      <div x-show="activeTab === 'users'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>User Management</h3>
+          <button @click="openAddUserModal()" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Add User
+          </button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="user in users" :key="user.id">
+                <tr>
+                  <td x-text="user.username"></td>
+                  <td x-text="user.name"></td>
+                  <td>
+                    <span
+                      :class="`badge bg-${user.role === 'admin' ? 'danger' : 'secondary'}`"
+                      x-text="user.role"
+                    ></span>
+                  </td>
+                  <td x-text="formatDate(user.last_login)"></td>
+                  <td>
+                    <button
+                      @click="editUser(user)"
+                      class="btn btn-sm btn-outline-primary me-1"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      @click="deleteUser(user)"
+                      class="btn btn-sm btn-outline-danger"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Deleted Jobs Tab -->
+      <div x-show="activeTab === 'deleted'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Deleted Jobs</h3>
+        </div>
+
+        <!-- Deleted Job Search -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <input
+              type="text"
+              class="form-control"
+              x-model="deletedJobSearch"
+              @input="filterDeletedJobs()"
+              placeholder="Search deleted jobs..."
+            />
+          </div>
+        </div>
+
+        <!-- Deleted Jobs Table -->
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Original Job Number</th>
+                <th>Client</th>
+                <th>Address</th>
+                <th>Deleted By</th>
+                <th>Deleted At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="job in filteredDeletedJobs" :key="job.id">
+                <tr>
+                  <td
+                    x-text="job.display_job_number || job.original_job_number"
+                  ></td>
+                  <td x-text="job.client"></td>
+                  <td x-text="job.address"></td>
+                  <td x-text="getDeletedByName(job.deleted_by_id)"></td>
+                  <td x-text="formatDate(job.deleted_at)"></td>
+                  <td>
+                    <button
+                      @click="restoreJob(job)"
+                      class="btn btn-sm btn-outline-success me-1"
+                      title="Restore"
+                    >
+                      <i class="bi bi-arrow-counterclockwise"></i> Restore
+                    </button>
+                    <button
+                      @click="permanentlyDeleteJob(job)"
+                      class="btn btn-sm btn-outline-danger"
+                      title="Permanently Delete"
+                    >
+                      <i class="bi bi-x-circle"></i> Delete
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <template x-if="filteredDeletedJobs.length === 0">
+          <div class="text-center py-4">
+            <p class="text-muted">No deleted jobs found</p>
+          </div>
+        </template>
+      </div>
     </div>
-    
+
     <!-- Notifications -->
     <div class="notifications">
-        <template x-for="notification in $store.notifications.items" :key="notification.id">
-            <div :class="`notification ${notification.type} ${notification.show ? 'show' : ''}`">
-                <div class="d-flex justify-content-between align-items-start">
-                    <span x-text="notification.message"></span>
-                    <button @click="$store.notifications.remove(notification.id)" 
-                            class="btn-close btn-close-sm ms-2"></button>
-                </div>
-            </div>
-        </template>
+      <template
+        x-for="notification in $store.notifications.items"
+        :key="notification.id"
+      >
+        <div
+          :class="`notification ${notification.type} ${notification.show ? 'show' : ''}`"
+        >
+          <div class="d-flex justify-content-between align-items-start">
+            <span x-text="notification.message"></span>
+            <button
+              @click="$store.notifications.remove(notification.id)"
+              class="btn-close btn-close-sm ms-2"
+            ></button>
+          </div>
+        </div>
+      </template>
     </div>
-    
+
     <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form @submit.prevent="updateUser()">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="editUsername" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="editUsername" x-model="editingUser.username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editName" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="editName" x-model="editingUser.name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editPassword" class="form-label">Password (leave blank to keep current)</label>
-                            <input type="password" class="form-control" id="editPassword" x-model="editingUser.password">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editRole" class="form-label">Role</label>
-                            <select class="form-control" id="editRole" x-model="editingUser.role" required>
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
-                </form>
+    <div
+      class="modal fade"
+      id="editUserModal"
+      tabindex="-1"
+      aria-labelledby="editUserModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form @submit.prevent="updateUser()">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="editUsername" class="form-label">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editUsername"
+                  x-model="editingUser.username"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editName" class="form-label">Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editName"
+                  x-model="editingUser.name"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editPassword" class="form-label"
+                  >Password (leave blank to keep current)</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="editPassword"
+                  x-model="editingUser.password"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editRole" class="form-label">Role</label>
+                <select
+                  class="form-control"
+                  id="editRole"
+                  x-model="editingUser.role"
+                  required
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-    
+
     <!-- Add User Modal -->
-    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form @submit.prevent="saveNewUser()">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="newUsername" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="newUsername" x-model="newUser.username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newName" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="newName" x-model="newUser.name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newPassword" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="newPassword" x-model="newUser.password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newRole" class="form-label">Role</label>
-                            <select class="form-control" id="newRole" x-model="newUser.role" required>
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Create User</button>
-                    </div>
-                </form>
+    <div
+      class="modal fade"
+      id="addUserModal"
+      tabindex="-1"
+      aria-labelledby="addUserModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form @submit.prevent="saveNewUser()">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="newUsername" class="form-label">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newUsername"
+                  x-model="newUser.username"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newName" class="form-label">Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newName"
+                  x-model="newUser.name"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newPassword" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="newPassword"
+                  x-model="newUser.password"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newRole" class="form-label">Role</label>
+                <select
+                  class="form-control"
+                  id="newRole"
+                  x-model="newUser.role"
+                  required
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">Create User</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-    
+
     <!-- Edit Job Modal -->
-    <div class="modal fade" id="editJobModal" tabindex="-1" aria-labelledby="editJobModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editJobModalLabel">Edit Job</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form @submit.prevent="updateJob()">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="editJobNumber" class="form-label">Job Number</label>
-                            <input type="text" class="form-control" id="editJobNumber" x-model="editingJob.job_number" readonly style="background-color: #f8f9fa;">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editJobClient" class="form-label">Client</label>
-                            <input type="text" class="form-control" id="editJobClient" x-model="editingJob.client" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editJobAddress" class="form-label">Address (will re-geocode if changed)</label>
-                            <input type="text" class="form-control" id="editJobAddress" x-model="editingJob.address" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editJobStatus" class="form-label">Status</label>
-                            <select class="form-control" id="editJobStatus" x-model="editingJob.status">
-                                <option value="">Select Status</option>
-                                <option value="On Hold/Pending">On Hold/Pending</option>
-                                <option value="Needs Fieldwork">Needs Fieldwork</option>
-                                <option value="Fieldwork Complete/Needs Office Work">Fieldwork Complete/Needs Office Work</option>
-                                <option value="To Be Printed/Packaged">To Be Printed/Packaged</option>
-                                <option value="Survey Complete/Invoice Sent/Unpaid">Survey Complete/Invoice Sent/Unpaid</option>
-                                <option value="Set/Flag Pins">Set/Flag Pins</option>
-                                <option value="Completed/To Be Filed">Completed/To Be Filed</option>
-                                <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-                                <option value="Estimate/Quote Available">Estimate/Quote Available</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editJobNotes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="editJobNotes" x-model="editingJob.notes" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </div>
-                </form>
+    <div
+      class="modal fade"
+      id="editJobModal"
+      tabindex="-1"
+      aria-labelledby="editJobModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editJobModalLabel">Edit Job</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form @submit.prevent="updateJob()">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="editJobNumber" class="form-label">Job Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editJobNumber"
+                  x-model="editingJob.job_number"
+                  readonly
+                  style="background-color: #f8f9fa"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editJobClient" class="form-label">Client</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editJobClient"
+                  x-model="editingJob.client"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editJobAddress" class="form-label"
+                  >Address (will re-geocode if changed)</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editJobAddress"
+                  x-model="editingJob.address"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="editJobStatus" class="form-label">Status</label>
+                <select
+                  class="form-control"
+                  id="editJobStatus"
+                  x-model="editingJob.status"
+                >
+                  <option value="">Select Status</option>
+                  <option value="On Hold/Pending">On Hold/Pending</option>
+                  <option value="Needs Fieldwork">Needs Fieldwork</option>
+                  <option value="Fieldwork Complete/Needs Office Work">
+                    Fieldwork Complete/Needs Office Work
+                  </option>
+                  <option value="To Be Printed/Packaged">
+                    To Be Printed/Packaged
+                  </option>
+                  <option value="Survey Complete/Invoice Sent/Unpaid">
+                    Survey Complete/Invoice Sent/Unpaid
+                  </option>
+                  <option value="Set/Flag Pins">Set/Flag Pins</option>
+                  <option value="Completed/To Be Filed">
+                    Completed/To Be Filed
+                  </option>
+                  <option value="Ongoing Site Plan">Ongoing Site Plan</option>
+                  <option value="Estimate/Quote Available">
+                    Estimate/Quote Available
+                  </option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="editJobNotes" class="form-label">Notes</label>
+                <textarea
+                  class="form-control"
+                  id="editJobNotes"
+                  x-model="editingJob.notes"
+                  rows="3"
+                ></textarea>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-    
+
     <!-- Add Job Modal -->
-    <div class="modal fade" id="addJobModal" tabindex="-1" aria-labelledby="addJobModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addJobModalLabel">Add New Job</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form @submit.prevent="saveNewJob()">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="newJobNumber" class="form-label">Job Number</label>
-                            <input type="text" class="form-control" id="newJobNumber" x-model="newJob.job_number" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newJobClient" class="form-label">Client</label>
-                            <input type="text" class="form-control" id="newJobClient" x-model="newJob.client" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newJobAddress" class="form-label">Address</label>
-                            <input type="text" class="form-control" id="newJobAddress" x-model="newJob.address" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newJobStatus" class="form-label">Status</label>
-                            <select class="form-control" id="newJobStatus" x-model="newJob.status">
-                                <option value="">Select Status</option>
-                                <option value="On Hold/Pending">On Hold/Pending</option>
-                                <option value="Needs Fieldwork">Needs Fieldwork</option>
-                                <option value="Fieldwork Complete/Needs Office Work">Fieldwork Complete/Needs Office Work</option>
-                                <option value="To Be Printed/Packaged">To Be Printed/Packaged</option>
-                                <option value="Survey Complete/Invoice Sent/Unpaid">Survey Complete/Invoice Sent/Unpaid</option>
-                                <option value="Set/Flag Pins">Set/Flag Pins</option>
-                                <option value="Completed/To Be Filed">Completed/To Be Filed</option>
-                                <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-                                <option value="Estimate/Quote Available">Estimate/Quote Available</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newJobNotes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="newJobNotes" x-model="newJob.notes" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Create Job</button>
-                    </div>
-                </form>
+    <div
+      class="modal fade"
+      id="addJobModal"
+      tabindex="-1"
+      aria-labelledby="addJobModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addJobModalLabel">Add New Job</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form @submit.prevent="saveNewJob()">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="newJobNumber" class="form-label">Job Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newJobNumber"
+                  x-model="newJob.job_number"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newJobClient" class="form-label">Client</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newJobClient"
+                  x-model="newJob.client"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newJobAddress" class="form-label">Address</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="newJobAddress"
+                  x-model="newJob.address"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="newJobStatus" class="form-label">Status</label>
+                <select
+                  class="form-control"
+                  id="newJobStatus"
+                  x-model="newJob.status"
+                >
+                  <option value="">Select Status</option>
+                  <option value="On Hold/Pending">On Hold/Pending</option>
+                  <option value="Needs Fieldwork">Needs Fieldwork</option>
+                  <option value="Fieldwork Complete/Needs Office Work">
+                    Fieldwork Complete/Needs Office Work
+                  </option>
+                  <option value="To Be Printed/Packaged">
+                    To Be Printed/Packaged
+                  </option>
+                  <option value="Survey Complete/Invoice Sent/Unpaid">
+                    Survey Complete/Invoice Sent/Unpaid
+                  </option>
+                  <option value="Set/Flag Pins">Set/Flag Pins</option>
+                  <option value="Completed/To Be Filed">
+                    Completed/To Be Filed
+                  </option>
+                  <option value="Ongoing Site Plan">Ongoing Site Plan</option>
+                  <option value="Estimate/Quote Available">
+                    Estimate/Quote Available
+                  </option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="newJobNotes" class="form-label">Notes</label>
+                <textarea
+                  class="form-control"
+                  id="newJobNotes"
+                  x-model="newJob.notes"
+                  rows="3"
+                ></textarea>
+              </div>
             </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">Create Job</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-    
+
     <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmModalLabel" x-text="confirmModal.title"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p x-text="confirmModal.message"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" @click="confirmModal.callback(); hideConfirmModal()">
-                        <span x-text="confirmModal.confirmText"></span>
-                    </button>
-                </div>
-            </div>
+    <div
+      class="modal fade"
+      id="confirmModal"
+      tabindex="-1"
+      aria-labelledby="confirmModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5
+              class="modal-title"
+              id="confirmModalLabel"
+              x-text="confirmModal.title"
+            ></h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p x-text="confirmModal.message"></p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              @click="confirmModal.callback(); hideConfirmModal()"
+            >
+              <span x-text="confirmModal.confirmText"></span>
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-    
+
     <!-- Alert Modal -->
-    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="alertModalLabel" x-text="alertModal.title"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p x-text="alertModal.message"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
+    <div
+      class="modal fade"
+      id="alertModal"
+      tabindex="-1"
+      aria-labelledby="alertModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5
+              class="modal-title"
+              id="alertModalLabel"
+              x-text="alertModal.title"
+            ></h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p x-text="alertModal.message"></p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+            >
+              OK
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
     <!-- Admin JavaScript -->
     <script>
-        document.addEventListener('alpine:init', () => {
-            // Notifications Store (reuse from main app)
-            Alpine.store('notifications', {
-                items: [],
-                nextId: 1,
-                
-                add(message, type = 'info', duration = 5000) {
-                    const notification = {
-                        id: this.nextId++,
-                        message,
-                        type,
-                        show: false
-                    };
-                    
-                    this.items.push(notification);
-                    
-                    setTimeout(() => {
-                        notification.show = true;
-                    }, 10);
-                    
-                    setTimeout(() => {
-                        this.remove(notification.id);
-                    }, duration);
-                },
-                
-                remove(id) {
-                    const index = this.items.findIndex(item => item.id === id);
-                    if (index > -1) {
-                        this.items[index].show = false;
-                        setTimeout(() => {
-                            this.items.splice(index, 1);
-                        }, 300);
-                    }
-                }
-            });
-            
-            // Admin App Component
-            Alpine.data('adminApp', () => ({
-                activeTab: 'dashboard',
-                
-                // Data
-                jobs: [],
-                users: [],
-                filteredJobs: [],
-                deletedJobs: [],
-                filteredDeletedJobs: [],
-                
-                // Filters
-                jobSearch: '',
-                statusFilter: '',
-                deletedJobSearch: '',
-                
-                // Stats
-                stats: {
-                    // Jobs by EPIC status
-                    onHoldPending: 0,
-                    needsFieldwork: 0,
-                    fieldworkComplete: 0,
-                    toBePrinted: 0,
-                    invoiceSent: 0,
-                    setPins: 0,
-                    completed: 0,
-                    ongoingSitePlan: 0,
-                    estimateAvailable: 0,
-                    // Other metrics
-                    uniqueClients: 0,
-                    deletedJobs: 0
-                },
-                
-                // User management
-                editingUser: {
-                    id: null,
-                    username: '',
-                    name: '',
-                    password: '',
-                    role: 'user'
-                },
-                newUser: {
-                    username: '',
-                    name: '',
-                    password: '',
-                    role: 'user'
-                },
-                
-                // Job management
-                editingJob: {
-                    job_number: '',
-                    client: '',
-                    address: '',
-                    status: '',
-                    notes: ''
-                },
-                newJob: {
-                    job_number: '',
-                    client: '',
-                    address: '',
-                    status: '',
-                    notes: ''
-                },
-                
-                // Modal management
-                confirmModal: {
-                    title: '',
-                    message: '',
-                    confirmText: 'Confirm',
-                    callback: () => {}
-                },
-                alertModal: {
-                    title: '',
-                    message: ''
-                },
-                
-                init() {
-                    this.loadData();
-                },
-                
-                async loadData() {
-                    await Promise.all([
-                        this.loadJobs(),
-                        this.loadUsers(),
-                        this.loadDeletedJobs(),
-                        this.loadStats()
-                    ]);
-                },
-                
-                async loadJobs() {
-                    try {
-                        const response = await fetch('/api/jobs');
-                        const data = await response.json();
-                        // Handle both array response (legacy) and object response (new API)
-                        this.jobs = Array.isArray(data) ? data : data.jobs || [];
-                        this.filteredJobs = this.jobs;
-                    } catch (error) {
-                        console.error('Failed to load jobs:', error);
-                        Alpine.store('notifications').add('Failed to load jobs', 'error');
-                    }
-                },
-                
-                async loadUsers() {
-                    try {
-                        const response = await fetch('/api/users');
-                        this.users = await response.json();
-                    } catch (error) {
-                        console.error('Failed to load users:', error);
-                        Alpine.store('notifications').add('Failed to load users', 'error');
-                    }
-                },
-                
-                async loadDeletedJobs() {
-                    try {
-                        const response = await fetch('/api/jobs/deleted');
-                        const data = await response.json();
-                        this.deletedJobs = data.jobs || [];
-                        this.filteredDeletedJobs = this.deletedJobs;
-                    } catch (error) {
-                        console.error('Failed to load deleted jobs:', error);
-                        Alpine.store('notifications').add('Failed to load deleted jobs', 'error');
-                    }
-                },
-                
-                async loadStats() {
-                    try {
-                        const response = await fetch('/api/jobs');
-                        const data = await response.json();
-                        const jobs = Array.isArray(data) ? data : data.jobs || [];
-                        
-                        // Count jobs by EPIC status
-                        this.stats.onHoldPending = jobs.filter(j => j.status === 'On Hold/Pending').length;
-                        this.stats.needsFieldwork = jobs.filter(j => j.status === 'Needs Fieldwork').length;
-                        this.stats.fieldworkComplete = jobs.filter(j => j.status === 'Fieldwork Complete/Needs Office Work').length;
-                        this.stats.toBePrinted = jobs.filter(j => j.status === 'To Be Printed/Packaged').length;
-                        this.stats.invoiceSent = jobs.filter(j => j.status === 'Survey Complete/Invoice Sent/Unpaid').length;
-                        this.stats.setPins = jobs.filter(j => j.status === 'Set/Flag Pins').length;
-                        this.stats.completed = jobs.filter(j => j.status === 'Completed/To Be Filed').length;
-                        this.stats.ongoingSitePlan = jobs.filter(j => j.status === 'Ongoing Site Plan').length;
-                        this.stats.estimateAvailable = jobs.filter(j => j.status === 'Estimate/Quote Available').length;
-                        
-                        // Count unique clients (excluding quote-only jobs)
-                        const activeJobs = jobs.filter(j => j.status !== 'Estimate/Quote Available');
-                        const uniqueClients = new Set(activeJobs.map(j => j.client.toLowerCase().trim()));
-                        this.stats.uniqueClients = uniqueClients.size;
-                        
-                        // Load deleted jobs count
-                        const deletedResponse = await fetch('/api/jobs/deleted');
-                        const deletedData = await deletedResponse.json();
-                        this.stats.deletedJobs = deletedData.total || 0;
-                    } catch (error) {
-                        console.error('Failed to load stats:', error);
-                    }
-                },
-                
-                filterJobs() {
-                    let filtered = this.jobs;
-                    
-                    if (this.jobSearch.trim()) {
-                        const term = this.jobSearch.toLowerCase();
-                        filtered = filtered.filter(job => 
-                            job.job_number.toLowerCase().includes(term) ||
-                            job.client.toLowerCase().includes(term) ||
-                            job.address.toLowerCase().includes(term)
-                        );
-                    }
-                    
-                    if (this.statusFilter) {
-                        filtered = filtered.filter(job => job.status === this.statusFilter);
-                    }
-                    
-                    this.filteredJobs = filtered;
-                },
-                
-                getStatusColor(status) {
-                    // Epic status to Bootstrap color mapping
-                    const statusColors = {
-                        "On Hold/Pending": "secondary",
-                        "Needs Fieldwork": "warning", 
-                        "Fieldwork Complete/Needs Office Work": "primary",
-                        "To Be Printed/Packaged": "info",
-                        "Survey Complete/Invoice Sent/Unpaid": "warning",
-                        "Set/Flag Pins": "danger",
-                        "Completed/To Be Filed": "success",
-                        "Ongoing Site Plan": "info",
-                        "Estimate/Quote Available": "secondary"
-                    };
-                    return statusColors[status] || 'secondary';
-                },
-                
-                formatDate(dateString) {
-                    if (!dateString) return 'Never';
-                    return new Date(dateString).toLocaleDateString();
-                },
-                
-                openAddJobModal() {
-                    // Reset form
-                    this.newJob = {
-                        job_number: '',
-                        client: '',
-                        address: '',
-                        status: '',
-                        notes: ''
-                    };
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('addJobModal'));
-                    modal.show();
-                },
-                
-                editJob(job) {
-                    // Prevent editing parcel jobs
-                    if (job.is_parcel_job) {
-                        Alpine.store('notifications').add('Parcel jobs cannot be edited', 'warning');
-                        return;
-                    }
-                    
-                    // Copy job data for editing
-                    this.editingJob = {
-                        job_number: job.job_number,
-                        client: job.client,
-                        address: job.address,
-                        status: job.status || '',
-                        notes: job.notes || ''
-                    };
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('editJobModal'));
-                    modal.show();
-                },
-                
-                async deleteJob(job) {
-                    this.showConfirm(
-                        'Delete Job',
-                        `Are you sure you want to delete job ${job.job_number}?`,
-                        async () => {
-                            try {
-                                const response = await fetch(`/api/jobs/${job.job_number}`, {
-                                    method: 'DELETE'
-                                });
-                                
-                                if (response.ok) {
-                                    await Promise.all([
-                                        this.loadJobs(),
-                                        this.loadDeletedJobs(),
-                                        this.loadStats()
-                                    ]);
-                                    Alpine.store('notifications').add('Job deleted successfully', 'success');
-                                } else {
-                                    throw new Error('Failed to delete job');
-                                }
-                            } catch (error) {
-                                console.error('Delete job error:', error);
-                                Alpine.store('notifications').add('Failed to delete job', 'error');
-                            }
-                        },
-                        'Delete'
-                    );
-                },
-                
-                openAddUserModal() {
-                    // Reset form
-                    this.newUser = {
-                        username: '',
-                        name: '',
-                        password: '',
-                        role: 'user'
-                    };
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
-                    modal.show();
-                },
-                
-                editUser(user) {
-                    // Copy user data for editing
-                    this.editingUser = {
-                        id: user.id,
-                        username: user.username,
-                        name: user.name,
-                        password: '', // Don't populate password
-                        role: user.role
-                    };
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-                    modal.show();
-                },
-                
-                async deleteUser(user) {
-                    this.showConfirm(
-                        'Delete User',
-                        `Are you sure you want to delete user ${user.username}?`,
-                        async () => {
-                            try {
-                                const response = await fetch(`/api/users/${user.id}`, {
-                                    method: 'DELETE'
-                                });
-                                
-                                if (response.ok) {
-                                    await this.loadUsers();
-                                    Alpine.store('notifications').add('User deleted successfully', 'success');
-                                } else {
-                                    throw new Error('Failed to delete user');
-                                }
-                            } catch (error) {
-                                console.error('Delete user error:', error);
-                                Alpine.store('notifications').add('Failed to delete user', 'error');
-                            }
-                        },
-                        'Delete'
-                    );
-                },
-                
-                filterDeletedJobs() {
-                    let filtered = this.deletedJobs;
-                    
-                    if (this.deletedJobSearch.trim()) {
-                        const term = this.deletedJobSearch.toLowerCase();
-                        filtered = filtered.filter(job => 
-                            (job.display_job_number || job.original_job_number || '').toLowerCase().includes(term) ||
-                            job.client.toLowerCase().includes(term) ||
-                            job.address.toLowerCase().includes(term)
-                        );
-                    }
-                    
-                    this.filteredDeletedJobs = filtered;
-                },
-                
-                getDeletedByName(userId) {
-                    if (!userId) return 'Unknown';
-                    const user = this.users.find(u => u.id === userId);
-                    return user ? user.name : 'Unknown User';
-                },
-                
-                async restoreJob(job) {
-                    const jobNumber = job.display_job_number || job.original_job_number;
-                    this.showConfirm(
-                        'Restore Job',
-                        `Are you sure you want to restore job ${jobNumber}?`,
-                        async () => {
-                            try {
-                                const response = await fetch(`/api/jobs/${job.job_number}/restore`, {
-                                    method: 'POST'
-                                });
-                                
-                                if (response.ok) {
-                                    await Promise.all([
-                                        this.loadJobs(),
-                                        this.loadDeletedJobs(),
-                                        this.loadStats()
-                                    ]);
-                                    Alpine.store('notifications').add(`Job ${jobNumber} restored successfully`, 'success');
-                                } else {
-                                    const error = await response.json();
-                                    throw new Error(error.error || 'Failed to restore job');
-                                }
-                            } catch (error) {
-                                console.error('Restore job error:', error);
-                                Alpine.store('notifications').add(error.message || 'Failed to restore job', 'error');
-                            }
-                        },
-                        'Restore'
-                    );
-                },
-                
-                async permanentlyDeleteJob(job) {
-                    const jobNumber = job.display_job_number || job.original_job_number;
-                    this.showConfirm(
-                        'Permanently Delete Job',
-                        `Are you sure you want to PERMANENTLY delete job ${jobNumber}? This action cannot be undone!`,
-                        () => {
-                            // Close first modal before opening second
-                            this.hideConfirmModal();
-                            
-                            // Small delay to ensure first modal is fully closed
-                            setTimeout(() => {
-                                this.showConfirm(
-                                    'Final Confirmation',
-                                    `This will permanently delete job ${jobNumber} and all associated data. Are you absolutely sure?`,
-                                    async () => {
-                                        try {
-                                            const response = await fetch(`/api/jobs/${job.job_number}/permanent-delete`, {
-                                                method: 'DELETE'
-                                            });
-                                            
-                                            if (response.ok) {
-                                                await Promise.all([
-                                                    this.loadDeletedJobs(),
-                                                    this.loadStats()
-                                                ]);
-                                                Alpine.store('notifications').add(`Job ${jobNumber} permanently deleted`, 'success');
-                                            } else {
-                                                throw new Error('Failed to permanently delete job');
-                                            }
-                                        } catch (error) {
-                                            console.error('Permanent delete job error:', error);
-                                            Alpine.store('notifications').add('Failed to permanently delete job', 'error');
-                                        }
-                                    },
-                                    'Permanently Delete'
-                                );
-                            }, 300); // 300ms delay for modal transition
-                        },
-                        'Continue'
-                    );
-                },
-                
-                async saveNewUser() {
-                    try {
-                        const response = await fetch('/api/users', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(this.newUser)
-                        });
-                        
-                        if (response.ok) {
-                            await this.loadUsers();
-                            Alpine.store('notifications').add('User created successfully', 'success');
-                            
-                            // Hide modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
-                            modal.hide();
-                            
-                            // Reset form
-                            this.newUser = {
-                                username: '',
-                                name: '',
-                                password: '',
-                                role: 'user'
-                            };
-                        } else {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to create user');
-                        }
-                    } catch (error) {
-                        console.error('Create user error:', error);
-                        Alpine.store('notifications').add(error.message || 'Failed to create user', 'error');
-                    }
-                },
-                
-                async updateUser() {
-                    try {
-                        // Prepare update data (exclude password if empty)
-                        const updateData = {
-                            username: this.editingUser.username,
-                            name: this.editingUser.name,
-                            role: this.editingUser.role
-                        };
-                        
-                        if (this.editingUser.password) {
-                            updateData.password = this.editingUser.password;
-                        }
-                        
-                        const response = await fetch(`/api/users/${this.editingUser.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(updateData)
-                        });
-                        
-                        if (response.ok) {
-                            await this.loadUsers();
-                            Alpine.store('notifications').add('User updated successfully', 'success');
-                            
-                            // Hide modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                            modal.hide();
-                        } else {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to update user');
-                        }
-                    } catch (error) {
-                        console.error('Update user error:', error);
-                        Alpine.store('notifications').add(error.message || 'Failed to update user', 'error');
-                    }
-                },
-                
-                async saveNewJob() {
-                    try {
-                        const response = await fetch('/api/jobs', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(this.newJob)
-                        });
-                        
-                        if (response.ok) {
-                            await Promise.all([
-                                this.loadJobs(),
-                                this.loadStats()
-                            ]);
-                            Alpine.store('notifications').add('Job created successfully', 'success');
-                            
-                            // Hide modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('addJobModal'));
-                            modal.hide();
-                            
-                            // Reset form
-                            this.newJob = {
-                                job_number: '',
-                                client: '',
-                                address: '',
-                                status: '',
-                                notes: ''
-                            };
-                        } else {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to create job');
-                        }
-                    } catch (error) {
-                        console.error('Create job error:', error);
-                        Alpine.store('notifications').add(error.message || 'Failed to create job', 'error');
-                    }
-                },
-                
-                async updateJob() {
-                    try {
-                        // Prepare update data
-                        const updateData = {
-                            client: this.editingJob.client,
-                            address: this.editingJob.address,
-                            status: this.editingJob.status,
-                            notes: this.editingJob.notes
-                        };
-                        
-                        const response = await fetch(`/api/jobs/${this.editingJob.job_number}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(updateData)
-                        });
-                        
-                        if (response.ok) {
-                            await Promise.all([
-                                this.loadJobs(),
-                                this.loadStats()
-                            ]);
-                            Alpine.store('notifications').add('Job updated successfully', 'success');
-                            
-                            // Hide modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('editJobModal'));
-                            modal.hide();
-                        } else {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to update job');
-                        }
-                    } catch (error) {
-                        console.error('Update job error:', error);
-                        Alpine.store('notifications').add(error.message || 'Failed to update job', 'error');
-                    }
-                },
-                
-                // Modal helper functions
-                showConfirm(title, message, callback, confirmText = 'Confirm') {
-                    this.confirmModal = {
-                        title,
-                        message,
-                        confirmText,
-                        callback
-                    };
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                    modal.show();
-                },
-                
-                hideConfirmModal() {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                    modal.hide();
-                },
-                
-                showAlert(title, message) {
-                    this.alertModal = {
-                        title,
-                        message
-                    };
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
-                    modal.show();
-                }
-            }));
+      document.addEventListener("alpine:init", () => {
+        // Notifications Store (reuse from main app)
+        Alpine.store("notifications", {
+          items: [],
+          nextId: 1,
+
+          add(message, type = "info", duration = 5000) {
+            const notification = {
+              id: this.nextId++,
+              message,
+              type,
+              show: false,
+            };
+
+            this.items.push(notification);
+
+            setTimeout(() => {
+              notification.show = true;
+            }, 10);
+
+            setTimeout(() => {
+              this.remove(notification.id);
+            }, duration);
+          },
+
+          remove(id) {
+            const index = this.items.findIndex((item) => item.id === id);
+            if (index > -1) {
+              this.items[index].show = false;
+              setTimeout(() => {
+                this.items.splice(index, 1);
+              }, 300);
+            }
+          },
         });
+
+        // Admin App Component
+        Alpine.data("adminApp", () => ({
+          activeTab: "dashboard",
+
+          // Data
+          jobs: [],
+          users: [],
+          filteredJobs: [],
+          deletedJobs: [],
+          filteredDeletedJobs: [],
+
+          // Filters
+          jobSearch: "",
+          statusFilter: "",
+          deletedJobSearch: "",
+
+          // Stats
+          stats: {
+            // Jobs by EPIC status
+            onHoldPending: 0,
+            needsFieldwork: 0,
+            fieldworkComplete: 0,
+            toBePrinted: 0,
+            invoiceSent: 0,
+            setPins: 0,
+            completed: 0,
+            ongoingSitePlan: 0,
+            estimateAvailable: 0,
+            // Other metrics
+            uniqueClients: 0,
+            deletedJobs: 0,
+          },
+
+          // User management
+          editingUser: {
+            id: null,
+            username: "",
+            name: "",
+            password: "",
+            role: "user",
+          },
+          newUser: {
+            username: "",
+            name: "",
+            password: "",
+            role: "user",
+          },
+
+          // Job management
+          editingJob: {
+            job_number: "",
+            client: "",
+            address: "",
+            status: "",
+            notes: "",
+          },
+          newJob: {
+            job_number: "",
+            client: "",
+            address: "",
+            status: "",
+            notes: "",
+          },
+
+          // Modal management
+          confirmModal: {
+            title: "",
+            message: "",
+            confirmText: "Confirm",
+            callback: () => {},
+          },
+          alertModal: {
+            title: "",
+            message: "",
+          },
+
+          init() {
+            this.loadData();
+          },
+
+          async loadData() {
+            await Promise.all([
+              this.loadJobs(),
+              this.loadUsers(),
+              this.loadDeletedJobs(),
+              this.loadStats(),
+            ]);
+          },
+
+          async loadJobs() {
+            try {
+              const response = await fetch("/api/jobs");
+              const data = await response.json();
+              // Handle both array response (legacy) and object response (new API)
+              this.jobs = Array.isArray(data) ? data : data.jobs || [];
+              this.filteredJobs = this.jobs;
+            } catch (error) {
+              console.error("Failed to load jobs:", error);
+              Alpine.store("notifications").add("Failed to load jobs", "error");
+            }
+          },
+
+          async loadUsers() {
+            try {
+              const response = await fetch("/api/users");
+              this.users = await response.json();
+            } catch (error) {
+              console.error("Failed to load users:", error);
+              Alpine.store("notifications").add(
+                "Failed to load users",
+                "error",
+              );
+            }
+          },
+
+          async loadDeletedJobs() {
+            try {
+              const response = await fetch("/api/jobs/deleted");
+              const data = await response.json();
+              this.deletedJobs = data.jobs || [];
+              this.filteredDeletedJobs = this.deletedJobs;
+            } catch (error) {
+              console.error("Failed to load deleted jobs:", error);
+              Alpine.store("notifications").add(
+                "Failed to load deleted jobs",
+                "error",
+              );
+            }
+          },
+
+          async loadStats() {
+            try {
+              const response = await fetch("/api/jobs");
+              const data = await response.json();
+              const jobs = Array.isArray(data) ? data : data.jobs || [];
+
+              // Count jobs by EPIC status
+              this.stats.onHoldPending = jobs.filter(
+                (j) => j.status === "On Hold/Pending",
+              ).length;
+              this.stats.needsFieldwork = jobs.filter(
+                (j) => j.status === "Needs Fieldwork",
+              ).length;
+              this.stats.fieldworkComplete = jobs.filter(
+                (j) => j.status === "Fieldwork Complete/Needs Office Work",
+              ).length;
+              this.stats.toBePrinted = jobs.filter(
+                (j) => j.status === "To Be Printed/Packaged",
+              ).length;
+              this.stats.invoiceSent = jobs.filter(
+                (j) => j.status === "Survey Complete/Invoice Sent/Unpaid",
+              ).length;
+              this.stats.setPins = jobs.filter(
+                (j) => j.status === "Set/Flag Pins",
+              ).length;
+              this.stats.completed = jobs.filter(
+                (j) => j.status === "Completed/To Be Filed",
+              ).length;
+              this.stats.ongoingSitePlan = jobs.filter(
+                (j) => j.status === "Ongoing Site Plan",
+              ).length;
+              this.stats.estimateAvailable = jobs.filter(
+                (j) => j.status === "Estimate/Quote Available",
+              ).length;
+
+              // Count unique clients (excluding quote-only jobs)
+              const activeJobs = jobs.filter(
+                (j) => j.status !== "Estimate/Quote Available",
+              );
+              const uniqueClients = new Set(
+                activeJobs.map((j) => j.client.toLowerCase().trim()),
+              );
+              this.stats.uniqueClients = uniqueClients.size;
+
+              // Load deleted jobs count
+              const deletedResponse = await fetch("/api/jobs/deleted");
+              const deletedData = await deletedResponse.json();
+              this.stats.deletedJobs = deletedData.total || 0;
+            } catch (error) {
+              console.error("Failed to load stats:", error);
+            }
+          },
+
+          filterJobs() {
+            let filtered = this.jobs;
+
+            if (this.jobSearch.trim()) {
+              const term = this.jobSearch.toLowerCase();
+              filtered = filtered.filter(
+                (job) =>
+                  job.job_number.toLowerCase().includes(term) ||
+                  job.client.toLowerCase().includes(term) ||
+                  job.address.toLowerCase().includes(term),
+              );
+            }
+
+            if (this.statusFilter) {
+              filtered = filtered.filter(
+                (job) => job.status === this.statusFilter,
+              );
+            }
+
+            this.filteredJobs = filtered;
+          },
+
+          getStatusColor(status) {
+            // Epic status to Bootstrap color mapping
+            const statusColors = {
+              "On Hold/Pending": "secondary",
+              "Needs Fieldwork": "warning",
+              "Fieldwork Complete/Needs Office Work": "primary",
+              "To Be Printed/Packaged": "info",
+              "Survey Complete/Invoice Sent/Unpaid": "warning",
+              "Set/Flag Pins": "danger",
+              "Completed/To Be Filed": "success",
+              "Ongoing Site Plan": "info",
+              "Estimate/Quote Available": "secondary",
+            };
+            return statusColors[status] || "secondary";
+          },
+
+          formatDate(dateString) {
+            if (!dateString) return "Never";
+            return new Date(dateString).toLocaleDateString();
+          },
+
+          openAddJobModal() {
+            // Reset form
+            this.newJob = {
+              job_number: "",
+              client: "",
+              address: "",
+              status: "",
+              notes: "",
+            };
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+              document.getElementById("addJobModal"),
+            );
+            modal.show();
+          },
+
+          editJob(job) {
+            // Prevent editing parcel jobs
+            if (job.is_parcel_job) {
+              Alpine.store("notifications").add(
+                "Parcel jobs cannot be edited",
+                "warning",
+              );
+              return;
+            }
+
+            // Copy job data for editing
+            this.editingJob = {
+              job_number: job.job_number,
+              client: job.client,
+              address: job.address,
+              status: job.status || "",
+              notes: job.notes || "",
+            };
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+              document.getElementById("editJobModal"),
+            );
+            modal.show();
+          },
+
+          async deleteJob(job) {
+            this.showConfirm(
+              "Delete Job",
+              `Are you sure you want to delete job ${job.job_number}?`,
+              async () => {
+                try {
+                  const response = await fetch(`/api/jobs/${job.job_number}`, {
+                    method: "DELETE",
+                  });
+
+                  if (response.ok) {
+                    await Promise.all([
+                      this.loadJobs(),
+                      this.loadDeletedJobs(),
+                      this.loadStats(),
+                    ]);
+                    Alpine.store("notifications").add(
+                      "Job deleted successfully",
+                      "success",
+                    );
+                  } else {
+                    throw new Error("Failed to delete job");
+                  }
+                } catch (error) {
+                  console.error("Delete job error:", error);
+                  Alpine.store("notifications").add(
+                    "Failed to delete job",
+                    "error",
+                  );
+                }
+              },
+              "Delete",
+            );
+          },
+
+          openAddUserModal() {
+            // Reset form
+            this.newUser = {
+              username: "",
+              name: "",
+              password: "",
+              role: "user",
+            };
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+              document.getElementById("addUserModal"),
+            );
+            modal.show();
+          },
+
+          editUser(user) {
+            // Copy user data for editing
+            this.editingUser = {
+              id: user.id,
+              username: user.username,
+              name: user.name,
+              password: "", // Don't populate password
+              role: user.role,
+            };
+
+            // Show modal
+            const modal = new bootstrap.Modal(
+              document.getElementById("editUserModal"),
+            );
+            modal.show();
+          },
+
+          async deleteUser(user) {
+            this.showConfirm(
+              "Delete User",
+              `Are you sure you want to delete user ${user.username}?`,
+              async () => {
+                try {
+                  const response = await fetch(`/api/users/${user.id}`, {
+                    method: "DELETE",
+                  });
+
+                  if (response.ok) {
+                    await this.loadUsers();
+                    Alpine.store("notifications").add(
+                      "User deleted successfully",
+                      "success",
+                    );
+                  } else {
+                    throw new Error("Failed to delete user");
+                  }
+                } catch (error) {
+                  console.error("Delete user error:", error);
+                  Alpine.store("notifications").add(
+                    "Failed to delete user",
+                    "error",
+                  );
+                }
+              },
+              "Delete",
+            );
+          },
+
+          filterDeletedJobs() {
+            let filtered = this.deletedJobs;
+
+            if (this.deletedJobSearch.trim()) {
+              const term = this.deletedJobSearch.toLowerCase();
+              filtered = filtered.filter(
+                (job) =>
+                  (job.display_job_number || job.original_job_number || "")
+                    .toLowerCase()
+                    .includes(term) ||
+                  job.client.toLowerCase().includes(term) ||
+                  job.address.toLowerCase().includes(term),
+              );
+            }
+
+            this.filteredDeletedJobs = filtered;
+          },
+
+          getDeletedByName(userId) {
+            if (!userId) return "Unknown";
+            const user = this.users.find((u) => u.id === userId);
+            return user ? user.name : "Unknown User";
+          },
+
+          async restoreJob(job) {
+            const jobNumber = job.display_job_number || job.original_job_number;
+            this.showConfirm(
+              "Restore Job",
+              `Are you sure you want to restore job ${jobNumber}?`,
+              async () => {
+                try {
+                  const response = await fetch(
+                    `/api/jobs/${job.job_number}/restore`,
+                    {
+                      method: "POST",
+                    },
+                  );
+
+                  if (response.ok) {
+                    await Promise.all([
+                      this.loadJobs(),
+                      this.loadDeletedJobs(),
+                      this.loadStats(),
+                    ]);
+                    Alpine.store("notifications").add(
+                      `Job ${jobNumber} restored successfully`,
+                      "success",
+                    );
+                  } else {
+                    const error = await response.json();
+                    throw new Error(error.error || "Failed to restore job");
+                  }
+                } catch (error) {
+                  console.error("Restore job error:", error);
+                  Alpine.store("notifications").add(
+                    error.message || "Failed to restore job",
+                    "error",
+                  );
+                }
+              },
+              "Restore",
+            );
+          },
+
+          async permanentlyDeleteJob(job) {
+            const jobNumber = job.display_job_number || job.original_job_number;
+            this.showConfirm(
+              "Permanently Delete Job",
+              `Are you sure you want to PERMANENTLY delete job ${jobNumber}? This action cannot be undone!`,
+              () => {
+                // Close first modal before opening second
+                this.hideConfirmModal();
+
+                // Small delay to ensure first modal is fully closed
+                setTimeout(() => {
+                  this.showConfirm(
+                    "Final Confirmation",
+                    `This will permanently delete job ${jobNumber} and all associated data. Are you absolutely sure?`,
+                    async () => {
+                      try {
+                        const response = await fetch(
+                          `/api/jobs/${job.job_number}/permanent-delete`,
+                          {
+                            method: "DELETE",
+                          },
+                        );
+
+                        if (response.ok) {
+                          await Promise.all([
+                            this.loadDeletedJobs(),
+                            this.loadStats(),
+                          ]);
+                          Alpine.store("notifications").add(
+                            `Job ${jobNumber} permanently deleted`,
+                            "success",
+                          );
+                        } else {
+                          throw new Error("Failed to permanently delete job");
+                        }
+                      } catch (error) {
+                        console.error("Permanent delete job error:", error);
+                        Alpine.store("notifications").add(
+                          "Failed to permanently delete job",
+                          "error",
+                        );
+                      }
+                    },
+                    "Permanently Delete",
+                  );
+                }, 300); // 300ms delay for modal transition
+              },
+              "Continue",
+            );
+          },
+
+          async saveNewUser() {
+            try {
+              const response = await fetch("/api/users", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(this.newUser),
+              });
+
+              if (response.ok) {
+                await this.loadUsers();
+                Alpine.store("notifications").add(
+                  "User created successfully",
+                  "success",
+                );
+
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(
+                  document.getElementById("addUserModal"),
+                );
+                modal.hide();
+
+                // Reset form
+                this.newUser = {
+                  username: "",
+                  name: "",
+                  password: "",
+                  role: "user",
+                };
+              } else {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to create user");
+              }
+            } catch (error) {
+              console.error("Create user error:", error);
+              Alpine.store("notifications").add(
+                error.message || "Failed to create user",
+                "error",
+              );
+            }
+          },
+
+          async updateUser() {
+            try {
+              // Prepare update data (exclude password if empty)
+              const updateData = {
+                username: this.editingUser.username,
+                name: this.editingUser.name,
+                role: this.editingUser.role,
+              };
+
+              if (this.editingUser.password) {
+                updateData.password = this.editingUser.password;
+              }
+
+              const response = await fetch(
+                `/api/users/${this.editingUser.id}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(updateData),
+                },
+              );
+
+              if (response.ok) {
+                await this.loadUsers();
+                Alpine.store("notifications").add(
+                  "User updated successfully",
+                  "success",
+                );
+
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(
+                  document.getElementById("editUserModal"),
+                );
+                modal.hide();
+              } else {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to update user");
+              }
+            } catch (error) {
+              console.error("Update user error:", error);
+              Alpine.store("notifications").add(
+                error.message || "Failed to update user",
+                "error",
+              );
+            }
+          },
+
+          async saveNewJob() {
+            try {
+              const response = await fetch("/api/jobs", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(this.newJob),
+              });
+
+              if (response.ok) {
+                await Promise.all([this.loadJobs(), this.loadStats()]);
+                Alpine.store("notifications").add(
+                  "Job created successfully",
+                  "success",
+                );
+
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(
+                  document.getElementById("addJobModal"),
+                );
+                modal.hide();
+
+                // Reset form
+                this.newJob = {
+                  job_number: "",
+                  client: "",
+                  address: "",
+                  status: "",
+                  notes: "",
+                };
+              } else {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to create job");
+              }
+            } catch (error) {
+              console.error("Create job error:", error);
+              Alpine.store("notifications").add(
+                error.message || "Failed to create job",
+                "error",
+              );
+            }
+          },
+
+          async updateJob() {
+            try {
+              // Prepare update data
+              const updateData = {
+                client: this.editingJob.client,
+                address: this.editingJob.address,
+                status: this.editingJob.status,
+                notes: this.editingJob.notes,
+              };
+
+              const response = await fetch(
+                `/api/jobs/${this.editingJob.job_number}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(updateData),
+                },
+              );
+
+              if (response.ok) {
+                await Promise.all([this.loadJobs(), this.loadStats()]);
+                Alpine.store("notifications").add(
+                  "Job updated successfully",
+                  "success",
+                );
+
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(
+                  document.getElementById("editJobModal"),
+                );
+                modal.hide();
+              } else {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to update job");
+              }
+            } catch (error) {
+              console.error("Update job error:", error);
+              Alpine.store("notifications").add(
+                error.message || "Failed to update job",
+                "error",
+              );
+            }
+          },
+
+          // Modal helper functions
+          showConfirm(title, message, callback, confirmText = "Confirm") {
+            this.confirmModal = {
+              title,
+              message,
+              confirmText,
+              callback,
+            };
+
+            const modal = new bootstrap.Modal(
+              document.getElementById("confirmModal"),
+            );
+            modal.show();
+          },
+
+          hideConfirmModal() {
+            const modal = bootstrap.Modal.getInstance(
+              document.getElementById("confirmModal"),
+            );
+            modal.hide();
+          },
+
+          showAlert(title, message) {
+            this.alertModal = {
+              title,
+              message,
+            };
+
+            const modal = new bootstrap.Modal(
+              document.getElementById("alertModal"),
+            );
+            modal.show();
+          },
+        }));
+      });
     </script>
-</body>
+  </body>
 </html>
+
