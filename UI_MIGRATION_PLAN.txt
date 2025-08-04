@@ -1,0 +1,351 @@
+================================================================================
+EPIC MAP UI MIGRATION PLAN
+Bootstrap → Tailwind CSS + DaisyUI
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+Migrate Epic Map from Bootstrap 5 to Tailwind CSS + DaisyUI while:
+- Maintaining Alpine.js for interactivity
+- Improving UI/UX with modern components
+- Adding enhanced search functionality
+- Applying company branding (Pink #FF1393, White #FFFFFF, Gray #AAAAAA)
+- Fixing iOS zoom issues
+- Keeping the application stable and maintainable
+
+================================================================================
+PHASE 1: FOUNDATION & SETUP
+================================================================================
+
+1. CDN SETUP & CONFIGURATION
+   1.1. Add Tailwind CSS CDN (v3.4.1) to templates
+        1.1.1. Add to admin_spa.html
+        1.1.2. Add to map.html
+        1.1.3. Add to login.html
+   
+   1.2. Add DaisyUI CDN (v4.6.0)
+        1.2.1. Add DaisyUI CSS link after Tailwind
+        1.2.2. Configure DaisyUI theme in script tag
+        1.2.3. Set epicmap custom theme with brand colors
+   
+   1.3. Add Montserrat font
+        1.3.1. Add Google Fonts link
+        1.3.2. Configure as default sans-serif font
+   
+   1.4. Create compatibility layer
+        1.4.1. Keep Bootstrap 5.3.0 CSS temporarily
+        1.4.2. Keep Bootstrap JS for existing modals
+        1.4.3. Create CSS file for transition utilities
+
+2. BRAND CONFIGURATION
+   2.1. Set up color variables
+        2.1.1. Define primary color (#FF1393)
+        2.1.2. Define base color (#FFFFFF)
+        2.1.3. Define neutral color (#AAAAAA)
+        2.1.4. Update CSS custom properties
+   
+   2.2. Add company logo
+        2.2.1. Verify EMS-llc-4.png exists in static/data
+        2.2.2. Add logo to header navigation
+        2.2.3. Add logo to login page
+        2.2.4. Set as favicon
+
+3. FIX IOS ZOOM ISSUES
+   3.1. Update viewport meta tags
+        3.1.1. Add maximum-scale=1.0
+        3.1.2. Add user-scalable=no for UI elements only
+   
+   3.2. Fix touch interactions
+        3.2.1. Add touch-action: manipulation to buttons
+        3.2.2. Add touch-action: manipulation to FAB
+        3.2.3. Add touch-action: manipulation to modals
+   
+   3.3. Fix input zoom
+        3.3.1. Set all input font-size to 16px minimum
+        3.3.2. Set select font-size to 16px minimum
+        3.3.3. Set textarea font-size to 16px minimum
+
+================================================================================
+PHASE 2: ADMIN DASHBOARD MIGRATION
+================================================================================
+
+4. TABLE IMPROVEMENTS
+   4.1. Convert job management table
+        4.1.1. Replace Bootstrap table classes with DaisyUI
+        4.1.2. Add hover states and better borders
+        4.1.3. Improve responsive behavior for mobile
+        4.1.4. Update striped row styling
+   
+   4.2. Add sorting functionality
+        4.2.1. Add sort indicators to headers
+        4.2.2. Implement client-side sorting logic
+        4.2.3. Make all columns sortable
+        4.2.4. Default sort by job_number descending
+        4.2.5. Add visual feedback for active sort
+   
+   4.3. Implement pagination
+        4.3.1. Add results per page selector (10, 25, 50, 100, All)
+        4.3.2. Create pagination component with page numbers
+        4.3.3. Add previous/next navigation
+        4.3.4. Show current range (e.g., "1-10 of 234")
+        4.3.5. Maintain filters during pagination
+
+5. CARD COMPONENTS
+   5.1. Convert stats cards
+        5.1.1. Replace Bootstrap cards with DaisyUI cards
+        5.1.2. Apply new color scheme to backgrounds
+        5.1.3. Update typography and spacing
+        5.1.4. Improve mobile grid layout
+   
+   5.2. Update status indicators
+        5.2.1. Convert status badges to DaisyUI badges
+        5.2.2. Apply consistent color coding
+        5.2.3. Add icons where appropriate
+
+6. FORM ELEMENTS
+   6.1. Convert search inputs
+        6.1.1. Replace Bootstrap form-control with DaisyUI input
+        6.1.2. Update placeholder styling
+        6.1.3. Maintain Alpine.js x-model bindings
+   
+   6.2. Convert select dropdowns
+        6.2.1. Replace Bootstrap select with DaisyUI select
+        6.2.2. Update option styling
+        6.2.3. Maintain @change handlers
+   
+   6.3. Convert buttons
+        6.3.1. Replace btn-primary with DaisyUI btn-primary
+        6.3.2. Update button sizes and padding
+        6.3.3. Add hover/active states
+
+================================================================================
+PHASE 3: FAB MENU ENHANCEMENT
+================================================================================
+
+7. FAB BUTTON REDESIGN
+   7.1. Create new FAB structure
+        7.1.1. Build with DaisyUI button classes
+        7.1.2. Set 56px dimensions for touch target
+        7.1.3. Position bottom-right with proper spacing
+        7.1.4. Add elevation shadow
+   
+   7.2. Improve animations
+        7.2.1. Add rotation animation for open/close
+        7.2.2. Create smooth menu item reveal
+        7.2.3. Add backdrop fade transition
+        7.2.4. Implement spring animations
+
+8. SEARCH FUNCTIONALITY ENHANCEMENT
+   8.1. Add parcel search to FAB menu
+        8.1.1. Add new "Search by Parcel" option
+        8.1.2. Create tabbed interface (Address | Parcel | Client)
+        8.1.3. Reuse existing modal structure
+   
+   8.2. Implement parcel search UI
+        8.2.1. Add county selector (Brevard/Orange only)
+        8.2.2. Show appropriate input fields per county
+        8.2.3. For Brevard: Tax Account OR Parcel ID
+        8.2.4. For Orange: Parcel ID only
+        8.2.5. Connect to existing geocoding endpoints
+   
+   8.3. Add client search
+        8.3.1. Create client search input
+        8.3.2. Implement type-ahead suggestions
+        8.3.3. Connect to existing API endpoints
+        8.3.4. Display results in dropdown
+
+9. MENU LAYOUT IMPROVEMENTS
+   9.1. Reorganize menu items
+        9.1.1. Group related functions
+        9.1.2. Add section dividers
+        9.1.3. Improve icon consistency
+   
+   9.2. Enhance mobile usability
+        9.2.1. Increase touch targets to 44px minimum
+        9.2.2. Add proper spacing between items
+        9.2.3. Improve contrast for outdoor visibility
+
+================================================================================
+PHASE 4: MAP VIEW UPDATES
+================================================================================
+
+10. MODAL CONVERSIONS
+    10.1. Convert Create Job modal
+          10.1.1. Replace Bootstrap modal with DaisyUI modal
+          10.1.2. Maintain Alpine.js state management
+          10.1.3. Keep tab navigation (Address/Parcel)
+          10.1.4. Update form styling to match DaisyUI
+    
+    10.2. Convert other modals
+          10.2.1. Job details modal
+          10.2.2. Confirmation dialogs
+          10.2.3. Alert messages
+          10.2.4. Success notifications
+
+11. MAP CONTROLS
+    11.1. Update top controls bar
+          11.1.1. Convert buttons to DaisyUI
+          11.1.2. Apply new color scheme
+          11.1.3. Improve spacing and alignment
+    
+    11.2. Update layer controls
+          11.2.1. Convert checkboxes to DaisyUI
+          11.2.2. Improve toggle switches
+          11.2.3. Update dropdown styling
+
+12. NOTIFICATION SYSTEM
+    12.1. Convert notifications
+          12.1.1. Replace custom notifications with DaisyUI alerts
+          12.1.2. Add slide-in animations
+          12.1.3. Implement auto-dismiss
+          12.1.4. Stack multiple notifications
+
+================================================================================
+PHASE 5: FINAL POLISH & CLEANUP
+================================================================================
+
+13. COMPLETE BRANDING
+    13.1. Apply pink primary color throughout
+          13.1.1. Update all primary buttons
+          13.1.2. Update links and active states
+          13.1.3. Update focus indicators
+    
+    13.2. Ensure logo placement
+          13.2.1. Header on all pages
+          13.2.2. Login page centering
+          13.2.3. Favicon implementation
+
+14. BOOTSTRAP REMOVAL
+    14.1. Remove Bootstrap dependencies
+          14.1.1. Remove Bootstrap CSS link
+          14.1.2. Remove Bootstrap JS link
+          14.1.3. Remove data-bs-* attributes
+    
+    14.2. Clean up CSS
+          14.2.1. Remove unused Bootstrap overrides
+          14.2.2. Consolidate custom styles
+          14.2.3. Remove redundant styles
+
+15. TESTING & OPTIMIZATION
+    15.1. Mobile testing
+          15.1.1. Test on iPhone 16 Pro Max
+          15.1.2. Test on iPad
+          15.1.3. Test on Android devices
+    
+    15.2. Performance optimization
+          15.2.1. Minimize CSS
+          15.2.2. Optimize Alpine.js components
+          15.2.3. Lazy load non-critical resources
+    
+    15.3. Cross-browser testing
+          15.3.1. Test on Safari
+          15.3.2. Test on Chrome
+          15.3.3. Test on Firefox
+          15.3.4. Test on Edge
+
+================================================================================
+TECHNICAL SPECIFICATIONS
+================================================================================
+
+CDN VERSIONS (PINNED)
+--------------------
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+
+<!-- DaisyUI -->
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+
+<!-- Alpine.js (existing) -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+<!-- Montserrat Font -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Bootstrap (temporary during migration) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+TAILWIND CONFIGURATION
+---------------------
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        'epic-pink': '#FF1393',
+        'epic-gray': '#AAAAAA',
+        'epic-white': '#FFFFFF'
+      },
+      fontFamily: {
+        'sans': ['Montserrat', 'system-ui', 'sans-serif']
+      }
+    }
+  }
+}
+
+DAISYUI THEME
+------------
+daisyui: {
+  themes: [
+    {
+      epicmap: {
+        "primary": "#FF1393",
+        "secondary": "#AAAAAA",
+        "accent": "#FFFFFF",
+        "neutral": "#2B2D31",
+        "base-100": "#FFFFFF",
+        "info": "#3ABFF8",
+        "success": "#36D399",
+        "warning": "#FBBD23",
+        "error": "#F87272"
+      }
+    }
+  ]
+}
+
+================================================================================
+MIGRATION CHECKLIST
+================================================================================
+
+□ Phase 1: Foundation & Setup
+  □ 1. CDN Setup & Configuration
+  □ 2. Brand Configuration
+  □ 3. Fix iOS Zoom Issues
+
+□ Phase 2: Admin Dashboard Migration
+  □ 4. Table Improvements
+  □ 5. Card Components
+  □ 6. Form Elements
+
+□ Phase 3: FAB Menu Enhancement
+  □ 7. FAB Button Redesign
+  □ 8. Search Functionality Enhancement
+  □ 9. Menu Layout Improvements
+
+□ Phase 4: Map View Updates
+  □ 10. Modal Conversions
+  □ 11. Map Controls
+  □ 12. Notification System
+
+□ Phase 5: Final Polish & Cleanup
+  □ 13. Complete Branding
+  □ 14. Bootstrap Removal
+  □ 15. Testing & Optimization
+
+================================================================================
+NOTES & CONSIDERATIONS
+================================================================================
+
+1. Keep Alpine.js throughout - no React migration needed
+2. Maintain all existing functionality during migration
+3. Test each phase thoroughly before proceeding
+4. Keep Bootstrap during transition for stability
+5. Client-side operations for tables (data < 1000 rows)
+6. Focus on mobile-first design
+7. Ensure touch targets are 44px minimum
+8. All form inputs must be 16px+ to prevent iOS zoom
+9. Use existing API endpoints - no backend changes needed
+10. Logo file: EMS-llc-4.png in static/data folder
+
+================================================================================
+END OF MIGRATION PLAN
+================================================================================

@@ -1,0 +1,125 @@
+# Parcel Geocoding Integration Plan
+
+## Overview
+Add parcel geocoding functionality to the job creation modal with county selection, parcel lookup, map confirmation, and proper job tracking.
+
+## Phase 1: Database Schema Updates
+
+### 1.1 Update Job Model
+- Add `is_parcel_job` boolean field (default: False)
+- Add `parcel_data` JSON field to store parcel information
+- Create database migration for new fields
+
+### 1.2 Update API Endpoints
+- Modify job creation endpoint to handle parcel data
+- Update job update logic to prevent parcel job modifications
+
+## Phase 2: Frontend Modal Enhancements
+
+### 2.1 Create Job Modal Updates
+- Add county selection dropdown (Brevard, Orange)
+- Add conditional input fields based on county:
+  - Brevard: Tax Account OR Parcel ID
+  - Orange: Parcel ID (with dashes format)
+- Add "Address" vs "Parcel" toggle/tabs
+- Maintain existing address input for regular jobs
+
+### 2.2 Parcel Lookup Flow
+- Call appropriate geocoding endpoint based on county selection
+- Display loading state during API calls
+- Handle API errors gracefully with user feedback
+
+## Phase 3: Map Confirmation System
+
+### 3.1 Temporary Marker Display
+- Add temporary marker to map when parcel geocoding succeeds
+- Different marker style/color to distinguish from permanent jobs
+- Pan/zoom map to show the parcel location
+- Display parcel information in popup/sidebar
+
+### 3.2 User Confirmation Interface
+- Show confirmation dialog: "Does this location look correct?"
+- Include parcel details (ID, address if available, coordinates)
+- "Yes, Create Job" and "No, Try Again" buttons
+- Clear temporary marker on any action
+
+## Phase 4: Job Creation & Management
+
+### 4.1 Enhanced Job Creation
+- Create job with parcel data when user confirms
+- Set `is_parcel_job = True`
+- Store original parcel ID and county in `parcel_data`
+- Use geocoding response for coordinates and address
+
+### 4.2 Admin Panel Restrictions
+- Hide edit buttons for parcel jobs in admin interface
+- Add visual indicator (badge/icon) to distinguish parcel jobs
+- Show parcel information in read-only format
+- Prevent API updates to parcel jobs
+
+## Phase 5: Error Handling & Logging
+
+### 5.1 Error Logging System
+- Log failed parcel lookups with user input
+- Log user rejections of parcel locations
+- Track geocoding API errors
+- Store logs for debugging and improvement
+
+### 5.2 User Experience
+- Clear error messages for invalid parcel IDs
+- Fallback to address geocoding option
+- Help text with parcel ID format examples
+- Progressive enhancement (graceful degradation)
+
+## Technical Implementation Details
+
+### Backend Changes
+- **models.py**: Add fields to Job model
+- **api_routes.py**: Update job creation/update endpoints
+- **utils.py**: Already complete with geocoding functions
+- **migrations**: Database schema updates
+
+### Frontend Changes
+- **templates/map.html**: Update create job modal
+- **static/js/map.js**: Add parcel lookup logic
+- **static/js/marker-utils.js**: Add temporary marker functions
+- **static/css/**: Style updates for new UI elements
+
+### API Integration
+- Use existing `/api/geocode/brevard-parcel` endpoint
+- Use existing `/api/geocode/orange-parcel` endpoint
+- Handle different response formats consistently
+
+## Testing Strategy
+- Test with known valid parcel IDs for each county
+- Test error cases (invalid IDs, API failures)
+- Test user confirmation flow
+- Verify admin panel restrictions
+- Test database migrations
+
+## Future Considerations
+- Add more counties as needed
+- Batch parcel lookup functionality
+- Parcel boundary visualization
+- Historical parcel data tracking
+
+## Implementation Priority
+1. Database schema updates (Phase 1)
+2. Basic parcel lookup in modal (Phase 2.1, 2.2)
+3. Map confirmation system (Phase 3)
+4. Job creation with parcel data (Phase 4.1)
+5. Admin panel restrictions (Phase 4.2)
+6. Error handling and logging (Phase 5)
+
+## County-Specific Implementation Notes
+
+### Brevard County
+- Endpoint: `/api/geocode/brevard-parcel`
+- Parameters: `tax_account` OR `parcel_id`
+- Input validation: Tax account (numbers only), Parcel ID (text)
+
+### Orange County  
+- Endpoint: `/api/geocode/orange-parcel`
+- Parameters: `parcel_id` (must include dashes)
+- Input validation: Format like "13-23-32-7600-00-070"
+- Help text: "Format: XX-XX-XX-XXXX-XX-XXX"
