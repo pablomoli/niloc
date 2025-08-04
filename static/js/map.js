@@ -1,4 +1,4 @@
-// Mobile-First Notification System
+// DaisyUI Alert Notification System
 function showNotification(message, type = 'info') {
     const container = document.getElementById('notification-container');
     if (!container) return;
@@ -10,13 +10,16 @@ function showNotification(message, type = 'info') {
     // Icon based on type
     const icons = {
         success: '<i class="bi bi-check-circle-fill"></i>',
-        error: '<i class="bi bi-exclamation-circle-fill"></i>',
-        info: '<i class="bi bi-info-circle-fill"></i>'
+        error: '<i class="bi bi-exclamation-triangle-fill"></i>',
+        info: '<i class="bi bi-info-circle-fill"></i>',
+        warning: '<i class="bi bi-exclamation-triangle-fill"></i>'
     };
     
     notification.innerHTML = `
-        <span class="notification-icon">${icons[type] || icons.info}</span>
-        <span class="notification-message">${message}</span>
+        <div class="flex items-center gap-3">
+            <span class="notification-icon">${icons[type] || icons.info}</span>
+            <span class="notification-message">${message}</span>
+        </div>
     `;
     
     // Add to container

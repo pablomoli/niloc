@@ -2,22 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Admin Dashboard - Epic Map</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>"
-    />
+    <link rel="icon" href="{{ url_for('static', filename='data/EMS-llc-4.png') }}" type="image/png" />
 
-    <!-- Google Fonts - Roboto -->
+    <!-- Google Fonts - Montserrat -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Bootstrap CSS -->
+    <!-- Tailwind CSS v3.4.1 -->
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    
+    <!-- DaisyUI v4.6.0 -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Bootstrap CSS (temporary during migration) -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -28,14 +31,90 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
     />
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'epic-pink': '#FF1393',
+                        'epic-gray': '#AAAAAA',
+                        'epic-white': '#FFFFFF'
+                    },
+                    fontFamily: {
+                        'sans': ['Montserrat', 'system-ui', 'sans-serif']
+                    }
+                }
+            },
+            daisyui: {
+                themes: [
+                    {
+                        epicmap: {
+                            "primary": "#FF1393",
+                            "secondary": "#AAAAAA",
+                            "accent": "#FFFFFF",
+                            "neutral": "#2B2D31",
+                            "base-100": "#FFFFFF",
+                            "info": "#3ABFF8",
+                            "success": "#36D399",
+                            "warning": "#FBBD23",
+                            "error": "#F87272"
+                        }
+                    }
+                ]
+            }
+        }
+    </script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/app.css" />
+    <link rel="stylesheet" href="/static/css/tailwind-compat.css" />
 
     <!-- Admin Panel Styling -->
     <style>
       body {
-        font-family: "Roboto", sans-serif !important;
+        font-family: "Montserrat", sans-serif !important;
+      }
+      
+      /* iOS Zoom Prevention */
+      input[type="text"],
+      input[type="email"],
+      input[type="number"],
+      input[type="tel"],
+      input[type="password"],
+      input[type="search"],
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+      
+      /* Touch interaction improvements */
+      button,
+      .btn,
+      a,
+      .nav-link,
+      .nav-tabs {
+        touch-action: manipulation;
+      }
+      
+      /* Pink tabs instead of blue */
+      .nav-tabs .nav-link.active {
+        background-color: #FF1393 !important;
+        border-color: #FF1393 !important;
+        color: white !important;
+      }
+      
+      .nav-tabs .nav-link.active:hover {
+        background-color: #e0117f !important;
+        border-color: #e0117f !important;
+        color: white !important;
+      }
+      
+      .nav-tabs .nav-link:hover:not(.active) {
+        border-color: #FF1393 !important;
+        color: #FF1393 !important;
+        background-color: transparent !important;
       }
 
       /* Logout button specific styling */
@@ -45,10 +124,36 @@
         transition: all 0.2s ease;
       }
 
-      /* Keep Map button blue hover */
+      /* Keep Map button pink hover */
       .app-nav a[href="/"]:hover {
-        background: var(--primary-color) !important;
+        background: #FF1393 !important;
         color: white !important;
+      }
+
+      /* Fix scrolling issues in admin sections */
+      .container-fluid {
+        height: calc(100vh - 60px); /* Account for header */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Ensure table containers can scroll */
+      .table-responsive,
+      .overflow-x-auto {
+        max-height: none !important;
+        overflow-y: visible !important;
+      }
+      
+      /* Fix tab content scrolling */
+      .tab-content {
+        height: auto;
+        overflow: visible;
+      }
+      
+      /* Ensure pagination is accessible */
+      .pagination-container {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
       }
 
       /* Mobile optimizations for iPhone 16 Pro Max */
@@ -83,6 +188,8 @@
         .container-fluid {
           padding-left: 1rem;
           padding-right: 1rem;
+          height: calc(100vh - 60px);
+          overflow-y: auto;
         }
 
         /* Better touch targets for mobile */
@@ -98,13 +205,20 @@
       }
     </style>
   </head>
-  <body x-data="adminApp()">
+  <body x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content">
     <!-- Header -->
     <header class="app-header">
-      <h1><i class="bi bi-gear"></i> Admin Dashboard</h1>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 32px; height: 32px;">
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 20px; color: #FF1393; letter-spacing: -0.5px;">EMS</span>
+          <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 10px; color: #AAAAAA; letter-spacing: 0.5px; text-transform: uppercase;">Epic Map System</span>
+        </div>
+        <h1 style="margin: 0; font-size: 1.5rem; font-family: 'Montserrat', sans-serif; font-weight: 700; color: #333;">Admin Dashboard</h1>
+      </div>
       <nav class="app-nav">
-        <a href="/"><i class="bi bi-map"></i> Map</a>
-        <a href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        <a href="/" style="color: #333;"><i class="bi bi-map"></i> Map</a>
+        <a href="/logout" style="color: #333;"><i class="bi bi-box-arrow-right"></i> Logout</a>
       </nav>
     </header>
 
@@ -155,48 +269,34 @@
           <!-- Row 1: Priority Statuses -->
           <div class="row mb-3">
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #28a745; border-color: #1e7e34"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #28a745; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Completed</h6>
-                  <h2 class="text-white mb-0" x-text="stats.completed">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Completed</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #e09132; border-color: #cc7a1c"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #e09132; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Needs Fieldwork</h6>
-                  <h2 class="text-white mb-0" x-text="stats.needsFieldwork">
-                    -
-                  </h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Needs Fieldwork</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.needsFieldwork">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #dc3545; border-color: #bd2130"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #dc3545; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Set/Flag Pins</h6>
-                  <h2 class="text-white mb-0" x-text="stats.setPins">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #0d6efd; border-color: #0b5ed7"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #FF1393; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">To Be Printed</h6>
-                  <h2 class="text-white mb-0" x-text="stats.toBePrinted">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">To Be Printed</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.toBePrinted">-</h2>
                 </div>
               </div>
             </div>
@@ -205,52 +305,34 @@
           <!-- Row 2: Workflow Statuses -->
           <div class="row mb-3">
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #6f42c1; border-color: #59359a"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #6f42c1; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Office Work</h6>
-                  <h2 class="text-white mb-0" x-text="stats.fieldworkComplete">
-                    -
-                  </h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Office Work</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #f5c842; border-color: #f3b300"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #f5c842; color: #2d3748;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-dark mb-2">Invoice Sent</h6>
-                  <h2 class="text-dark mb-0" x-text="stats.invoiceSent">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-80">Invoice Sent</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.invoiceSent">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #e685b5; border-color: #d1477a"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #e685b5; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Site Plan</h6>
-                  <h2 class="text-white mb-0" x-text="stats.ongoingSitePlan">
-                    -
-                  </h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Site Plan</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.ongoingSitePlan">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #a8a8a8; border-color: #909090"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #a8a8a8; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">On Hold/Pending</h6>
-                  <h2 class="text-white mb-0" x-text="stats.onHoldPending">
-                    -
-                  </h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
                 </div>
               </div>
             </div>
@@ -259,15 +341,10 @@
           <!-- Row 3: Quote Status -->
           <div class="row">
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div
-                class="card text-center"
-                style="background-color: #6c757d; border-color: #5a6268"
-              >
+              <div class="card text-center shadow-lg" style="background-color: #6c757d; color: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-white mb-2">Quote Available</h6>
-                  <h2 class="text-white mb-0" x-text="stats.estimateAvailable">
-                    -
-                  </h2>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Quote Available</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.estimateAvailable">-</h2>
                 </div>
               </div>
             </div>
@@ -279,18 +356,18 @@
           <h3 class="mb-3">Business Metrics</h3>
           <div class="row">
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div class="card text-center border-info">
+              <div class="card text-center shadow-lg" style="border: 2px solid #17a2b8; background: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-muted mb-2">Unique Clients</h6>
-                  <h2 class="text-info mb-0" x-text="stats.uniqueClients">-</h2>
+                  <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Unique Clients</h6>
+                  <h2 class="text-3xl font-bold mb-0" style="color: #17a2b8;" x-text="stats.uniqueClients">-</h2>
                 </div>
               </div>
             </div>
             <div class="col-6 col-md-3 mb-3 mb-md-0">
-              <div class="card text-center border-danger">
+              <div class="card text-center shadow-lg" style="border: 2px solid #dc3545; background: white;">
                 <div class="card-body py-3">
-                  <h6 class="card-title text-muted mb-2">Deleted Jobs</h6>
-                  <h2 class="text-danger mb-0" x-text="stats.deletedJobs">-</h2>
+                  <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Deleted Jobs</h6>
+                  <h2 class="text-3xl font-bold mb-0" style="color: #dc3545;" x-text="stats.deletedJobs">-</h2>
                 </div>
               </div>
             </div>
@@ -312,7 +389,7 @@
           <div class="col-md-6">
             <input
               type="text"
-              class="form-control"
+              class="input input-bordered input-primary w-full"
               x-model="jobSearch"
               @input="filterJobs()"
               placeholder="Search jobs..."
@@ -320,7 +397,7 @@
           </div>
           <div class="col-md-6">
             <select
-              class="form-control"
+              class="select select-bordered select-primary w-full"
               x-model="statusFilter"
               @change="filterJobs()"
             >
@@ -349,26 +426,41 @@
         </div>
 
         <!-- Jobs Table -->
-        <div class="table-responsive">
-          <table class="table table-striped">
+        <div class="overflow-x-auto">
+          <table class="table table-striped w-full">
             <thead>
               <tr>
-                <th>Job Number</th>
-                <th>Client</th>
-                <th>Address</th>
-                <th>Status</th>
-                <th>Created</th>
+                <th class="cursor-pointer" @click="sortJobs('job_number')">
+                  Job Number
+                  <i class="bi" :class="getSortIcon('job_number')"></i>
+                </th>
+                <th class="cursor-pointer " @click="sortJobs('client')">
+                  Client
+                  <i class="bi" :class="getSortIcon('client')"></i>
+                </th>
+                <th class="cursor-pointer " @click="sortJobs('address')">
+                  Address
+                  <i class="bi" :class="getSortIcon('address')"></i>
+                </th>
+                <th class="cursor-pointer " @click="sortJobs('status')">
+                  Status
+                  <i class="bi" :class="getSortIcon('status')"></i>
+                </th>
+                <th class="cursor-pointer " @click="sortJobs('created_at')">
+                  Created
+                  <i class="bi" :class="getSortIcon('created_at')"></i>
+                </th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <template x-for="job in filteredJobs" :key="job.id">
+              <template x-for="job in paginatedJobs" :key="job.id">
                 <tr>
                   <td>
                     <span x-text="job.job_number"></span>
                     <template x-if="job.is_parcel_job">
                       <span
-                        class="badge bg-info ms-1"
+                        class="badge badge-info badge-sm ml-2"
                         title="Created from parcel lookup"
                       >
                         <i class="bi bi-geo-alt"></i> Parcel
@@ -379,7 +471,7 @@
                   <td x-text="job.address"></td>
                   <td>
                     <span
-                      :class="`badge bg-${getStatusColor(job.status)}`"
+                      :class="`badge badge-${getStatusColor(job.status)} badge-sm`"
                       x-text="job.status"
                     ></span>
                   </td>
@@ -388,7 +480,7 @@
                     <template x-if="!job.is_parcel_job">
                       <button
                         @click="editJob(job)"
-                        class="btn btn-sm btn-outline-primary me-1"
+                        class="btn btn-ghost btn-xs text-primary mr-1"
                       >
                         <i class="bi bi-pencil"></i>
                       </button>
@@ -396,7 +488,7 @@
                     <template x-if="job.is_parcel_job">
                       <button
                         disabled
-                        class="btn btn-sm btn-outline-secondary me-1"
+                        class="btn btn-ghost btn-xs btn-disabled mr-1"
                         title="Parcel jobs cannot be edited"
                       >
                         <i class="bi bi-lock"></i>
@@ -404,7 +496,7 @@
                     </template>
                     <button
                       @click="deleteJob(job)"
-                      class="btn btn-sm btn-outline-danger"
+                      class="btn btn-ghost btn-xs text-error"
                     >
                       <i class="bi bi-trash"></i>
                     </button>
@@ -413,6 +505,49 @@
               </template>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
+          <!-- Results per page selector -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm">Show:</span>
+            <select class="select select-bordered select-sm" x-model="jobsPerPage" @change="updatePagination()">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="999999">All</option>
+            </select>
+            <span class="text-sm">entries</span>
+          </div>
+          
+          <!-- Page info and navigation -->
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-base-content/70" x-text="getPageInfo()"></span>
+            <div class="btn-group">
+              <button class="btn btn-sm" :disabled="currentPage === 1" @click="currentPage = 1">
+                <i class="bi bi-chevron-double-left"></i>
+              </button>
+              <button class="btn btn-sm" :disabled="currentPage === 1" @click="currentPage--">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <template x-for="page in getVisiblePages()" :key="page">
+                <button 
+                  class="btn btn-sm" 
+                  :class="page === currentPage ? 'btn-primary' : ''"
+                  @click="currentPage = page"
+                  x-text="page"
+                ></button>
+              </template>
+              <button class="btn btn-sm" :disabled="currentPage === totalPages" @click="currentPage++">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+              <button class="btn btn-sm" :disabled="currentPage === totalPages" @click="currentPage = totalPages">
+                <i class="bi bi-chevron-double-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
         <template x-if="filteredJobs.length === 0">
@@ -731,23 +866,16 @@
 
     <!-- Edit Job Modal -->
     <div
-      class="modal fade"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
       id="editJobModal"
-      tabindex="-1"
-      aria-labelledby="editJobModalLabel"
-      aria-hidden="true"
+      style="z-index: 2000;"
+      @click.self="document.getElementById('editJobModal').classList.add('hidden')"
     >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editJobModalLabel">Edit Job</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+                  onclick="document.getElementById('editJobModal').classList.add('hidden')">✕</button>
+          
+          <h3 class="font-bold text-lg mb-4 text-primary">Edit Job</h3>
           <form @submit.prevent="updateJob()">
             <div class="modal-body">
               <div class="mb-3">
@@ -826,7 +954,7 @@
               <button
                 type="button"
                 class="btn btn-secondary"
-                data-bs-dismiss="modal"
+                @click="document.getElementById('editJobModal').classList.add('hidden')"
               >
                 Cancel
               </button>
@@ -841,23 +969,16 @@
 
     <!-- Add Job Modal -->
     <div
-      class="modal fade"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
       id="addJobModal"
-      tabindex="-1"
-      aria-labelledby="addJobModalLabel"
-      aria-hidden="true"
+      style="z-index: 2000;"
+      @click.self="document.getElementById('addJobModal').classList.add('hidden')"
     >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addJobModalLabel">Add New Job</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+                  onclick="document.getElementById('addJobModal').classList.add('hidden')">✕</button>
+          
+          <h3 class="font-bold text-lg mb-4 text-primary">Add New Job</h3>
           <form @submit.prevent="saveNewJob()">
             <div class="modal-body">
               <div class="mb-3">
@@ -933,7 +1054,7 @@
               <button
                 type="button"
                 class="btn btn-secondary"
-                data-bs-dismiss="modal"
+                @click="document.getElementById('addJobModal').classList.add('hidden')"
               >
                 Cancel
               </button>
@@ -946,46 +1067,34 @@
 
     <!-- Confirmation Modal -->
     <div
-      class="modal fade"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
       id="confirmModal"
-      tabindex="-1"
-      aria-labelledby="confirmModalLabel"
-      aria-hidden="true"
+      style="z-index: 2000;"
+      @click.self="hideConfirmModal()"
     >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5
-              class="modal-title"
-              id="confirmModalLabel"
-              x-text="confirmModal.title"
-            ></h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <p x-text="confirmModal.message"></p>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger"
-              @click="confirmModal.callback(); hideConfirmModal()"
-            >
-              <span x-text="confirmModal.confirmText"></span>
-            </button>
-          </div>
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+                @click="hideConfirmModal()">✕</button>
+        
+        <h3 class="font-bold text-lg mb-4 text-primary" x-text="confirmModal.title"></h3>
+        
+        <p class="mb-6" x-text="confirmModal.message"></p>
+        
+        <div class="flex justify-end space-x-3">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            @click="hideConfirmModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-error"
+            @click="confirmModal.callback(); hideConfirmModal()"
+          >
+            <span x-text="confirmModal.confirmText"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -1091,6 +1200,15 @@
           jobSearch: "",
           statusFilter: "",
           deletedJobSearch: "",
+          
+          // Sorting
+          sortField: 'job_number',
+          sortDirection: 'desc',
+          
+          // Pagination
+          currentPage: 1,
+          jobsPerPage: 25,
+          totalPages: 1,
 
           // Stats
           stats: {
@@ -1154,6 +1272,80 @@
 
           init() {
             this.loadData();
+          },
+          
+          // Computed properties
+          get paginatedJobs() {
+            const start = (this.currentPage - 1) * this.jobsPerPage;
+            const end = start + parseInt(this.jobsPerPage);
+            return this.filteredJobs.slice(start, end);
+          },
+          
+          // Sorting methods
+          sortJobs(field) {
+            if (this.sortField === field) {
+              this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              this.sortField = field;
+              this.sortDirection = 'asc';
+            }
+            this.applySorting();
+            this.updatePagination();
+          },
+          
+          getSortIcon(field) {
+            if (this.sortField !== field) return 'bi-chevron-expand';
+            return this.sortDirection === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down';
+          },
+          
+          applySorting() {
+            this.filteredJobs.sort((a, b) => {
+              let aVal = a[this.sortField];
+              let bVal = b[this.sortField];
+              
+              // Handle different data types
+              if (this.sortField === 'created_at') {
+                aVal = new Date(aVal);
+                bVal = new Date(bVal);
+              } else if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+              }
+              
+              if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
+              if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+              return 0;
+            });
+          },
+          
+          // Pagination methods
+          updatePagination() {
+            this.totalPages = Math.ceil(this.filteredJobs.length / this.jobsPerPage);
+            if (this.currentPage > this.totalPages) {
+              this.currentPage = Math.max(1, this.totalPages);
+            }
+          },
+          
+          getPageInfo() {
+            const start = Math.min((this.currentPage - 1) * this.jobsPerPage + 1, this.filteredJobs.length);
+            const end = Math.min(this.currentPage * this.jobsPerPage, this.filteredJobs.length);
+            return `${start}-${end} of ${this.filteredJobs.length}`;
+          },
+          
+          getVisiblePages() {
+            const pages = [];
+            const maxVisible = 5;
+            let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(this.totalPages, start + maxVisible - 1);
+            
+            if (end - start + 1 < maxVisible) {
+              start = Math.max(1, end - maxVisible + 1);
+            }
+            
+            for (let i = start; i <= end; i++) {
+              pages.push(i);
+            }
+            return pages;
           },
 
           async loadData() {
@@ -1279,22 +1471,24 @@
             }
 
             this.filteredJobs = filtered;
+            this.applySorting();
+            this.updatePagination();
           },
 
           getStatusColor(status) {
-            // Epic status to Bootstrap color mapping
+            // Epic status to DaisyUI badge color mapping
             const statusColors = {
-              "On Hold/Pending": "secondary",
+              "On Hold/Pending": "neutral",
               "Needs Fieldwork": "warning",
               "Fieldwork Complete/Needs Office Work": "primary",
               "To Be Printed/Packaged": "info",
               "Survey Complete/Invoice Sent/Unpaid": "warning",
-              "Set/Flag Pins": "danger",
+              "Set/Flag Pins": "error",
               "Completed/To Be Filed": "success",
               "Ongoing Site Plan": "info",
               "Estimate/Quote Available": "secondary",
             };
-            return statusColors[status] || "secondary";
+            return statusColors[status] || "neutral";
           },
 
           formatDate(dateString) {
@@ -1313,10 +1507,7 @@
             };
 
             // Show modal
-            const modal = new bootstrap.Modal(
-              document.getElementById("addJobModal"),
-            );
-            modal.show();
+            document.getElementById("addJobModal").classList.remove("hidden");
           },
 
           editJob(job) {
@@ -1339,10 +1530,7 @@
             };
 
             // Show modal
-            const modal = new bootstrap.Modal(
-              document.getElementById("editJobModal"),
-            );
-            modal.show();
+            document.getElementById("editJobModal").classList.remove("hidden");
           },
 
           async deleteJob(job) {
@@ -1390,10 +1578,7 @@
             };
 
             // Show modal
-            const modal = new bootstrap.Modal(
-              document.getElementById("addUserModal"),
-            );
-            modal.show();
+            document.getElementById("addUserModal").classList.remove("hidden");
           },
 
           editUser(user) {
@@ -1407,10 +1592,7 @@
             };
 
             // Show modal
-            const modal = new bootstrap.Modal(
-              document.getElementById("editUserModal"),
-            );
-            modal.show();
+            document.getElementById("editUserModal").classList.remove("hidden");
           },
 
           async deleteUser(user) {
@@ -1577,10 +1759,7 @@
                 );
 
                 // Hide modal
-                const modal = bootstrap.Modal.getInstance(
-                  document.getElementById("addUserModal"),
-                );
-                modal.hide();
+                document.getElementById("addUserModal").classList.add("hidden");
 
                 // Reset form
                 this.newUser = {
@@ -1634,10 +1813,7 @@
                 );
 
                 // Hide modal
-                const modal = bootstrap.Modal.getInstance(
-                  document.getElementById("editUserModal"),
-                );
-                modal.hide();
+                document.getElementById("editUserModal").classList.add("hidden");
               } else {
                 const error = await response.json();
                 throw new Error(error.error || "Failed to update user");
@@ -1669,10 +1845,7 @@
                 );
 
                 // Hide modal
-                const modal = bootstrap.Modal.getInstance(
-                  document.getElementById("addJobModal"),
-                );
-                modal.hide();
+                document.getElementById("addJobModal").classList.add("hidden");
 
                 // Reset form
                 this.newJob = {
@@ -1724,10 +1897,7 @@
                 );
 
                 // Hide modal
-                const modal = bootstrap.Modal.getInstance(
-                  document.getElementById("editJobModal"),
-                );
-                modal.hide();
+                document.getElementById("editJobModal").classList.add("hidden");
               } else {
                 const error = await response.json();
                 throw new Error(error.error || "Failed to update job");
@@ -1750,17 +1920,17 @@
               callback,
             };
 
-            const modal = new bootstrap.Modal(
-              document.getElementById("confirmModal"),
-            );
-            modal.show();
+            const modal = document.getElementById("confirmModal");
+            if (modal) {
+              modal.classList.remove("hidden");
+            }
           },
 
           hideConfirmModal() {
-            const modal = bootstrap.Modal.getInstance(
-              document.getElementById("confirmModal"),
-            );
-            modal.hide();
+            const modal = document.getElementById("confirmModal");
+            if (modal) {
+              modal.classList.add("hidden");
+            }
           },
 
           showAlert(title, message) {

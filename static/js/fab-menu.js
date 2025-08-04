@@ -10,7 +10,17 @@ function fabMenu() {
         searchOpen: false,
         statusOpen: false,
         layerOpen: false,
+        
+        // Enhanced Search Properties
+        searchTab: 'address',
         addressSearch: '',
+        parcelSearch: '',
+        clientSearch: '',
+        selectedCounty: '',
+        brevardSearchType: 'tax-account',
+        clientSuggestions: [],
+        
+        // Existing properties
         availableStatuses: [],
         selectedStatuses: new Set(['all']), // Local reactive state for UI
         currentBaseLayer: 'satellite',
@@ -57,23 +67,181 @@ function fabMenu() {
             }
         },
         
-        openSearch() {
+        // Enhanced Search Methods
+        openAdvancedSearch() {
             this.searchOpen = true;
             this.menuOpen = false;
+            this.searchTab = 'address'; // Default to address tab
             this.$nextTick(() => {
                 this.$refs.searchInput?.focus();
             });
         },
         
-        closeSearch() {
+        closeAdvancedSearch() {
             this.searchOpen = false;
             this.addressSearch = '';
+            this.parcelSearch = '';
+            this.clientSearch = '';
+            this.selectedCounty = '';
+            this.clientSuggestions = [];
+        },
+        
+        clearClientFilter() {
+            // Clear any active client filter and show all jobs
+            window.activeClientFilter = null;
+            
+            if (window.clearAllFilters) {
+                window.clearAllFilters();
+            } else if (window.loadAllJobs) {
+                window.loadAllJobs();
+            } else if (window.AppState?.allJobs) {
+                // Fallback: reload all job markers
+                if (window.clearAllMarkers) {
+                    window.clearAllMarkers();
+                }
+                
+                if (window.addJobMarkers) {
+                    window.addJobMarkers(window.AppState.allJobs);
+                } else if (window.loadJobMarkers) {
+                    window.loadJobMarkers(window.AppState.allJobs);
+                }
+            }
+            
+            if (window.showNotification) {
+                window.showNotification('Showing all jobs', 'info');
+            }
+        },
+        
+        updateParcelFields() {
+            this.parcelSearch = '';
+            if (this.selectedCounty === 'brevard') {
+                this.brevardSearchType = 'tax-account';
+            }
+        },
+        
+        // Legacy methods for backward compatibility
+        openSearch() {
+            this.openAdvancedSearch();
+        },
+        
+        closeSearch() {
+            this.closeAdvancedSearch();
         },
         
         performAddressSearch() {
             if (this.addressSearch.trim()) {
                 window.searchAddress(this.addressSearch);
-                this.closeSearch();
+                this.closeAdvancedSearch();
+            }
+        },
+        
+        performParcelSearch() {
+            if (this.selectedCounty && this.parcelSearch.trim()) {
+                const searchData = {
+                    county: this.selectedCounty,
+                    value: this.parcelSearch.trim(),
+                    type: this.selectedCounty === 'brevard' ? this.brevardSearchType : 'parcel-id'
+                };
+                
+                if (window.searchParcel) {
+                    window.searchParcel(searchData);
+                } else {
+                    // Fallback to address search with parcel format
+                    window.searchAddress(`${this.selectedCounty} ${this.parcelSearch}`);
+                }
+                this.closeAdvancedSearch();
+            }
+        },
+        
+        async searchClients() {
+            if (this.clientSearch.length < 2) {
+                this.clientSuggestions = [];
+                return;
+            }
+            
+            try {
+                // Get unique clients from existing jobs
+                if (window.AppState?.allJobs) {
+                    const searchTerm = this.clientSearch.toLowerCase();
+                    const uniqueClients = [...new Set(
+                        window.AppState.allJobs
+                            .map(job => job.client)
+                            .filter(client => client && client.toLowerCase().includes(searchTerm))
+                    )];
+                    this.clientSuggestions = uniqueClients.slice(0, 5); // Limit to 5 suggestions
+                }
+            } catch (error) {
+                console.error('Error searching clients:', error);
+                this.clientSuggestions = [];
+            }
+        },
+        
+        selectClient(client) {
+            this.clientSearch = client;
+            this.clientSuggestions = [];
+        },
+        
+        performClientSearch() {
+            if (this.clientSearch.trim()) {
+                const searchTerm = this.clientSearch.trim();
+                console.log(`Performing client search for: ${searchTerm}`);
+                
+                if (window.searchByClient) {
+                    window.searchByClient(searchTerm);
+                } else if (window.AppState?.allJobs) {
+                    // Filter jobs by client - this acts as a filter, not single job focus
+                    const clientJobs = window.AppState.allJobs.filter(job => 
+                        job.client && job.client.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                    
+                    console.log(`Found ${clientJobs.length} jobs for client: ${searchTerm}`);
+                    
+                    if (clientJobs.length > 0) {
+                        // Apply client filter to show only these jobs
+                        if (window.filterJobsByClient) {
+                            window.filterJobsByClient(searchTerm);
+                        } else if (window.applyJobFilter) {
+                            // Use generic job filter
+                            window.applyJobFilter(clientJobs);
+                        } else {
+                            // Fallback: Store client filter globally and trigger map update
+                            window.activeClientFilter = searchTerm;
+                            
+                            // Clear existing markers and show only client jobs
+                            if (window.clearAllMarkers) {
+                                window.clearAllMarkers();
+                            }
+                            
+                            // Add markers for client jobs only
+                            if (window.addJobMarkers) {
+                                window.addJobMarkers(clientJobs);
+                            } else if (window.loadJobMarkers) {
+                                window.loadJobMarkers(clientJobs);
+                            }
+                            
+                            // Focus map on first job
+                            const firstJob = clientJobs[0];
+                            if (firstJob.latitude && firstJob.longitude && window.AppState?.map) {
+                                window.AppState.map.setView([firstJob.latitude, firstJob.longitude], 18);
+                            }
+                        }
+                        
+                        // Show success notification
+                        if (window.showNotification) {
+                            window.showNotification(`Filtered to ${clientJobs.length} job(s) for ${searchTerm}`, 'success');
+                        } else {
+                            console.log(`Client filter applied: ${clientJobs.length} jobs shown for ${searchTerm}`);
+                        }
+                    } else {
+                        // Show no results notification
+                        if (window.showNotification) {
+                            window.showNotification(`No jobs found for client: ${searchTerm}`, 'warning');
+                        } else {
+                            console.log(`No jobs found for client: ${searchTerm}`);
+                        }
+                    }
+                }
+                this.closeAdvancedSearch();
             }
         },
         

@@ -5,73 +5,58 @@ window.SimpleModal = {
         
         // Create modal HTML
         const modalHTML = `
-            <div id="simpleJobModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999; display: flex; align-items: center; justify-content: center;">
+            <div id="simpleJobModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 2000;">
                 <!-- Backdrop -->
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);" onclick="SimpleModal.hide()"></div>
+                <div class="absolute inset-0" onclick="SimpleModal.hide()"></div>
                 
                 <!-- Modal Content -->
-                <div style="position: relative; background: white; padding: 20px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                    <button style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;" onclick="SimpleModal.hide()">&times;</button>
+                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.hide()">✕</button>
                     
-                    <h2>Job #${job.job_number || 'N/A'}</h2>
-                    <div style="display: inline-block; background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 15px;">
+                    <h3 class="font-bold text-lg mb-2 text-primary">Job #${job.job_number || 'N/A'}</h3>
+                    <div class="inline-block px-3 py-1 rounded-full text-white text-xs font-medium mb-4" style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};">
                         ${job.status || 'Unknown Status'}
                     </div>
                     
-                    <div style="margin-bottom: 20px;">
-                        <h4>Client</h4>
-                        <p>${job.client || 'N/A'}</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <h4>Address</h4>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <p style="margin: 0; flex: 1;">${job.address || 'N/A'}</p>
-                            ${job.address && job.address !== 'N/A' ? `
-                                <button 
-                                    id="copyAddressBtn"
-                                    onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')" 
-                                    style="background: #0d6efd; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; font-size: 14px;"
-                                    title="Copy address to clipboard">
-                                    <i class="bi bi-clipboard"></i>
-                                    <span id="copyBtnText">Copy</span>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
+                    <div class="space-y-4">
                         <div>
-                            <h4>County</h4>
-                            <p>${job.county || 'N/A'}</p>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">Client</h4>
+                            <p class="text-gray-700">${job.client || 'N/A'}</p>
                         </div>
+                        
+                        <div>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">Address</h4>
+                            <div class="flex items-center gap-3">
+                                <p class="text-gray-700 flex-1">${job.address || 'N/A'}</p>
+                                ${job.address && job.address !== 'N/A' ? `
+                                    <button 
+                                        id="copyAddressBtn"
+                                        onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')" 
+                                        class="btn btn-sm btn-primary"
+                                        title="Copy address to clipboard">
+                                        <i class="bi bi-clipboard mr-1"></i>
+                                        <span id="copyBtnText">Copy</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">County</h4>
+                            <p class="text-gray-700">${job.county || 'N/A'}</p>
+                        </div>
+                        
+                        ${job.notes ? `
+                        <div>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">Notes</h4>
+                            <p class="text-gray-700">${job.notes}</p>
+                        </div>
+                        ` : ''}
                     </div>
                     
-                    ${job.notes ? `
-                    <div style="margin-bottom: 20px;">
-                        <h4>Notes</h4>
-                        <p>${job.notes}</p>
+                    <div class="flex justify-end mt-6">
+                        <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" onclick="SimpleModal.hide()">Close</button>
                     </div>
-                    ` : ''}
-                    
-                    <!-- Statistics section commented out
-                    <div style="border-top: 1px solid #ddd; padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                        <div>
-                            <small style="color: #666;">Visits</small>
-                            <p style="font-weight: bold; margin: 0;">${job.visited || 0}</p>
-                        </div>
-                        <div>
-                            <small style="color: #666;">Total Time</small>
-                            <p style="font-weight: bold; margin: 0;">${Number(job.total_time_spent || 0).toFixed(2)} hours</p>
-                        </div>
-                        <div>
-                            <small style="color: #666;">Created</small>
-                            <p style="font-weight: bold; margin: 0;">${job.created_at ? new Date(job.created_at).toLocaleDateString() : 'N/A'}</p>
-                        </div>
-                    </div>
-                    -->
-                    
-                    <button style="margin-top: 20px; padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="SimpleModal.hide()">Close</button>
                 </div>
             </div>
         `;

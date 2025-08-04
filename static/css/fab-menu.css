@@ -15,10 +15,10 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #0d6efd;
+  background: #FF1393;
   color: white;
   border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(255, 19, 147, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -26,11 +26,12 @@
   font-size: 24px;
   position: relative;
   z-index: 10;
-  transition: all 0.3s ease-out;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  touch-action: manipulation;
 }
 
 .fab-button:hover {
-  background: #0b5ed7;
+  background: #e0117f;
   transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
@@ -62,7 +63,7 @@
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: #0d6efd;
+  background: #FF1393;
   color: white;
   display: flex;
   align-items: center;
@@ -77,10 +78,11 @@
   opacity: 0;
   transform: scale(0);
   transition: all 0.3s ease-out;
+  touch-action: manipulation;
 }
 
 .fab-action-btn:hover {
-  background: #0b5ed7;
+  background: #e0117f;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -189,12 +191,25 @@
   border: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   font-size: 24px;
   z-index: 1000;
   transition: all 0.3s ease-out;
+  touch-action: manipulation;
+  padding: 0 !important;
+}
+
+/* Fix Bootstrap Icon centering in location FAB */
+.location-fab .bi {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 1 !important;
+  vertical-align: baseline !important;
 }
 
 .location-fab:hover {
@@ -253,7 +268,7 @@
 
 .search-container input:focus {
   outline: none;
-  border-color: #0d6efd;
+  border-color: #FF1393;
 }
 
 .search-actions {
@@ -317,14 +332,14 @@
 }
 
 .status-item:hover {
-  border-color: #0d6efd;
+  border-color: #FF1393;
   background: #f8f9fa;
   transform: scale(1.02);
 }
 
 .status-item.active {
-  border-color: #0d6efd;
-  background: #e7f1ff;
+  border-color: #FF1393;
+  background: #ffe6f5;
 }
 
 .status-item .status-dot {

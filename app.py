@@ -157,6 +157,15 @@ def logout():
 # =============================================================================
 
 
+@app.after_request
+def add_cache_headers(response):
+    """Add cache headers to static files"""
+    if request.endpoint == 'static' and '.css' in request.path:
+        response.cache_control.max_age = 300  # 5 minutes
+        response.cache_control.public = True
+    return response
+
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""

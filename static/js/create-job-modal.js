@@ -23,38 +23,38 @@ window.CreateJobModal = {
         
         // Create modal HTML
         const modalHTML = `
-            <div id="createJobModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999; display: flex; align-items: center; justify-content: center;">
+            <div id="createJobModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 2000;">
                 <!-- Backdrop -->
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);" onclick="CreateJobModal.hide()"></div>
+                <div class="absolute inset-0" onclick="CreateJobModal.hide()"></div>
                 
                 <!-- Modal Content -->
-                <div style="position: relative; background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                    <button style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;" onclick="CreateJobModal.hide()">&times;</button>
+                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="CreateJobModal.hide()">✕</button>
                     
-                    <h2>Create New Job</h2>
+                    <h3 class="font-bold text-lg mb-4 text-primary">Create New Job</h3>
                     
                     <!-- Tab Navigation -->
-                    <div style="border-bottom: 2px solid #dee2e6; margin-bottom: 20px;">
-                        <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" style="padding: 10px 20px; background: none; border: none; border-bottom: 3px solid #0d6efd; color: #0d6efd; font-weight: 500; cursor: pointer;">
-                            Address
+                    <div class="flex bg-gray-700 rounded-lg p-1 mb-4">
+                        <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm">
+                            <i class="bi bi-geo-alt mr-1"></i> Address
                         </button>
-                        <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" style="padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent; color: #6c757d; font-weight: 500; cursor: pointer;">
-                            Parcel ID
+                        <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300">
+                            <i class="bi bi-map mr-1"></i> Parcel ID
                         </button>
                     </div>
                     
-                    <form id="createJobForm" onsubmit="CreateJobModal.submit(event); return false;">
+                    <form id="createJobForm" onsubmit="CreateJobModal.submit(event); return false;" class="space-y-4">
                         <!-- Address Input Section -->
-                        <div id="addressSection" style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Address *</label>
-                            <input type="text" id="job_address_input" value="${address || ''}" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter job address">
+                        <div id="addressSection">
+                            <label class="block text-gray-400 text-sm font-medium mb-2">Address *</label>
+                            <input type="text" id="job_address_input" value="${address || ''}" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter job address">
                         </div>
                         
                         <!-- Parcel Input Section (hidden by default) -->
-                        <div id="parcelSection" style="display: none; margin-bottom: 15px;">
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">County *</label>
-                                <select id="parcel_county" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" onchange="CreateJobModal.updateParcelInputs()">
+                        <div id="parcelSection" style="display: none;">
+                            <div class="mb-4">
+                                <label class="block text-gray-400 text-sm font-medium mb-2">County *</label>
+                                <select id="parcel_county" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white focus:outline-none focus:border-pink-400" onchange="CreateJobModal.updateParcelInputs()">
                                     <option value="">Select County</option>
                                     <option value="brevard">Brevard County</option>
                                     <option value="orange">Orange County</option>
@@ -63,54 +63,54 @@ window.CreateJobModal = {
                             
                             <!-- Brevard County Inputs -->
                             <div id="brevardInputs" style="display: none;">
-                                <div style="margin-bottom: 10px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Tax Account Number</label>
-                                    <input type="text" id="brevard_tax_account" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Tax Account Number">
+                                <div class="mb-3">
+                                    <label class="block text-gray-400 text-sm font-medium mb-2">Tax Account Number</label>
+                                    <input type="text" id="brevard_tax_account" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter Tax Account Number">
                                 </div>
-                                <div style="text-align: center; margin: 10px 0; color: #6c757d; font-weight: 500;">OR</div>
-                                <div style="margin-bottom: 10px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Parcel ID</label>
-                                    <input type="text" id="brevard_parcel_id" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter Parcel ID">
+                                <div class="text-center my-3 text-gray-400 font-medium">OR</div>
+                                <div class="mb-3">
+                                    <label class="block text-gray-400 text-sm font-medium mb-2">Parcel ID</label>
+                                    <input type="text" id="brevard_parcel_id" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter Parcel ID">
                                 </div>
                             </div>
                             
                             <!-- Orange County Inputs -->
                             <div id="orangeInputs" style="display: none;">
-                                <div style="margin-bottom: 10px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Parcel ID *</label>
-                                    <input type="text" id="orange_parcel_id" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Format: XX-XX-XX-XXXX-XX-XXX">
-                                    <small style="color: #6c757d; display: block; margin-top: 5px;">Example: 13-23-32-7600-00-070</small>
+                                <div class="mb-3">
+                                    <label class="block text-gray-400 text-sm font-medium mb-2">Parcel ID *</label>
+                                    <input type="text" id="orange_parcel_id" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Format: XX-XX-XX-XXXX-XX-XXX">
+                                    <small class="text-gray-400 text-xs block mt-1">Example: 13-23-32-7600-00-070</small>
                                 </div>
                             </div>
                         </div>
                         
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Job Number *</label>
-                            <input type="text" id="job_number" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="mb-4">
+                            <label class="block text-gray-400 text-sm font-medium mb-2">Job Number *</label>
+                            <input type="text" id="job_number" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400">
                         </div>
                         
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Client Name *</label>
-                            <input type="text" id="job_client" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="mb-4">
+                            <label class="block text-gray-400 text-sm font-medium mb-2">Client Name *</label>
+                            <input type="text" id="job_client" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400">
                         </div>
                         
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Status *</label>
-                            <select id="job_status" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="mb-4">
+                            <label class="block text-gray-400 text-sm font-medium mb-2">Status *</label>
+                            <select id="job_status" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white focus:outline-none focus:border-pink-400">
                                 <option value="">Select Status</option>
                                 ${statusOptions}
                             </select>
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Notes</label>
-                            <textarea id="job_notes" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                        <div class="mb-6">
+                            <label class="block text-gray-400 text-sm font-medium mb-2">Notes</label>
+                            <textarea id="job_notes" rows="3" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"></textarea>
                         </div>
                         
-                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <button type="button" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="CreateJobModal.hide()">Cancel</button>
-                            <button type="submit" style="padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                <i class="bi bi-plus-circle"></i> Create Job
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" onclick="CreateJobModal.hide()">Cancel</button>
+                            <button type="submit" class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
+                                <i class="bi bi-plus-circle mr-1"></i> Create Job
                             </button>
                         </div>
                     </form>
@@ -161,18 +161,14 @@ window.CreateJobModal = {
         const addressInput = document.getElementById('job_address_input');
         
         if (tab === 'address') {
-            addressTab.style.borderBottomColor = '#0d6efd';
-            addressTab.style.color = '#0d6efd';
-            parcelTab.style.borderBottomColor = 'transparent';
-            parcelTab.style.color = '#6c757d';
+            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm';
+            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300';
             addressSection.style.display = 'block';
             parcelSection.style.display = 'none';
             addressInput.required = true;
         } else {
-            addressTab.style.borderBottomColor = 'transparent';
-            addressTab.style.color = '#6c757d';
-            parcelTab.style.borderBottomColor = '#0d6efd';
-            parcelTab.style.color = '#0d6efd';
+            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300';
+            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm';
             addressSection.style.display = 'none';
             parcelSection.style.display = 'block';
             addressInput.required = false;

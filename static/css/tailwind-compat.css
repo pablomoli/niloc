@@ -1,0 +1,201 @@
+/**
+ * Tailwind/DaisyUI Compatibility Layer
+ * Ensures smooth coexistence with Bootstrap during migration
+ */
+
+/* Set DaisyUI theme */
+:root {
+  --epic-pink: #FF1393;
+  --epic-gray: #AAAAAA;
+  --epic-white: #FFFFFF;
+}
+
+/* Apply epicmap theme globally */
+html {
+  data-theme: epicmap;
+}
+
+/* Override Bootstrap's default font */
+body {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Prevent conflicts between Bootstrap and Tailwind utilities */
+.container-fluid {
+  max-width: none !important;
+}
+
+/* Touch interaction improvements for all interactive elements */
+button,
+a,
+input,
+select,
+textarea,
+.btn,
+.fab-button,
+.fab-action-btn,
+.location-fab,
+.modal-close,
+.nav-link,
+.nav-tabs {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS form zoom prevention */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+select,
+textarea {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Ensure proper touch targets (44px minimum for iOS) */
+button,
+.btn,
+.fab-button,
+.fab-action-btn,
+.location-fab {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Fix potential z-index conflicts */
+.modal {
+  z-index: 1050 !important;
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+/* DaisyUI modal compatibility with Bootstrap modals */
+.modal-box {
+  max-width: none;
+}
+
+/* Smooth transitions during migration */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Disable transitions for structural changes */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* Brand color applications */
+.text-epic-pink {
+  color: var(--epic-pink) !important;
+}
+
+.bg-epic-pink {
+  background-color: var(--epic-pink) !important;
+}
+
+.border-epic-pink {
+  border-color: var(--epic-pink) !important;
+}
+
+.text-epic-gray {
+  color: var(--epic-gray) !important;
+}
+
+.bg-epic-gray {
+  background-color: var(--epic-gray) !important;
+}
+
+.border-epic-gray {
+  border-color: var(--epic-gray) !important;
+}
+
+/* Update primary button colors to match brand */
+.btn-primary {
+  background-color: var(--epic-pink) !important;
+  border-color: var(--epic-pink) !important;
+}
+
+.btn-primary:hover {
+  background-color: #e0117f !important;
+  border-color: #e0117f !important;
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #cc0f6b !important;
+  border-color: #cc0f6b !important;
+  box-shadow: 0 0 0 0.25rem rgba(255, 19, 147, 0.25) !important;
+}
+
+/* Update form control focus states */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--epic-pink) !important;
+  box-shadow: 0 0 0 0.25rem rgba(255, 19, 147, 0.25) !important;
+}
+
+/* Fix potential layout issues during migration */
+.d-flex {
+  display: flex !important;
+}
+
+.justify-content-between {
+  justify-content: space-between !important;
+}
+
+.align-items-center {
+  align-items: center !important;
+}
+
+/* Ensure modals work properly on mobile */
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 0;
+    max-width: 100%;
+    height: 100%;
+  }
+  
+  .modal-content {
+    height: 100%;
+    border-radius: 0;
+  }
+  
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Ensure proper stacking context */
+.leaflet-container {
+  z-index: 0;
+}
+
+.fab-container {
+  z-index: 1000;
+}
+
+.location-fab {
+  z-index: 1000;
+}
