@@ -104,17 +104,75 @@ AppState.baseLayers = {
 // Add default satellite layer
 AppState.baseLayers.satellite.addTo(AppState.map);
 
-// Initialize user location tracking
+// Location permission localStorage helpers
+const LocationPermission = {
+    STORAGE_KEY: 'epicmap_location_permission',
+    EXPIRY_DAYS: 30,
+    
+    get() {
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            if (!stored) return null;
+            
+            const data = JSON.parse(stored);
+            const now = Date.now();
+            
+            // Check if expired (30 days)
+            if (data.timestamp && (now - data.timestamp) > (this.EXPIRY_DAYS * 24 * 60 * 60 * 1000)) {
+                this.clear();
+                return null;
+            }
+            
+            return data.status;
+        } catch (e) {
+            console.error('Error reading location permission:', e);
+            return null;
+        }
+    },
+    
+    set(status) {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+                status: status,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.error('Error saving location permission:', e);
+        }
+    },
+    
+    clear() {
+        try {
+            localStorage.removeItem(this.STORAGE_KEY);
+        } catch (e) {
+            console.error('Error clearing location permission:', e);
+        }
+    }
+};
+
+// Initialize user location tracking with localStorage support
 function initUserLocation() {
     if (!navigator.geolocation) {
         showNotification('Location services not available', 'error');
         return;
     }
     
-    // Request initial position
+    // Check stored permission preference
+    const storedPermission = LocationPermission.get();
+    
+    if (storedPermission === 'denied') {
+        // User previously denied, show gentle reminder instead of forcing request
+        showLocationPrompt();
+        return;
+    }
+    
+    // If granted or no stored preference, try to get location
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const { latitude, longitude, accuracy } = position.coords;
+            
+            // Store successful permission grant
+            LocationPermission.set('granted');
             
             // Store user location
             AppState.userLocation = { lat: latitude, lng: longitude, accuracy };
@@ -137,6 +195,10 @@ function initUserLocation() {
             switch(error.code) {
                 case error.PERMISSION_DENIED:
                     message = 'Location permission denied';
+                    // Store denial to avoid repeated prompts
+                    LocationPermission.set('denied');
+                    // Show prompt for re-enabling
+                    setTimeout(() => showLocationPrompt(), 2000);
                     break;
                 case error.POSITION_UNAVAILABLE:
                     message = 'Location information unavailable';
@@ -154,6 +216,41 @@ function initUserLocation() {
             maximumAge: 0
         }
     );
+}
+
+// Show gentle prompt for users who denied location
+function showLocationPrompt() {
+    // Create a non-intrusive prompt
+    const prompt = document.createElement('div');
+    prompt.className = 'location-prompt';
+    prompt.innerHTML = `
+        <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                    background: white; padding: 15px 20px; border-radius: 8px; 
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; 
+                    display: flex; align-items: center; gap: 10px; max-width: 90%; width: auto;">
+            <i class="bi bi-geo-alt" style="color: #0066cc;"></i>
+            <span>Enable location to see your position on the map</span>
+            <button onclick="retryLocation()" style="background: #0066cc; color: white; 
+                    border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">
+                Enable
+            </button>
+            <button onclick="this.parentElement.remove()" style="background: #f0f0f0; 
+                    border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">
+                Dismiss
+            </button>
+        </div>
+    `;
+    document.body.appendChild(prompt);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => prompt.remove(), 10000);
+}
+
+// Retry location access (clear stored denial and try again)
+function retryLocation() {
+    LocationPermission.clear();
+    document.querySelector('.location-prompt')?.remove();
+    initUserLocation();
 }
 
 // Update user location marker and accuracy circle
@@ -227,8 +324,14 @@ function centerOnUserLocation() {
         AppState.map.setView([AppState.userLocation.lat, AppState.userLocation.lng], 16);
         showNotification('Centered on your location', 'info');
     } else {
-        showNotification('Location not available', 'error');
-        initUserLocation(); // Try to get location again
+        // Check if location was previously denied
+        const storedPermission = LocationPermission.get();
+        if (storedPermission === 'denied') {
+            showLocationPrompt();
+        } else {
+            showNotification('Getting your location...', 'info');
+            initUserLocation(); // Try to get location again
+        }
     }
 }
 
