@@ -1,6 +1,12 @@
 // Simple modal handler without Alpine
 window.SimpleModal = {
     currentJob: null,
+    fieldworkData: [],
+    confirmModal: {
+        title: '',
+        message: '',
+        callback: null
+    },
     
     // Generate FEMA Flood Zone link from address
     generateFEMALink(address) {
@@ -174,6 +180,22 @@ window.SimpleModal = {
         }
     },
     
+    // Fetch fieldwork data for a job
+    async fetchFieldworkData(jobNumber) {
+        try {
+            const response = await fetch(`/api/jobs/${jobNumber}/fieldwork`);
+            if (response.ok) {
+                this.fieldworkData = await response.json();
+            } else {
+                console.error('Failed to fetch fieldwork data');
+                this.fieldworkData = [];
+            }
+        } catch (error) {
+            console.error('Error fetching fieldwork data:', error);
+            this.fieldworkData = [];
+        }
+    },
+
     show(job) {
         console.log('SimpleModal.show called with job:', job);
         this.currentJob = { ...job }; // Store a copy of the job data
@@ -181,6 +203,89 @@ window.SimpleModal = {
         // Generate FEMA link if job has address
         const femaLink = this.generateFEMALink(job.address);
         
+        // Fetch fieldwork data and render modal
+        this.fetchFieldworkData(job.job_number).then(() => {
+            this.renderModal(job, femaLink);
+        });
+    },
+
+    // Generate fieldwork entries HTML
+    generateFieldworkHTML() {
+        if (this.fieldworkData.length === 0) {
+            return `
+                <div class="text-center py-4 text-gray-500">
+                    <i class="bi bi-clock-history text-2xl mb-2"></i>
+                    <p>No time entries recorded</p>
+                </div>
+            `;
+        }
+
+        return this.fieldworkData.map((fw, index) => `
+            <div class="border border-gray-200 rounded-lg p-3 mb-2 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900">
+                            ${index + 1}. ${this.formatDate(fw.work_date)} - ${this.formatDuration(fw.total_time)}
+                        </div>
+                    </div>
+                    <div class="flex gap-1 ml-3">
+                        <button class="btn btn-sm btn-ghost" onclick="SimpleModal.editFieldwork(${fw.id})" title="Edit entry">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-ghost text-red-600 hover:bg-red-50" onclick="SimpleModal.deleteFieldwork(${fw.id})" title="Delete entry">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    // Calculate total time from start and end times
+    calculateTotalTime(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        
+        // Handle overnight shifts
+        if (end < start) {
+            end.setDate(end.getDate() + 1);
+        }
+        
+        const diffMs = end - start;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        
+        return Math.round(diffHours * 100) / 100; // Round to 2 decimal places
+    },
+
+    // Format date for display
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        } catch (error) {
+            return dateString;
+        }
+    },
+
+    // Format duration for display
+    formatDuration(hours) {
+        if (!hours || hours === 0) return '0.0h';
+        return `${parseFloat(hours).toFixed(1)}h`;
+    },
+
+    // Calculate total time from all fieldwork entries
+    getTotalFieldworkTime() {
+        if (!this.fieldworkData || this.fieldworkData.length === 0) return 0;
+        return this.fieldworkData.reduce((total, fw) => total + parseFloat(fw.total_time || 0), 0);
+    },
+
+    renderModal(job, femaLink) {
         // Create modal HTML with editable fields
         const modalHTML = `
             <div id="simpleJobModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 2000;">
@@ -188,33 +293,43 @@ window.SimpleModal = {
                 <div class="absolute inset-0" onclick="SimpleModal.hide()"></div>
                 
                 <!-- Modal Content -->
-                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
                     <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.hide()">✕</button>
                     
                     <h3 class="font-bold text-lg mb-2 text-primary">Job #${job.job_number || 'N/A'}</h3>
                     
-                    <!-- Editable Status -->
-                    <div class="mb-4">
-                        <div id="status-view" style="display: block;">
-                            <div class="inline-block px-3 py-1 rounded-full text-white text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity" 
-                                 id="status-badge"
-                                 style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};"
-                                 onclick="SimpleModal.toggleEdit('status')"
-                                 title="Click to edit">
-                                <span id="status-view-text">${job.status || 'Unknown Status'}</span>
-                                <i class="bi bi-pencil-square ml-1" style="font-size: 10px;"></i>
+                    <!-- Editable Status with Total Time -->
+                    <div class="mb-4 flex justify-between items-start">
+                        <div>
+                            <div id="status-view" style="display: block;">
+                                <div class="inline-block px-3 py-1 rounded-full text-white text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity" 
+                                     id="status-badge"
+                                     style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};"
+                                     onclick="SimpleModal.toggleEdit('status')"
+                                     title="Click to edit">
+                                    <span id="status-view-text">${job.status || 'Unknown Status'}</span>
+                                    <i class="bi bi-pencil-square ml-1" style="font-size: 10px;"></i>
+                                </div>
+                            </div>
+                            <div id="status-edit" style="display: none;" class="flex items-center gap-2">
+                                <select id="status-select" class="select select-bordered select-sm flex-1">
+                                    ${this.generateStatusOptions(job.status)}
+                                </select>
+                                <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('status')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('status')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </div>
                         </div>
-                        <div id="status-edit" style="display: none;" class="flex items-center gap-2">
-                            <select id="status-select" class="select select-bordered select-sm flex-1">
-                                ${this.generateStatusOptions(job.status)}
-                            </select>
-                            <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('status')">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                            <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('status')">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                        
+                        <div class="text-right">
+                            <h4 class="text-gray-400 text-xs font-medium mb-1">Total Time</h4>
+                            <div id="total-time-badge" class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium" 
+                                 style="background-color: #FF1393;">
+                                ${this.formatDuration(this.getTotalFieldworkTime())}
+                            </div>
                         </div>
                     </div>
                     
@@ -287,10 +402,44 @@ window.SimpleModal = {
                             <p class="text-gray-700">${job.notes}</p>
                         </div>
                         ` : ''}
+                        
+                        <!-- Fieldwork Section -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-gray-400 text-sm font-medium">Time Tracking</h4>
+                                <button class="btn btn-sm btn-primary" onclick="SimpleModal.showAddFieldworkForm()" title="Add time entry">
+                                    <i class="bi bi-plus-circle mr-1"></i>
+                                    Add Entry
+                                </button>
+                            </div>
+                            <div id="fieldwork-list">
+                                ${this.generateFieldworkHTML()}
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="flex justify-end mt-6">
                         <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" onclick="SimpleModal.hide()">Close</button>
+                    </div>
+                </div>
+                
+                <!-- Confirmation Modal -->
+                <div id="fieldwork-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2001;">
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.hideConfirmModal()">✕</button>
+                        
+                        <h3 id="confirm-title" class="font-bold text-lg mb-4 text-primary"></h3>
+                        
+                        <p id="confirm-message" class="mb-6"></p>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" class="btn btn-ghost" onclick="SimpleModal.hideConfirmModal()">
+                                Cancel
+                            </button>
+                            <button type="button" class="btn btn-error" onclick="SimpleModal.confirmAction()">
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -392,6 +541,416 @@ window.SimpleModal = {
             console.error('Failed to copy address:', err);
             SimpleModal.showNotification('Failed to copy address', 'error');
         }
+    },
+
+    // Show add fieldwork form
+    showAddFieldworkForm() {
+        const today = new Date().toISOString().split('T')[0];
+        const currentTime = new Date().toTimeString().slice(0, 5);
+        
+        const formHTML = `
+            <div id="fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h5 class="font-medium text-gray-800 mb-3">Add Time Entry</h5>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- Date and Total Hours in 2 columns -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
+                            <input type="date" id="fw-work-date" class="input input-bordered input-md w-full" value="${today}" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
+                            <input type="text" id="fw-total-time" class="input input-bordered input-md w-full bg-gray-100" readonly placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <!-- Start and End Times -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            <input type="time" id="fw-start-time" class="input input-bordered input-md w-full" onchange="SimpleModal.updateTotalTime()" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                            <input type="time" id="fw-end-time" class="input input-bordered input-md w-full" onchange="SimpleModal.updateTotalTime()" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Crew and Drone Card - Stack on mobile -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
+                            <input type="text" id="fw-crew" class="input input-bordered input-md w-full" placeholder="Optional">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
+                            <input type="text" id="fw-drone-card" class="input input-bordered input-md w-full" placeholder="Optional">
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2">
+                        <button id="fw-save-btn" class="btn btn-md btn-success flex-1" onclick="SimpleModal.saveFieldwork()">
+                            <i class="bi bi-check-lg mr-1"></i>
+                            Save Entry
+                        </button>
+                        <button class="btn btn-md btn-ghost" onclick="SimpleModal.hideAddFieldworkForm()">
+                            <i class="bi bi-x-lg mr-1"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Find the time tracking section and add form
+        const timeSection = document.querySelector('#fieldwork-list').parentElement;
+        const existingForm = document.getElementById('fieldwork-form');
+        
+        if (existingForm) {
+            existingForm.remove();
+        }
+        
+        timeSection.insertAdjacentHTML('beforeend', formHTML);
+    },
+
+    // Hide add fieldwork form
+    hideAddFieldworkForm() {
+        const form = document.getElementById('fieldwork-form');
+        if (form) {
+            form.remove();
+        }
+    },
+
+    // Update total time calculation
+    updateTotalTime() {
+        const startTime = document.getElementById('fw-start-time')?.value;
+        const endTime = document.getElementById('fw-end-time')?.value;
+        const totalTimeInput = document.getElementById('fw-total-time');
+        
+        if (startTime && endTime && totalTimeInput) {
+            const totalHours = this.calculateTotalTime(startTime, endTime);
+            totalTimeInput.value = totalHours.toFixed(2);
+        }
+    },
+
+    // Save new fieldwork entry
+    async saveFieldwork() {
+        const saveBtn = document.getElementById('fw-save-btn');
+        const originalContent = saveBtn.innerHTML;
+        
+        // Get form values
+        const workDate = document.getElementById('fw-work-date').value;
+        const startTime = document.getElementById('fw-start-time').value;
+        const endTime = document.getElementById('fw-end-time').value;
+        const totalTime = document.getElementById('fw-total-time').value;
+        const crew = document.getElementById('fw-crew').value.trim();
+        const droneCard = document.getElementById('fw-drone-card').value.trim();
+        const notes = document.getElementById('fw-notes').value.trim();
+        
+        // Validation
+        if (!workDate || !startTime || !endTime) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        if (!totalTime || parseFloat(totalTime) <= 0) {
+            this.showNotification('Invalid time range', 'error');
+            return;
+        }
+        
+        // Show loading
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        
+        try {
+            const response = await fetch(`/api/jobs/${this.currentJob.job_number}/fieldwork`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    work_date: workDate,
+                    start_time: startTime,
+                    end_time: endTime,
+                    crew: crew || null,
+                    drone_card: droneCard || null,
+                    notes: notes || null
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Refresh fieldwork data and update display
+                await this.fetchFieldworkData(this.currentJob.job_number);
+                this.refreshFieldworkDisplay();
+                
+                // Hide form and show success
+                this.hideAddFieldworkForm();
+                this.showNotification('Time entry saved successfully', 'success');
+                
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save entry');
+            }
+        } catch (error) {
+            console.error('Failed to save fieldwork:', error);
+            this.showNotification(`Failed to save: ${error.message}`, 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalContent;
+        }
+    },
+
+    // Refresh fieldwork display
+    refreshFieldworkDisplay() {
+        const fieldworkList = document.getElementById('fieldwork-list');
+        if (fieldworkList) {
+            fieldworkList.innerHTML = this.generateFieldworkHTML();
+        }
+        
+        // Update total time display
+        this.updateTotalTimeDisplay();
+    },
+
+    // Update total time display
+    updateTotalTimeDisplay() {
+        const totalTimeElement = document.getElementById('total-time-badge');
+        if (totalTimeElement) {
+            totalTimeElement.textContent = this.formatDuration(this.getTotalFieldworkTime());
+        }
+    },
+
+    // Edit fieldwork entry
+    editFieldwork(fieldworkId) {
+        const fieldwork = this.fieldworkData.find(fw => fw.id === fieldworkId);
+        if (!fieldwork) return;
+        
+        // Hide any existing forms
+        this.hideAddFieldworkForm();
+        this.hideEditFieldworkForm();
+        
+        const formHTML = `
+            <div id="edit-fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
+                <h5 class="font-medium text-gray-800 mb-3">Edit Time Entry</h5>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- Date and Total Hours in 2 columns -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
+                            <input type="date" id="edit-fw-work-date" class="input input-bordered input-md w-full" value="${fieldwork.work_date}" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
+                            <input type="text" id="edit-fw-total-time" class="input input-bordered input-md w-full bg-gray-100" readonly value="${fieldwork.total_time}">
+                        </div>
+                    </div>
+                    
+                    <!-- Start and End Times -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            <input type="time" id="edit-fw-start-time" class="input input-bordered input-md w-full" value="${fieldwork.start_time}" onchange="SimpleModal.updateEditTotalTime()" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                            <input type="time" id="edit-fw-end-time" class="input input-bordered input-md w-full" value="${fieldwork.end_time}" onchange="SimpleModal.updateEditTotalTime()" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Crew and Drone Card - Stack on mobile -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
+                            <input type="text" id="edit-fw-crew" class="input input-bordered input-md w-full" value="${fieldwork.crew || ''}" placeholder="Optional">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
+                            <input type="text" id="edit-fw-drone-card" class="input input-bordered input-md w-full" value="${fieldwork.drone_card || ''}" placeholder="Optional">
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="edit-fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2">${fieldwork.notes || ''}</textarea>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2">
+                        <button id="edit-fw-save-btn" class="btn btn-md btn-success flex-1" onclick="SimpleModal.saveEditFieldwork(${fieldworkId})">
+                            <i class="bi bi-check-lg mr-1"></i>
+                            Save Changes
+                        </button>
+                        <button class="btn btn-md btn-ghost" onclick="SimpleModal.hideEditFieldworkForm()">
+                            <i class="bi bi-x-lg mr-1"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Find the time tracking section and add form
+        const timeSection = document.querySelector('#fieldwork-list').parentElement;
+        timeSection.insertAdjacentHTML('beforeend', formHTML);
+    },
+
+    // Hide edit fieldwork form
+    hideEditFieldworkForm() {
+        const form = document.getElementById('edit-fieldwork-form');
+        if (form) {
+            form.remove();
+        }
+    },
+
+    // Update total time calculation for edit form
+    updateEditTotalTime() {
+        const startTime = document.getElementById('edit-fw-start-time')?.value;
+        const endTime = document.getElementById('edit-fw-end-time')?.value;
+        const totalTimeInput = document.getElementById('edit-fw-total-time');
+        
+        if (startTime && endTime && totalTimeInput) {
+            const totalHours = this.calculateTotalTime(startTime, endTime);
+            totalTimeInput.value = totalHours.toFixed(2);
+        }
+    },
+
+    // Save edited fieldwork entry
+    async saveEditFieldwork(fieldworkId) {
+        const saveBtn = document.getElementById('edit-fw-save-btn');
+        const originalContent = saveBtn.innerHTML;
+        
+        // Get form values
+        const workDate = document.getElementById('edit-fw-work-date').value;
+        const startTime = document.getElementById('edit-fw-start-time').value;
+        const endTime = document.getElementById('edit-fw-end-time').value;
+        const totalTime = document.getElementById('edit-fw-total-time').value;
+        const crew = document.getElementById('edit-fw-crew').value.trim();
+        const droneCard = document.getElementById('edit-fw-drone-card').value.trim();
+        const notes = document.getElementById('edit-fw-notes').value.trim();
+        
+        // Validation
+        if (!workDate || !startTime || !endTime) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        if (!totalTime || parseFloat(totalTime) <= 0) {
+            this.showNotification('Invalid time range', 'error');
+            return;
+        }
+        
+        // Show loading
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+        
+        try {
+            const response = await fetch(`/api/fieldwork/${fieldworkId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    work_date: workDate,
+                    start_time: startTime,
+                    end_time: endTime,
+                    crew: crew || null,
+                    drone_card: droneCard || null,
+                    notes: notes || null
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Refresh fieldwork data and update display
+                await this.fetchFieldworkData(this.currentJob.job_number);
+                this.refreshFieldworkDisplay();
+                
+                // Hide form and show success
+                this.hideEditFieldworkForm();
+                this.showNotification('Time entry updated successfully', 'success');
+                
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update entry');
+            }
+        } catch (error) {
+            console.error('Failed to update fieldwork:', error);
+            this.showNotification(`Failed to update: ${error.message}`, 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalContent;
+        }
+    },
+
+    // Show confirmation modal
+    showConfirm(title, message, callback) {
+        this.confirmModal.title = title;
+        this.confirmModal.message = message;
+        this.confirmModal.callback = callback;
+        
+        // Update modal content
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        
+        // Show modal
+        document.getElementById('fieldwork-confirm-modal').classList.remove('hidden');
+    },
+
+    // Hide confirmation modal
+    hideConfirmModal() {
+        document.getElementById('fieldwork-confirm-modal').classList.add('hidden');
+        this.confirmModal.callback = null;
+    },
+
+    // Execute confirmed action
+    confirmAction() {
+        if (this.confirmModal.callback) {
+            this.confirmModal.callback();
+        }
+        this.hideConfirmModal();
+    },
+
+    // Delete fieldwork entry with confirmation
+    async deleteFieldwork(fieldworkId) {
+        const fieldwork = this.fieldworkData.find(fw => fw.id === fieldworkId);
+        if (!fieldwork) return;
+        
+        this.showConfirm(
+            'Delete Time Entry',
+            `Delete time entry for ${this.formatDate(fieldwork.work_date)}?\n\nThis action cannot be undone.`,
+            async () => {
+                try {
+                    const response = await fetch(`/api/fieldwork/${fieldworkId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        // Refresh fieldwork data and update display
+                        await this.fetchFieldworkData(this.currentJob.job_number);
+                        this.refreshFieldworkDisplay();
+                        
+                        this.showNotification('Time entry deleted successfully', 'success');
+                        
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to delete entry');
+                    }
+                } catch (error) {
+                    console.error('Failed to delete fieldwork:', error);
+                    this.showNotification(`Failed to delete: ${error.message}`, 'error');
+                }
+            }
+        );
     },
     
     showNotification(message, type = 'info') {

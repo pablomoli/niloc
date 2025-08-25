@@ -488,6 +488,13 @@
                   </td>
                   <td x-text="formatDate(job.created_at)"></td>
                   <td>
+                    <button
+                      @click="openFieldworkModal(job)"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 me-1"
+                      title="Manage Time Tracking"
+                    >
+                      <i class="bi bi-clock-history"></i>
+                    </button>
                     <template x-if="!job.is_parcel_job">
                       <button
                         @click="editJob(job)"
@@ -1082,6 +1089,136 @@
       </div>
     </div>
 
+    <!-- Fieldwork Management Modal -->
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      id="fieldworkModal"
+      style="z-index: 2000;"
+      @click.self="document.getElementById('fieldworkModal').classList.add('hidden')"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-4xl relative max-h-[90vh] overflow-y-auto">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+                onclick="document.getElementById('fieldworkModal').classList.add('hidden')">✕</button>
+        
+        <!-- Line 1: Time Tracking title and X button -->
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-bold text-lg text-primary">Time Tracking</h3>
+        </div>
+        
+        <!-- Line 2: Job # and Total Time -->
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="font-medium text-gray-700" x-text="'Job #' + (fieldworkModal.job?.job_number || '')"></h4>
+          <div class="text-right">
+            <span class="text-gray-400 text-xs font-medium mr-2">Total Time</span>
+            <div class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium" 
+                 style="background-color: #FF1393;" x-text="formatDuration(getTotalFieldworkTime())">
+            </div>
+          </div>
+        </div>
+
+        <!-- Add New Entry Button -->
+        <div class="mb-4">
+          <button @click="showAddFieldworkForm = !showAddFieldworkForm" 
+                  class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle mr-1"></i>
+            <span x-text="showAddFieldworkForm ? 'Cancel' : 'Add New Entry'"></span>
+          </button>
+        </div>
+
+        <!-- Add Entry Form -->
+        <div x-show="showAddFieldworkForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h5 class="font-medium text-gray-800 mb-3">Add Time Entry</h5>
+          <form @submit.prevent="saveFieldworkEntry()">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
+                <input type="date" x-model="newFieldworkEntry.work_date" class="form-control form-control-sm" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
+                <input type="text" x-model="calculatedTotalTime" class="form-control form-control-sm bg-gray-100" readonly>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                <input type="time" x-model="newFieldworkEntry.start_time" @change="updateCalculatedTime()" class="form-control form-control-sm" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                <input type="time" x-model="newFieldworkEntry.end_time" @change="updateCalculatedTime()" class="form-control form-control-sm" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
+                <input type="text" x-model="newFieldworkEntry.crew" class="form-control form-control-sm" placeholder="Optional">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
+                <input type="text" x-model="newFieldworkEntry.drone_card" class="form-control form-control-sm" placeholder="Optional">
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea x-model="newFieldworkEntry.notes" class="form-control form-control-sm" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-check-lg mr-1"></i>
+                Save Entry
+              </button>
+              <button type="button" @click="showAddFieldworkForm = false; resetNewEntry()" class="btn btn-secondary btn-sm">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Fieldwork Entries Table -->
+        <div class="overflow-x-auto">
+          <table class="table table-striped w-full">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration</th>
+                <th>Crew</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="entry in fieldworkEntries" :key="entry.id">
+                <tr>
+                  <td x-text="formatDate(entry.work_date)"></td>
+                  <td x-text="entry.start_time"></td>
+                  <td x-text="entry.end_time"></td>
+                  <td x-text="formatDuration(entry.total_time)"></td>
+                  <td x-text="entry.crew || '-'"></td>
+                  <td x-text="entry.notes || '-'"></td>
+                  <td>
+                    <button @click="editFieldworkEntry(entry)" 
+                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 me-1">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button @click="deleteFieldworkEntry(entry)" 
+                            class="px-2 py-1 rounded text-xs font-medium border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <template x-if="fieldworkEntries.length === 0">
+          <div class="text-center py-8 text-gray-500">
+            <i class="bi bi-clock-history text-4xl mb-2"></i>
+            <p>No time entries recorded for this job</p>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- Confirmation Modal -->
     <div
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
@@ -1248,6 +1385,22 @@
             title: "",
             message: "",
           },
+
+          // Fieldwork management
+          fieldworkModal: {
+            job: null,
+          },
+          fieldworkEntries: [],
+          showAddFieldworkForm: false,
+          newFieldworkEntry: {
+            work_date: '',
+            start_time: '',
+            end_time: '',
+            crew: '',
+            drone_card: '',
+            notes: ''
+          },
+          calculatedTotalTime: '0.00',
 
           init() {
             this.loadData();
@@ -1915,6 +2068,142 @@
             if (modal) {
               modal.classList.add("hidden");
             }
+          },
+
+          // Fieldwork management functions
+          async openFieldworkModal(job) {
+            this.fieldworkModal.job = job;
+            this.resetNewEntry();
+            await this.loadFieldworkEntries(job.job_number);
+            document.getElementById("fieldworkModal").classList.remove("hidden");
+          },
+
+          async loadFieldworkEntries(jobNumber) {
+            try {
+              const response = await fetch(`/api/jobs/${jobNumber}/fieldwork`);
+              if (response.ok) {
+                this.fieldworkEntries = await response.json();
+              } else {
+                this.fieldworkEntries = [];
+                console.error('Failed to load fieldwork entries');
+              }
+            } catch (error) {
+              console.error('Error loading fieldwork entries:', error);
+              this.fieldworkEntries = [];
+            }
+          },
+
+          resetNewEntry() {
+            const today = new Date().toISOString().split('T')[0];
+            this.newFieldworkEntry = {
+              work_date: today,
+              start_time: '',
+              end_time: '',
+              crew: '',
+              drone_card: '',
+              notes: ''
+            };
+            this.calculatedTotalTime = '0.00';
+            this.showAddFieldworkForm = false;
+          },
+
+          updateCalculatedTime() {
+            const startTime = this.newFieldworkEntry.start_time;
+            const endTime = this.newFieldworkEntry.end_time;
+            
+            if (startTime && endTime) {
+              const start = new Date(`1970-01-01T${startTime}:00`);
+              const end = new Date(`1970-01-01T${endTime}:00`);
+              
+              // Handle overnight shifts
+              if (end < start) {
+                end.setDate(end.getDate() + 1);
+              }
+              
+              const diffMs = end - start;
+              const diffHours = diffMs / (1000 * 60 * 60);
+              
+              this.calculatedTotalTime = Math.round(diffHours * 100) / 100;
+            } else {
+              this.calculatedTotalTime = '0.00';
+            }
+          },
+
+          getTotalFieldworkTime() {
+            if (!this.fieldworkEntries || this.fieldworkEntries.length === 0) return 0;
+            return this.fieldworkEntries.reduce((total, entry) => total + parseFloat(entry.total_time || 0), 0);
+          },
+
+          formatDuration(hours) {
+            if (!hours || hours === 0) return '0.0h';
+            return `${parseFloat(hours).toFixed(1)}h`;
+          },
+
+          async saveFieldworkEntry() {
+            if (!this.newFieldworkEntry.work_date || !this.newFieldworkEntry.start_time || !this.newFieldworkEntry.end_time) {
+              Alpine.store("notifications").add("Please fill in all required fields", "error");
+              return;
+            }
+
+            if (!this.calculatedTotalTime || this.calculatedTotalTime <= 0) {
+              Alpine.store("notifications").add("Invalid time range", "error");
+              return;
+            }
+
+            try {
+              const response = await fetch(`/api/jobs/${this.fieldworkModal.job.job_number}/fieldwork`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  work_date: this.newFieldworkEntry.work_date,
+                  start_time: this.newFieldworkEntry.start_time,
+                  end_time: this.newFieldworkEntry.end_time,
+                  crew: this.newFieldworkEntry.crew || null,
+                  drone_card: this.newFieldworkEntry.drone_card || null,
+                  notes: this.newFieldworkEntry.notes || null
+                })
+              });
+
+              if (response.ok) {
+                await this.loadFieldworkEntries(this.fieldworkModal.job.job_number);
+                this.resetNewEntry();
+                Alpine.store("notifications").add("Time entry saved successfully", "success");
+              } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save entry');
+              }
+            } catch (error) {
+              console.error('Failed to save fieldwork:', error);
+              Alpine.store("notifications").add(`Failed to save: ${error.message}`, "error");
+            }
+          },
+
+          async deleteFieldworkEntry(entry) {
+            this.showConfirm(
+              'Delete Time Entry',
+              `Delete time entry for ${this.formatDate(entry.work_date)}?`,
+              async () => {
+                try {
+                  const response = await fetch(`/api/fieldwork/${entry.id}`, {
+                    method: 'DELETE'
+                  });
+
+                  if (response.ok) {
+                    await this.loadFieldworkEntries(this.fieldworkModal.job.job_number);
+                    Alpine.store("notifications").add("Time entry deleted successfully", "success");
+                  } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete entry');
+                  }
+                } catch (error) {
+                  console.error('Failed to delete fieldwork:', error);
+                  Alpine.store("notifications").add(`Failed to delete: ${error.message}`, "error");
+                }
+              },
+              'Delete'
+            );
           },
 
         }));
