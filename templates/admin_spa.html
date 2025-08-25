@@ -281,6 +281,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #28a745; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Completed</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
                 </div>
@@ -289,6 +290,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #e09132; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-rulers text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Needs Fieldwork</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.needsFieldwork">-</h2>
                 </div>
@@ -297,6 +299,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #dc3545; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
                 </div>
@@ -305,6 +308,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #0066cc; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-printer text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">To Be Printed</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.toBePrinted">-</h2>
                 </div>
@@ -317,6 +321,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #6f42c1; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Office Work</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
                 </div>
@@ -325,6 +330,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #f5c842; color: #2d3748;">
                 <div class="card-body py-3">
+                  <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-80">Invoice Sent</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.invoiceSent">-</h2>
                 </div>
@@ -333,6 +339,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #e685b5; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Site Plan</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.ongoingSitePlan">-</h2>
                 </div>
@@ -341,6 +348,7 @@
             <div class="col-6 col-md-3 mb-3 mb-md-0">
               <div class="card text-center shadow-lg" style="background-color: #a8a8a8; color: white;">
                 <div class="card-body py-3">
+                  <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
                 </div>
@@ -1615,17 +1623,17 @@
           getStatusBadgeStyle(status) {
             // Match the exact colors from the dashboard cards
             const statusStyles = {
-              "Completed/To Be Filed": "background-color: #28a745; color: white;",
-              "Needs Fieldwork": "background-color: #e09132; color: white;",
-              "Set/Flag Pins": "background-color: #dc3545; color: white;",
-              "To Be Printed/Packaged": "background-color: #0066cc; color: white;",  // Royal blue
-              "Fieldwork Complete/Needs Office Work": "background-color: #6f42c1; color: white;",
-              "Survey Complete/Invoice Sent/Unpaid": "background-color: #f5c842; color: #2d3748;",
-              "Ongoing Site Plan": "background-color: #e685b5; color: white;",
-              "On Hold/Pending": "background-color: #a8a8a8; color: white;",
-              "Estimate/Quote Available": "background-color: #a8a8a8; color: white;",
+              "Completed/To Be Filed": "background-color: #28a745; color: white; border: 2px solid #1e7e34;",
+              "Needs Fieldwork": "background-color: #e09132; color: white; border: 2px solid #c7791c;",
+              "Set/Flag Pins": "background-color: #dc3545; color: white; border: 2px solid #bd2130;",
+              "To Be Printed/Packaged": "background-color: #0066cc; color: white; border: 2px solid #004c99;",  // Royal blue
+              "Fieldwork Complete/Needs Office Work": "background-color: #6f42c1; color: white; border: 2px solid #59359a;",
+              "Survey Complete/Invoice Sent/Unpaid": "background-color: #f5c842; color: #2d3748; border: 2px solid #d4a91a;",
+              "Ongoing Site Plan": "background-color: #e685b5; color: white; border: 2px solid #d961a3;",
+              "On Hold/Pending": "background-color: #a8a8a8; color: white; border: 2px solid #868686;",
+              "Estimate/Quote Available": "background-color: #a8a8a8; color: white; border: 2px solid #868686;",
             };
-            return statusStyles[status] || "background-color: #6c757d; color: white;";
+            return statusStyles[status] || "background-color: #6c757d; color: white; border: 2px solid #545b62;";
           },
 
           formatDate(dateString) {
