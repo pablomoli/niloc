@@ -519,27 +519,73 @@ function updateMapMarkers() {
 
 // Handle marker click for selection
 function handleMarkerClick(e, job) {
+    // Always get the latest job data from cache
+    const latestJob = AppState.allJobs.find(j => j.job_number === job.job_number) || job;
+    
     // Check if it's a multi-select click
     const isMultiSelect = e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
     
     if (isMultiSelect) {
         // Multi-select mode
-        toggleJobSelection(job);
+        toggleJobSelection(latestJob);
     } else {
         // Single select mode - open modal
         AppState.selectedJobs.clear();
-        AppState.selectedJobs.add(job.job_number);
+        AppState.selectedJobs.add(latestJob.job_number);
         updateMapMarkers();
         
         // Use simple modal instead of Alpine
         if (window.SimpleModal) {
-            window.SimpleModal.show(job);
+            window.SimpleModal.show(latestJob);
         } else {
             // Fallback
             console.error('SimpleModal not available');
-            // Use SimpleModal instead of alert for better UX
-            if (window.SimpleModal) {
-                window.SimpleModal.show(job);
+        }
+    }
+}
+
+// Update a job marker (e.g., after status change)
+function updateJobMarker(jobNumber, updatedJob) {
+    const marker = AppState.markers.get(jobNumber);
+    if (marker && window.MarkerUtils) {
+        const isSelected = AppState.selectedJobs.has(jobNumber);
+        
+        // Update marker icon with new status
+        marker.setIcon(MarkerUtils.getStatusIcon(updatedJob.status, isSelected));
+        
+        // Update the job in our local state (already done in SimpleModal but double-check)
+        const jobIndex = AppState.allJobs.findIndex(j => j.job_number === jobNumber);
+        if (jobIndex !== -1) {
+            // Preserve any fields not in updatedJob
+            AppState.allJobs[jobIndex] = { ...AppState.allJobs[jobIndex], ...updatedJob };
+        }
+        
+        const filteredIndex = AppState.filteredJobs.findIndex(j => j.job_number === jobNumber);
+        if (filteredIndex !== -1) {
+            AppState.filteredJobs[filteredIndex] = { ...AppState.filteredJobs[filteredIndex], ...updatedJob };
+        }
+        
+        // Update the marker's stored job reference for next click
+        // This ensures the marker always has the latest data
+        const lat = updatedJob.latitude || updatedJob.lat;
+        const lng = updatedJob.longitude || updatedJob.long;
+        if (lat && lng) {
+            // Re-bind the click handler with updated job data
+            marker.off('click'); // Remove old handler
+            marker.on('click', function(e) {
+                handleMarkerClick(e, AppState.allJobs[jobIndex] || updatedJob);
+            });
+        }
+        
+        // Update popup content if needed
+        if (marker.getPopup) {
+            const popup = marker.getPopup();
+            if (popup) {
+                popup.setContent(`
+                    <strong>${updatedJob.job_number}</strong><br>
+                    Client: ${updatedJob.client}<br>
+                    Status: ${updatedJob.status}
+                `);
             }
         }
     }
@@ -833,6 +879,7 @@ window.loadJobs = loadJobs; // Export loadJobs for create job modal
 window.centerOnUserLocation = centerOnUserLocation; // Export for FAB menu
 window.switchBaseLayer = switchBaseLayer; // Export for layer controls
 window.toggleCounties = toggleCounties; // Export for layer controls
+window.updateJobMarker = updateJobMarker; // Export for job modal updates
 
 // Create job at location function
 window.createJobAtLocation = function(lat, lng, address) {
