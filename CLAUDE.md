@@ -5,6 +5,7 @@
 Epic Map is a field service management application for tracking and managing location-based jobs with geographic visualization. The application provides a mobile-friendly map interface with simplified workflow for field crews and a comprehensive admin dashboard for management oversight.
 
 **Hosting & Infrastructure:**
+
 - **Backend**: Flask application hosted on Render
 - **Database**: Supabase (PostgreSQL with PostGIS extensions)
 - **Frontend**: Bootstrap 5/Tailwind CSS + DaisyUI, Alpine.js, Leaflet.js
@@ -13,6 +14,7 @@ Epic Map is a field service management application for tracking and managing loc
 ## Database Schemas (Supabase PostgreSQL)
 
 ### Jobs Table (`jobs`)
+
 The main entity representing field service jobs.
 
 | Column | Type | Constraints | Description |
@@ -41,6 +43,7 @@ The main entity representing field service jobs.
 | `original_job_number` | VARCHAR(50) | | Original number for deleted jobs |
 
 **Job Status Options:**
+
 - `On Hold/Pending`
 - `Needs Fieldwork`
 - `Fieldwork Complete/Needs Office Work`
@@ -52,6 +55,7 @@ The main entity representing field service jobs.
 - `Estimate/Quote Available`
 
 ### FieldWork Table (`fieldwork`)
+
 Time tracking entries for field work performed on jobs.
 
 | Column | Type | Constraints | Description |
@@ -68,6 +72,7 @@ Time tracking entries for field work performed on jobs.
 | `created_at` | TIMESTAMP | DEFAULT NOW() | Entry creation timestamp |
 
 ### Users Table (`users`)
+
 System user accounts and authentication.
 
 | Column | Type | Constraints | Description |
@@ -82,6 +87,7 @@ System user accounts and authentication.
 | `last_ip` | VARCHAR(45) | | Last login IP address |
 
 ### Tags Table (`tags`)
+
 Categorization system for jobs (currently unused but available).
 
 | Column | Type | Constraints | Description |
@@ -96,6 +102,7 @@ Categorization system for jobs (currently unused but available).
 ### Job Management APIs
 
 #### Core Job Operations
+
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/jobs` | List all active jobs | Yes |
@@ -105,6 +112,7 @@ Categorization system for jobs (currently unused but available).
 | `DELETE` | `/api/jobs/<job_number>` | Soft delete job | Yes |
 
 #### Job Deletion & Recovery
+
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/jobs/deleted` | List deleted jobs | Admin |
@@ -112,6 +120,7 @@ Categorization system for jobs (currently unused but available).
 | `DELETE` | `/api/jobs/<job_number>/permanent-delete` | Permanently delete job | Admin |
 
 #### Job Search & Discovery
+
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/api/jobs/search` | Search jobs by criteria | Yes |
@@ -157,6 +166,7 @@ Categorization system for jobs (currently unused but available).
 ## Frontend Routes
 
 ### Public Routes
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/` | Main map interface |
@@ -164,6 +174,7 @@ Categorization system for jobs (currently unused but available).
 | `POST` | `/logout` | User logout |
 
 ### Admin Routes
+
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/admin/` | Admin dashboard SPA | Admin |
@@ -172,12 +183,14 @@ Categorization system for jobs (currently unused but available).
 ## Tech Stack Details
 
 ### Backend Framework
+
 - **Flask**: Python web framework
 - **SQLAlchemy**: Database ORM
 - **Flask-SQLAlchemy**: Flask integration
 - **Bcrypt**: Password hashing
 
 ### Frontend Technologies  
+
 - **Bootstrap 5**: CSS framework (being migrated to Tailwind)
 - **Tailwind CSS + DaisyUI**: Modern CSS framework
 - **Alpine.js**: Lightweight JavaScript framework
@@ -210,12 +223,16 @@ Categorization system for jobs (currently unused but available).
 ## Development Workflow
 
 ### Running Locally
+
 ```bash
 python app.py
+or 
+flask run
 # Application runs on http://localhost:5000
 ```
 
 ### Environment Setup
+
 - Uses Supabase for database (PostgreSQL)
 - Requires Google Geocoding API key for address lookups
 - Session-based authentication
@@ -223,18 +240,21 @@ python app.py
 ### Key Features
 
 #### Map Interface
+
 - **Interactive Map**: Leaflet.js with custom markers
 - **Job Details Modal**: Complete fieldwork time tracking integration
 - **Mobile Optimized**: Touch-friendly interface for field crews
 - **Real-time Updates**: Live job status and time tracking
 
 #### Admin Dashboard  
+
 - **Job Management**: Complete CRUD operations
 - **Time Tracking**: Fieldwork management with totals
 - **User Management**: Full user administration
 - **Search & Filtering**: Advanced job search capabilities
 
 #### Time Tracking System
+
 - **Field Interface**: Mobile-friendly time entry via job modal
 - **Admin Interface**: Comprehensive fieldwork management
 - **Automatic Calculations**: Real-time total time updates
@@ -251,12 +271,14 @@ python app.py
 ### Common Development Tasks
 
 #### Testing Fieldwork Functionality
+
 - Test time entry on actual mobile devices
 - Verify time calculations are accurate
 - Check modal scrolling on various screen sizes
 - Validate data synchronization between interfaces
 
 #### Database Operations
+
 - All models use soft deletion where applicable
 - Fieldwork automatically updates job totals
 - PostgreSQL with PostGIS for geographic data
@@ -273,12 +295,15 @@ python app.py
 ## Deployment (Render + Supabase)
 
 ### Production Environment
+
 - **Web Host**: Render (Python web service)
 - **Database**: Supabase (Managed PostgreSQL)
 - **Static Assets**: Served via CDN links (Bootstrap, Alpine.js, Leaflet)
 - **Environment Variables**: Configured in Render dashboard
 
 ### Configuration Requirements
+
 - `DATABASE_URL`: Supabase PostgreSQL connection string
 - `SECRET_KEY`: Flask session encryption key
 - `GOOGLE_GEOCODING_API_KEY`: For address geocoding
+
