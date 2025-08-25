@@ -1,7 +1,17 @@
 // Simple modal handler without Alpine
 window.SimpleModal = {
+    // Generate FEMA Flood Zone link from address
+    generateFEMALink(address) {
+        if (!address || address === 'N/A') return null;
+        const baseURL = "https://msc.fema.gov/portal/search";
+        return `${baseURL}?AddressQuery=${encodeURIComponent(address)}`;
+    },
+    
     show(job) {
         console.log('SimpleModal.show called with job:', job);
+        
+        // Generate FEMA link if job has address
+        const femaLink = this.generateFEMALink(job.address);
         
         // Create modal HTML
         const modalHTML = `
@@ -45,6 +55,19 @@ window.SimpleModal = {
                             <h4 class="text-gray-400 text-sm font-medium mb-1">County</h4>
                             <p class="text-gray-700">${job.county || 'N/A'}</p>
                         </div>
+                        
+                        ${femaLink ? `
+                        <div>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">Flood Zone Information</h4>
+                            <button 
+                                onclick="window.open('${femaLink}', '_blank')" 
+                                class="btn btn-sm btn-primary"
+                                title="View FEMA Flood Zone">
+                                <i class="bi bi-water mr-1"></i>
+                                <span>View FEMA Flood Zone</span>
+                            </button>
+                        </div>
+                        ` : ''}
                         
                         ${job.notes ? `
                         <div>
