@@ -337,28 +337,28 @@
           <div class="flex items-center gap-4">
             <span class="text-sm text-gray-500" x-text="getPageInfo()"></span>
             <div class="join">
-              <button class="btn btn-sm join-item"
-                      :class="currentPage === 1 ? 'btn-disabled' : 'btn-ghost'"
-                      :disabled="currentPage === 1"
-                      @click="currentPage = 1" title="First page">«</button>
-              <button class="btn btn-sm join-item"
-                      :class="currentPage === 1 ? 'btn-disabled' : 'btn-ghost'"
-                      :disabled="currentPage === 1"
-                      @click="currentPage--" title="Previous page">‹</button>
+              <template x-if="currentPage > 1">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage = 1" title="First page">«</button>
+              </template>
+              <template x-if="currentPage > 1">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage--" title="Previous page">‹</button>
+              </template>
               <template x-for="page in getVisiblePages()" :key="page">
                 <button class="btn btn-sm join-item"
                         :class="page === currentPage ? 'btn-primary' : 'btn-outline'"
                         @click="currentPage = page"
                         x-text="page"></button>
               </template>
-              <button class="btn btn-sm join-item"
-                      :class="currentPage === totalPages ? 'btn-disabled' : 'btn-ghost'"
-                      :disabled="currentPage === totalPages"
-                      @click="currentPage++" title="Next page">›</button>
-              <button class="btn btn-sm join-item"
-                      :class="currentPage === totalPages ? 'btn-disabled' : 'btn-ghost'"
-                      :disabled="currentPage === totalPages"
-                      @click="currentPage = totalPages" title="Last page">»</button>
+              <template x-if="currentPage < totalPages">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage++" title="Next page">›</button>
+              </template>
+              <template x-if="currentPage < totalPages">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage = totalPages" title="Last page">»</button>
+              </template>
             </div>
           </div>
         </div>
