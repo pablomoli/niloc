@@ -455,41 +455,28 @@ window.CreateJobModal = {
     
     showParcelConfirmation(geocodeData, parcelData) {
         return new Promise((resolve) => {
-            // Determine if mobile or desktop
             const isMobile = window.innerWidth <= 768;
-            
+            const widthClass = isMobile ? 'w-[85%]' : 'w-[380px]';
+            const leftBackdropWidth = isMobile ? 'w-full' : 'w-[400px]';
             const confirmHTML = `
-                <div id="parcelConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999999; pointer-events: none;">
-                    <!-- Semi-transparent backdrop only on left side -->
-                    <div style="position: absolute; top: 0; left: 0; width: ${isMobile ? '100%' : '400px'}; height: 100%; background: rgba(0,0,0,0.3); pointer-events: auto;"></div>
-                    
-                    <!-- Modal Content - positioned on the left -->
-                    <div style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); background: white; padding: 20px; border-radius: 0 8px 8px 0; width: ${isMobile ? '85%' : '380px'}; max-width: 400px; box-shadow: 2px 0 20px rgba(0,0,0,0.3); pointer-events: auto;">
-                        <h3 style="margin-top: 0;">Confirm Parcel Location</h3>
-                        
-                        <div style="margin: 20px 0;">
-                            <p style="margin-bottom: 10px;"><strong>Does this location look correct?</strong></p>
-                            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 14px;">
-                                <div style="margin-bottom: 5px;">
-                                    <strong>Parcel ID:</strong> ${parcelData.parcel_id}
-                                </div>
-                                <div style="margin-bottom: 5px;">
-                                    <strong>County:</strong> ${parcelData.county.charAt(0).toUpperCase() + parcelData.county.slice(1)}
-                                </div>
-                                <div>
-                                    <strong>Address:</strong> ${geocodeData.formatted_address}
-                                </div>
+                <div id="parcelConfirmModal" class="fixed inset-0 z-[999999] pointer-events-none">
+                    <div class="absolute top-0 left-0 ${leftBackdropWidth} h-full bg-black/30 pointer-events-auto"></div>
+                    <div class="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-5 rounded-r-lg shadow-2xl pointer-events-auto ${widthClass} max-w-[400px]">
+                        <h3 class="mt-0 font-bold text-lg">Confirm Parcel Location</h3>
+                        <div class="my-5">
+                            <p class="mb-2"><strong>Does this location look correct?</strong></p>
+                            <div class="bg-gray-100 p-3 rounded text-sm">
+                                <div class="mb-1"><strong>Parcel ID:</strong> ${parcelData.parcel_id}</div>
+                                <div class="mb-1"><strong>County:</strong> ${parcelData.county.charAt(0).toUpperCase() + parcelData.county.slice(1)}</div>
+                                <div><strong>Address:</strong> ${geocodeData.formatted_address}</div>
                             </div>
-                            <p style="margin-top: 10px; font-size: 14px; color: #6c757d;">
-                                <i class="bi bi-geo-alt-fill" style="color: #9b59b6;"></i> The purple marker shows the parcel location on the map.
+                            <p class="mt-2 text-sm text-gray-500">
+                                <i class="bi bi-geo-alt-fill text-purple-500"></i> The purple marker shows the parcel location on the map.
                             </p>
                         </div>
-                        
-                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <button onclick="CreateJobModal.resolveConfirmation(false)" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                No, Try Again
-                            </button>
-                            <button onclick="CreateJobModal.resolveConfirmation(true)" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <div class="flex gap-2 justify-end">
+                            <button onclick="CreateJobModal.resolveConfirmation(false)" class="btn btn-ghost">No, Try Again</button>
+                            <button onclick="CreateJobModal.resolveConfirmation(true)" class="btn btn-success">
                                 <i class="bi bi-check-circle"></i> Yes, Create Job
                             </button>
                         </div>

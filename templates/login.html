@@ -88,13 +88,13 @@
 {% block content %}
 <div class="login-card">
   <div class="login-header">
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 64px; height: 64px;">
-      <div style="display: flex; flex-direction: column; align-items: center;">
-        <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 48px; color: white; letter-spacing: -1px;">EMS</span>
-        <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; color: rgba(255, 255, 255, 0.9); letter-spacing: 1px; text-transform: uppercase;">Epic Map System</span>
+    <div class="flex flex-col items-center gap-2">
+      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" class="w-16 h-16">
+      <div class="flex flex-col items-center">
+        <span class="font-sans font-bold text-[48px] text-white tracking-[-1px]">EMS</span>
+        <span class="font-sans font-normal text-[14px] text-white/90 tracking-[1px] uppercase">Epic Map System</span>
       </div>
-      <p class="mb-0" style="font-family: 'Montserrat', sans-serif; font-weight: 300; font-size: 14px; margin-top: 10px;">Survey Job Management</p>
+      <p class="mb-0 font-sans font-light text-sm mt-2">Survey Job Management</p>
     </div>
   </div>
 

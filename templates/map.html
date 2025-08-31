@@ -36,23 +36,11 @@
     <div id="map"></div>
     
     <!-- Mobile-First Notification Container -->
-    <div id="notification-container" style="
-        position: fixed;
-        bottom: 100px; /* Above FAB menu */
-        left: 0;
-        right: 0;
-        z-index: 10000;
-        pointer-events: none;
-        padding: 0 15px;
-        display: flex;
-        flex-direction: column-reverse;
-        gap: 10px;
-    "></div>
+    <div id="notification-container" class="notification-container"></div>
     
     <!-- Standalone Location Button (bottom left) -->
-    <button class="btn btn-circle btn-success location-fab" 
-            onclick="centerOnUserLocation()"
-            style="position: fixed; bottom: 20px; left: 20px; width: 56px; height: 56px; z-index: 1000;">
+    <button class="btn btn-circle btn-success location-fab fixed bottom-5 left-5 w-14 h-14 z-[1000]"
+            onclick="centerOnUserLocation()">
         <i class="bi bi-crosshair text-lg"></i>
         <div class="tooltip tooltip-right" data-tip="Center on Location"></div>
     </button>
@@ -62,43 +50,38 @@
         <!-- Secondary Action Buttons (hidden by default) -->
         <div class="fab-actions" :class="{ 'open': menuOpen }">
             <!-- Map Settings Button (180°) -->
-            <button class="btn btn-circle btn-neutral fab-action-btn layers-btn tooltip tooltip-left"
+            <button class="btn btn-circle btn-neutral fab-action-btn layers-btn tooltip tooltip-left w-12 h-12"
                     data-tip="Map Settings"
-                    @click="openLayerControl()"
-                    style="width: 48px; height: 48px;">
+                    @click="openLayerControl()">
                 <i class="bi bi-layers"></i>
             </button>
             
             <!-- Filters Button (150°) -->
-            <button class="btn btn-circle btn-info fab-action-btn status-btn tooltip tooltip-left"
+            <button class="btn btn-circle btn-info fab-action-btn status-btn tooltip tooltip-left w-12 h-12"
                     data-tip="Filters"
-                    @click="openStatusFilter()"
-                    style="width: 48px; height: 48px;">
+                    @click="openStatusFilter()">
                 <i class="bi bi-funnel"></i>
             </button>
             
             <!-- Enhanced Search Button (120°) -->
-            <button class="btn btn-circle btn-warning fab-action-btn search-btn tooltip tooltip-left"
+            <button class="btn btn-circle btn-warning fab-action-btn search-btn tooltip tooltip-left w-12 h-12"
                     data-tip="Advanced Search"
-                    @click="openAdvancedSearch()"
-                    style="width: 48px; height: 48px;">
+                    @click="openAdvancedSearch()">
                 <i class="bi bi-search-heart"></i>
             </button>
             
             <!-- Create Job Button (90°) -->
-            <button class="btn btn-circle btn-success fab-action-btn create-btn tooltip tooltip-top"
+            <button class="btn btn-circle btn-success fab-action-btn create-btn tooltip tooltip-top w-12 h-12"
                     data-tip="Create Job"
-                    @click="openCreateJob()"
-                    style="width: 48px; height: 48px;">
+                    @click="openCreateJob()">
                 <i class="bi bi-plus-circle"></i>
             </button>
         </div>
         
         <!-- Main FAB Button -->
-        <button class="btn btn-circle btn-primary fab-button" 
+        <button class="btn btn-circle btn-primary fab-button w-14 h-14 relative z-[10]" 
                 :class="{ 'btn-error': menuOpen, 'btn-primary': !menuOpen }"
                 @click="toggleMenu()"
-                style="width: 56px; height: 56px; position: relative; z-index: 10;"
                 :style="`transform: ${menuOpen ? 'rotate(45deg)' : 'rotate(0deg)'}`">
             <i class="bi text-lg" :class="menuOpen ? 'bi-x' : 'bi-plus'"></i>
         </button>
@@ -108,8 +91,7 @@
              x-transition:enter.duration.300ms
              x-transition:leave.duration.200ms
              @click.self="closeAdvancedSearch()"
-             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-             style="z-index: 2000;"
+             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[2000]"
              x-cloak>
             <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
                 <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
@@ -258,7 +240,7 @@
         </div>
         
         <!-- Status Selection Overlay -->
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]"
              x-show="statusOpen"
              x-transition:enter.duration.300ms
              x-transition:leave.duration.200ms
@@ -300,7 +282,7 @@
         </div>
         
         <!-- Layer Control Overlay -->
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]"
              x-show="layerOpen"
              x-transition:enter.duration.300ms
              x-transition:leave.duration.200ms
