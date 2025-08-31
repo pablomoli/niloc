@@ -116,20 +116,20 @@
                         
                 <h3 class="font-bold text-lg mb-4 text-primary">Advanced Search</h3>
                 
-                <!-- Search Tabs -->
-                <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
+                <!-- Search Tabs with Inverted Colors -->
+                <div class="flex bg-gray-700 rounded-lg p-1 mb-4">
                     <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'address' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
+                            :class="searchTab === 'address' ? 'bg-gray-500 text-white shadow-sm' : 'text-pink-400 hover:text-pink-300'"
                             @click="searchTab = 'address'">
                         <i class="bi bi-geo-alt mr-1"></i> Address
                     </button>
                     <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'parcel' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
+                            :class="searchTab === 'parcel' ? 'bg-gray-500 text-white shadow-sm' : 'text-pink-400 hover:text-pink-300'"
                             @click="searchTab = 'parcel'">
                         <i class="bi bi-map mr-1"></i> Parcel
                     </button>
                     <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'client' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
+                            :class="searchTab === 'client' ? 'bg-gray-500 text-white shadow-sm' : 'text-pink-400 hover:text-pink-300'"
                             @click="searchTab = 'client'">
                         <i class="bi bi-person mr-1"></i> Client
                     </button>
@@ -142,7 +142,7 @@
                             Address
                         </label>
                         <input type="text" 
-                               class="input input-bordered w-full max-w-md mx-auto"
+                               class="w-full max-w-md mx-auto px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"
                                placeholder="Enter address..."
                                x-model="addressSearch"
                                @keyup.enter="performAddressSearch()"
@@ -160,10 +160,10 @@
                         <label class="block text-gray-400 text-sm font-medium mb-2">
                             County
                         </label>
-                        <select class="select select-bordered w-full max-w-md mx-auto" x-model="selectedCounty" @change="updateParcelFields()">
-                            <option value="">Select County</option>
-                            <option value="brevard">Brevard County</option>
-                            <option value="orange">Orange County</option>
+                        <select class="w-full max-w-md mx-auto px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white focus:outline-none focus:border-pink-400" x-model="selectedCounty" @change="updateParcelFields()">
+                            <option value="" class="bg-gray-700 text-gray-300">Select County</option>
+                            <option value="brevard" class="bg-gray-700 text-white">Brevard County</option>
+                            <option value="orange" class="bg-gray-700 text-white">Orange County</option>
                         </select>
                     </div>
                     
@@ -193,7 +193,7 @@
                             </div>
                             <div class="text-center">
                                 <input type="text" 
-                                       class="input input-bordered w-full max-w-md mx-auto"
+                                       class="w-full max-w-md mx-auto px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"
                                        :placeholder="brevardSearchType === 'tax-account' ? 'Enter Tax Account Number...' : 'Enter Parcel ID...'"
                                        x-model="parcelSearch">
                             </div>
@@ -207,7 +207,7 @@
                                 Parcel ID
                             </label>
                             <input type="text" 
-                                   class="input input-bordered w-full max-w-md mx-auto"
+                                   class="w-full max-w-md mx-auto px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"
                                    placeholder="Enter Parcel ID..."
                                    x-model="parcelSearch">
                         </div>
@@ -229,7 +229,7 @@
                             Client Name
                         </label>
                         <input type="text" 
-                               class="input input-bordered w-full max-w-md mx-auto"
+                               class="w-full max-w-md mx-auto px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"
                                placeholder="Enter client name..."
                                x-model="clientSearch"
                                @input="searchClients()"
@@ -237,9 +237,9 @@
                     </div>
                     
                     <!-- Client Search Results -->
-                    <div x-show="clientSuggestions.length > 0" class="max-h-40 overflow-y-auto bg-white rounded-lg border border-gray-300">
+                    <div x-show="clientSuggestions.length > 0" class="max-h-40 overflow-y-auto bg-gray-800 rounded-lg border border-gray-600">
                         <template x-for="client in clientSuggestions" :key="client">
-                            <button class="w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors" 
+                            <button class="w-full text-left px-4 py-2 text-white hover:bg-gray-600 transition-colors" 
                                     @click="selectClient(client)" 
                                     x-text="client"></button>
                         </template>
