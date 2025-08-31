@@ -34,11 +34,11 @@ window.CreateJobModal = {
                     <h3 class="font-bold text-lg mb-4 text-primary">Create New Job</h3>
                     
                     <!-- Tab Navigation -->
-                    <div class="flex bg-gray-700 rounded-lg p-1 mb-4">
-                        <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm">
+                    <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
+                        <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white">
                             <i class="bi bi-geo-alt mr-1"></i> Address
                         </button>
-                        <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300">
+                        <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200">
                             <i class="bi bi-map mr-1"></i> Parcel ID
                         </button>
                     </div>
@@ -46,15 +46,15 @@ window.CreateJobModal = {
                     <form id="createJobForm" onsubmit="CreateJobModal.submit(event); return false;" class="space-y-4">
                         <!-- Address Input Section -->
                         <div id="addressSection">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">Address *</label>
-                            <input type="text" id="job_address_input" value="${address || ''}" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter job address">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
+                            <input type="text" id="job_address_input" value="${address || ''}" required class="input input-bordered w-full" placeholder="Enter job address">
                         </div>
                         
                         <!-- Parcel Input Section (hidden by default) -->
                         <div id="parcelSection" style="display: none;">
                             <div class="mb-4">
-                                <label class="block text-gray-400 text-sm font-medium mb-2">County *</label>
-                                <select id="parcel_county" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white focus:outline-none focus:border-pink-400" onchange="CreateJobModal.updateParcelInputs()">
+                                <label class="block text-gray-600 text-sm font-medium mb-2">County *</label>
+                                <select id="parcel_county" class="select select-bordered w-full" onchange="CreateJobModal.updateParcelInputs()">
                                     <option value="">Select County</option>
                                     <option value="brevard">Brevard County</option>
                                     <option value="orange">Orange County</option>
@@ -64,52 +64,52 @@ window.CreateJobModal = {
                             <!-- Brevard County Inputs -->
                             <div id="brevardInputs" style="display: none;">
                                 <div class="mb-3">
-                                    <label class="block text-gray-400 text-sm font-medium mb-2">Tax Account Number</label>
-                                    <input type="text" id="brevard_tax_account" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter Tax Account Number">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">Tax Account Number</label>
+                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number">
                                 </div>
                                 <div class="text-center my-3 text-gray-400 font-medium">OR</div>
                                 <div class="mb-3">
-                                    <label class="block text-gray-400 text-sm font-medium mb-2">Parcel ID</label>
-                                    <input type="text" id="brevard_parcel_id" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Enter Parcel ID">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">Parcel ID</label>
+                                    <input type="text" id="brevard_parcel_id" class="input input-bordered w-full" placeholder="Enter Parcel ID">
                                 </div>
                             </div>
                             
                             <!-- Orange County Inputs -->
                             <div id="orangeInputs" style="display: none;">
                                 <div class="mb-3">
-                                    <label class="block text-gray-400 text-sm font-medium mb-2">Parcel ID *</label>
-                                    <input type="text" id="orange_parcel_id" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400" placeholder="Format: XX-XX-XX-XXXX-XX-XXX">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">Parcel ID *</label>
+                                    <input type="text" id="orange_parcel_id" class="input input-bordered w-full" placeholder="Format: XX-XX-XX-XXXX-XX-XXX">
                                     <small class="text-gray-400 text-xs block mt-1">Example: 13-23-32-7600-00-070</small>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mb-4">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">Job Number *</label>
-                            <input type="text" id="job_number" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Job Number *</label>
+                            <input type="text" id="job_number" required class="input input-bordered w-full">
                         </div>
                         
                         <div class="mb-4">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">Client Name *</label>
-                            <input type="text" id="job_client" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Client Name *</label>
+                            <input type="text" id="job_client" required class="input input-bordered w-full">
                         </div>
                         
                         <div class="mb-4">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">Status *</label>
-                            <select id="job_status" required class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white focus:outline-none focus:border-pink-400">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Status *</label>
+                            <select id="job_status" required class="select select-bordered w-full">
                                 <option value="">Select Status</option>
                                 ${statusOptions}
                             </select>
                         </div>
                         
                         <div class="mb-6">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">Notes</label>
-                            <textarea id="job_notes" rows="3" class="w-full px-4 py-3 bg-gray-700 border-2 border-pink-500 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-pink-400"></textarea>
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Notes</label>
+                            <textarea id="job_notes" rows="3" class="textarea textarea-bordered w-full"></textarea>
                         </div>
                         
                         <div class="flex justify-end space-x-3">
-                            <button type="button" class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" onclick="CreateJobModal.hide()">Cancel</button>
-                            <button type="submit" class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
+                            <button type="button" class="btn btn-ghost" onclick="CreateJobModal.hide()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-plus-circle mr-1"></i> Create Job
                             </button>
                         </div>
@@ -161,14 +161,14 @@ window.CreateJobModal = {
         const addressInput = document.getElementById('job_address_input');
         
         if (tab === 'address') {
-            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm';
-            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300';
+            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white';
+            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
             addressSection.style.display = 'block';
             parcelSection.style.display = 'none';
             addressInput.required = true;
         } else {
-            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-pink-400 hover:text-pink-300';
-            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-gray-500 text-white shadow-sm';
+            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
+            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white';
             addressSection.style.display = 'none';
             parcelSection.style.display = 'block';
             addressInput.required = false;
