@@ -1,76 +1,9 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Admin Dashboard - Epic Map</title>
-    <link rel="icon" href="{{ url_for('static', filename='data/EMS-llc-4.png') }}" type="image/png" />
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - Epic Map{% endblock %}
 
-    <!-- Google Fonts - Montserrat -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Tailwind CSS v3.4.1 -->
-    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    
-    <!-- DaisyUI v4.6.0 -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
-    
-    <!-- Bootstrap CSS (temporary during migration) -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-
-    <!-- Bootstrap Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
-    />
-    
-    <!-- Tailwind Configuration -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'epic-pink': '#FF1393',
-                        'epic-gray': '#AAAAAA',
-                        'epic-white': '#FFFFFF'
-                    },
-                    fontFamily: {
-                        'sans': ['Montserrat', 'system-ui', 'sans-serif']
-                    }
-                }
-            },
-            daisyui: {
-                themes: [
-                    {
-                        epicmap: {
-                            "primary": "#FF1393",
-                            "secondary": "#AAAAAA",
-                            "accent": "#FFFFFF",
-                            "neutral": "#2B2D31",
-                            "base-100": "#A4ABB9",
-                            "base-content": "#1D232A",
-                            "info": "#3ABFF8",
-                            "success": "#36D399",
-                            "warning": "#FBBD23",
-                            "error": "#F87272"
-                        }
-                    }
-                ]
-            }
-        }
-    </script>
-
+{% block head_extra %}
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/app.css" />
-    <link rel="stylesheet" href="/static/css/tailwind-compat.css" />
 
     <!-- Admin Panel Styling -->
     <style>
@@ -214,8 +147,10 @@
         }
       }
     </style>
-  </head>
-  <body x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content">
+{% endblock %}
+
+{% block body_attrs %}x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content"{% endblock %}
+{% block content %}
     <!-- Header -->
     <header class="app-header">
       <div style="display: flex; align-items: center; gap: 20px;">
@@ -1262,14 +1197,11 @@
     </div>
 
 
+{% endblock %}
+
+{% block scripts %}
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Alpine.js -->
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
-    ></script>
 
     <!-- Admin JavaScript -->
     <script>
@@ -2217,6 +2149,4 @@
         }));
       });
     </script>
-  </body>
-</html>
-
+{% endblock %}

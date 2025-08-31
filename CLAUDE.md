@@ -11,6 +11,25 @@ Epic Map is a field service management application for tracking and managing loc
 - **Frontend**: Bootstrap 5/Tailwind CSS + DaisyUI, Alpine.js, Leaflet.js
 - **Authentication**: Session-based with bcrypt password hashing
 
+## Types of Jobs (User Defined)
+
+Epic Surveying has two types of sites they work on: Address and Parcel Jobs.
+Address jobs have an existing address on the world and thus is indexable in various APIs as such.
+Address jobs use the Google Maps API to be geocoded. This, unless there is user error has a 100% chance
+of returning the correct address/coordinates.
+
+Epic develops construction sites (aka sites, jobs) from a stage where its just a parcel of and
+hence the parcel jobs. These job sites do not have an address yet but once our service in over they will.
+
+# TODO
+
+We need to develop a system to allow parcel jobs to be able to be promoted to address jobs.
+Also we need to create a pipeline or a hierarchy to make this possible.
+
+It would be Parcel Job -> Address job but never the other way. That would be a downgrade.
+
+Address jobs will remain address jobs once they are created/upgraded
+
 ## Database Schemas (Supabase PostgreSQL)
 
 ### Jobs Table (`jobs`)
@@ -306,4 +325,3 @@ flask run
 - `DATABASE_URL`: Supabase PostgreSQL connection string
 - `SECRET_KEY`: Flask session encryption key
 - `GOOGLE_GEOCODING_API_KEY`: For address geocoding
-

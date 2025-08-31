@@ -1,205 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Login - Epic Map</title>
-    <link rel="icon" href="{{ url_for('static', filename='data/EMS-llc-4.png') }}" type="image/png">
-    
-    <!-- Google Fonts - Montserrat -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS v3.4.1 -->
-    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    
-    <!-- DaisyUI v4.6.0 -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
-    
-    <!-- Bootstrap CSS (temporary during migration) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
-    <!-- Tailwind Configuration -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'epic-pink': '#FF1393',
-                        'epic-gray': '#AAAAAA',
-                        'epic-white': '#FFFFFF'
-                    },
-                    fontFamily: {
-                        'sans': ['Montserrat', 'system-ui', 'sans-serif']
-                    }
-                }
-            },
-            daisyui: {
-                themes: [
-                    {
-                        epicmap: {
-                            "primary": "#FF1393",
-                            "secondary": "#AAAAAA",
-                            "accent": "#FFFFFF",
-                            "neutral": "#2B2D31",
-                            "base-100": "#FFFFFF",
-                            "info": "#3ABFF8",
-                            "success": "#36D399",
-                            "warning": "#FBBD23",
-                            "error": "#F87272"
-                        }
-                    }
-                ]
-            }
-        }
-    </script>
-    
-    <style>
-        body {
-            background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Montserrat', sans-serif;
-        }
-        
-        /* iOS Zoom Prevention */
-        input[type="text"],
-        input[type="password"] {
-            font-size: 16px !important;
-        }
-        
-        /* Touch interaction improvements */
-        button,
-        .btn,
-        input {
-            touch-action: manipulation;
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .login-header {
-            background: #FF1393;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .login-header h1 {
-            margin: 0;
-            font-size: 2rem;
-        }
-        
-        .login-body {
-            padding: 2rem;
-        }
-        
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: #FF1393;
-            box-shadow: 0 0 0 3px rgba(255, 19, 147, 0.1);
-        }
-        
-        .btn-login {
-            background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.2s ease;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-    </style>
-</head>
-<body data-theme="epicmap">
-    <div class="login-card">
-        <div class="login-header">
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 64px; height: 64px;">
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 48px; color: white; letter-spacing: -1px;">EMS</span>
-                    <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; color: rgba(255, 255, 255, 0.9); letter-spacing: 1px; text-transform: uppercase;">Epic Map System</span>
-                </div>
-                <p class="mb-0" style="font-family: 'Montserrat', sans-serif; font-weight: 300; font-size: 14px; margin-top: 10px;">Survey Job Management</p>
-            </div>
-        </div>
-        
-        <div class="login-body">
-            {% if error %}
-                <div class="alert alert-danger" role="alert">
-                    <i class="bi bi-exclamation-triangle"></i> {{ error }}
-                </div>
-            {% endif %}
-            
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="username" class="form-label">
-                        <i class="bi bi-person"></i> Username
-                    </label>
-                    <input type="text" 
-                           class="form-control" 
-                           id="username" 
-                           name="username" 
-                           required 
-                           autofocus
-                           autocomplete="username">
-                </div>
-                
-                <div class="mb-4">
-                    <label for="password" class="form-label">
-                        <i class="bi bi-lock"></i> Password
-                    </label>
-                    <input type="password" 
-                           class="form-control" 
-                           id="password" 
-                           name="password" 
-                           required
-                           autocomplete="current-password">
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-login w-100">
-                    <i class="bi bi-box-arrow-in-right"></i> Sign In
-                </button>
-            </form>
-            
-            <div class="text-center mt-4">
-                <small class="text-muted">
-                    <i class="bi bi-shield-check"></i> Secure Login
-                </small>
-            </div>
-        </div>
+{% extends 'base.html' %}
+{% block title %}Login - Epic Map{% endblock %}
+
+{% block head_extra %}
+<style>
+  body {
+    background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  /* iOS Zoom Prevention */
+  input[type="text"],
+  input[type="password"] {
+    font-size: 16px !important;
+  }
+
+  /* Touch interaction improvements */
+  button,
+  .btn,
+  input {
+    touch-action: manipulation;
+  }
+
+  .login-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .login-header {
+    background: #FF1393;
+    color: white;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .login-header h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  .login-body {
+    padding: 2rem;
+  }
+
+  .form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-control:focus {
+    border-color: #FF1393;
+    box-shadow: 0 0 0 3px rgba(255, 19, 147, 0.1);
+  }
+
+  .btn-login {
+    background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: transform 0.2s ease;
+  }
+
+  .btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .alert {
+    border-radius: 10px;
+    border: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-card">
+  <div class="login-header">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 64px; height: 64px;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 48px; color: white; letter-spacing: -1px;">EMS</span>
+        <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; color: rgba(255, 255, 255, 0.9); letter-spacing: 1px; text-transform: uppercase;">Epic Map System</span>
+      </div>
+      <p class="mb-0" style="font-family: 'Montserrat', sans-serif; font-weight: 300; font-size: 14px; margin-top: 10px;">Survey Job Management</p>
     </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+  </div>
+
+  <div class="login-body">
+    {% if error %}
+      <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+      </div>
+    {% endif %}
+
+    <form method="POST">
+      <div class="mb-3">
+        <label for="username" class="form-label">
+          <i class="bi bi-person"></i> Username
+        </label>
+        <input type="text" class="form-control" id="username" name="username" required autofocus autocomplete="username">
+      </div>
+
+      <div class="mb-4">
+        <label for="password" class="form-label">
+          <i class="bi bi-lock"></i> Password
+        </label>
+        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-login w-100">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+    </form>
+
+    <div class="text-center mt-4">
+      <small class="text-muted">
+        <i class="bi bi-shield-check"></i> Secure Login
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
