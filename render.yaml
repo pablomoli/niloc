@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: epicmap
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      npm install
+      npm run build
+    startCommand: gunicorn app:app
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+
