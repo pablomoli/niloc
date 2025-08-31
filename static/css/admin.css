@@ -86,6 +86,11 @@ a,
   background-color: #f3f4f6; /* tailwind gray-100 */
 }
 
+/* Ensure long status text stays inside badges */
+.admin-spa .badge {
+  white-space: nowrap;
+}
+
 /* Fix tab content scrolling */
 .tab-content {
   height: auto;
