@@ -91,6 +91,23 @@ a,
   white-space: nowrap;
 }
 
+/* Table header: use base-content (#1D232A) and stronger weight */
+.admin-spa table thead th {
+  color: #1D232A !important;
+  font-weight: 600;
+}
+
+/* Tabs: make labels darker and active state clearly accented */
+.admin-spa .tabs .tab {
+  color: #374151; /* gray-700 */
+  font-weight: 600;
+}
+
+.admin-spa .tabs .tab.tab-active {
+  color: #1D232A !important; /* base-content */
+  border-color: #1D232A !important; /* stronger underline/border */
+}
+
 /* Fix tab content scrolling */
 .tab-content {
   height: auto;
