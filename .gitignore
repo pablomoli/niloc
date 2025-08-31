@@ -7,6 +7,6 @@ instance/
 *.xlsx
 frontend_backup_20250606_233919/
 .claude/
-CLAUDE.md
+.codacy/
 static/data/BCPAO_Reference.gdb/
 
