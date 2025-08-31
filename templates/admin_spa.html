@@ -253,7 +253,7 @@
                   Created
                   <i class="bi" :class="getSortIcon('created_at')"></i>
                 </th>
-                <th>Actions</th>
+                <th class="actions-col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +280,8 @@
                     ></span>
                   </td>
                   <td x-text="formatDate(job.created_at)"></td>
-                  <td>
+                  <td class="actions-col">
+                    <div class="flex items-center gap-2 whitespace-nowrap">
                     <button
                       @click="openFieldworkModal(job)"
                       class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 mr-1"
@@ -311,6 +312,7 @@
                     >
                       <i class="bi bi-trash"></i>
                     </button>
+                    </div>
                   </td>
                 </tr>
               </template>

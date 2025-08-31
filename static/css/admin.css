@@ -91,6 +91,12 @@ a,
   white-space: nowrap;
 }
 
+/* Ensure Actions column stays wide enough for 3 buttons inline */
+.admin-spa th.actions-col,
+.admin-spa td.actions-col {
+  min-width: 160px;
+}
+
 /* Table header: use base-content (#1D232A) and stronger weight */
 .admin-spa table thead th {
   color: #1D232A !important;
