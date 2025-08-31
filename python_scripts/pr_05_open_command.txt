@@ -1,0 +1,18 @@
+git push -u origin feature/prod-css-build
+gh pr create --title "Add production CSS build (Tailwind + DaisyUI), remove CDN usage (closes #5)" --body-file - --base master --head feature/prod-css-build <<'EOF'
+Summary
+- Add Tailwind/DaisyUI build tooling (tailwindcss, postcss, autoprefixer, daisyui).
+- Configure theme in tailwind.config.cjs to match EpicMap colors.
+- Add build scripts: `npm run dev` (watch), `npm run build` (minified prod).
+- New entry CSS: `static/css/tw.css`; output: `static/dist/app.css`.
+- Update base template to reference compiled CSS and remove Tailwind CDN.
+- Document workflow in CONTRIBUTING.md.
+
+Testing
+- Run `npm install` then `npm run build`.
+- Load app and verify styles match (admin + map pages).
+- Confirm the console no longer warns about Tailwind CDN in production.
+
+Closes #5
+Relates to #30
+EOF

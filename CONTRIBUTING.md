@@ -103,6 +103,22 @@ Commands:
 - PR:
   - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<slug> -B master`
 
+## Production CSS Build (Tailwind + DaisyUI)
+- We compile CSS locally instead of using the Tailwind CDN in production.
+
+Setup (once):
+- `npm install` (installs tailwindcss, daisyui, postcss, autoprefixer)
+
+Dev (watch):
+- `npm run dev` (writes to `static/dist/app.css`)
+
+Build (prod):
+- `npm run build` (minified, no sourcemaps)
+
+Notes:
+- `templates/base.html` now references `static/dist/app.css`.
+- Theme and DaisyUI config live in `tailwind.config.cjs`.
+
 - Sync + Rebase:
   - `git fetch origin && git switch master && git pull --ff-only`
   - `git switch feature/<slug> && git rebase origin/master`

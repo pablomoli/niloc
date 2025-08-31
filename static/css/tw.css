@@ -1,0 +1,7 @@
+/* Tailwind entry file for Epic Map */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DaisyUI variables come from tailwind.config theme (epicmap) */
+
