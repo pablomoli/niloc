@@ -347,7 +347,7 @@
                       @click="currentPage--" title="Previous page">‹</button>
               <template x-for="page in getVisiblePages()" :key="page">
                 <button class="btn btn-sm join-item"
-                        :class="page === currentPage ? 'btn-primary' : 'btn-ghost'"
+                        :class="page === currentPage ? 'btn-primary' : 'btn-outline'"
                         @click="currentPage = page"
                         x-text="page"></button>
               </template>
