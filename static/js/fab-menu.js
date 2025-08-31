@@ -16,6 +16,7 @@ function fabMenu() {
         addressSearch: '',
         parcelSearch: '',
         clientSearch: '',
+        clientSearchTimer: null,
         selectedCounty: '',
         brevardSearchType: 'tax-account',
         clientSuggestions: [],
@@ -154,26 +155,38 @@ function fabMenu() {
         },
         
         async searchClients() {
-            if (this.clientSearch.length < 2) {
+            // Debounce to reduce network chatter
+            if (this.clientSearchTimer) clearTimeout(this.clientSearchTimer);
+            const term = (this.clientSearch || '').trim();
+            if (term.length < 2) {
                 this.clientSuggestions = [];
                 return;
             }
-            
-            try {
-                // Get unique clients from existing jobs
-                if (window.AppState?.allJobs) {
-                    const searchTerm = this.clientSearch.toLowerCase();
-                    const uniqueClients = [...new Set(
-                        window.AppState.allJobs
-                            .map(job => job.client)
-                            .filter(client => client && client.toLowerCase().includes(searchTerm))
-                    )];
-                    this.clientSuggestions = uniqueClients.slice(0, 5); // Limit to 5 suggestions
+            this.clientSearchTimer = setTimeout(async () => {
+                try {
+                    const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(term)}&limit=8`);
+                    const data = await resp.json();
+                    // Prefer server suggestions for clients, fall back to local if empty
+                    let suggestions = (data.suggestions || [])
+                        .filter(s => s.type === 'client')
+                        .map(s => s.value);
+                    if (suggestions.length === 0 && window.AppState?.allJobs) {
+                        const searchTerm = term.toLowerCase();
+                        suggestions = [...new Set(
+                            window.AppState.allJobs
+                                .map(j => j.client)
+                                .filter(c => c && c.toLowerCase().includes(searchTerm))
+                        )];
+                    }
+                    // Dedupe and trim list
+                    const unique = [];
+                    for (const c of suggestions) if (c && !unique.includes(c)) unique.push(c);
+                    this.clientSuggestions = unique.slice(0, 8);
+                } catch (error) {
+                    console.error('Error searching clients:', error);
+                    this.clientSuggestions = [];
                 }
-            } catch (error) {
-                console.error('Error searching clients:', error);
-                this.clientSuggestions = [];
-            }
+            }, 200);
         },
         
         selectClient(client) {
