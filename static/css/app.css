@@ -3,18 +3,8 @@ Epic Map - Clean CSS Implementation
 Bootstrap 5 + Custom Styles
 */
 
+/* Theme variables now live in static/css/theme.css */
 :root {
-  /* Epic Map Brand Colors */
-  --primary-color: #FF1393;
-  --secondary-color: #AAAAAA;
-  --success-color: #198754;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --info-color: #0dcaf0;
-  --epic-pink: #FF1393;
-  --epic-gray: #AAAAAA;
-  --epic-white: #FFFFFF;
-
   /* Map specific colors */
   --map-bg: #f8f9fa;
   --panel-bg: rgba(255, 255, 255, 0.95);

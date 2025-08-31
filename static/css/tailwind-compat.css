@@ -4,11 +4,7 @@
  */
 
 /* Set DaisyUI theme */
-:root {
-  --epic-pink: #FF1393;
-  --epic-gray: #AAAAAA;
-  --epic-white: #FFFFFF;
-}
+/* Theme variables are defined in static/css/theme.css */
 
 /* Apply epicmap theme globally */
 html {
