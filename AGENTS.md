@@ -33,3 +33,8 @@
 - Required env vars: `DATABASE_URL`, `SESSION_KEY`, optional `GOOGLE_GEOCODING_API_KEY`.
 - Never commit secrets or `.env`. Use timeouts for network calls (see geocoding logic) and prefer soft‑delete helpers in models over hard deletes.
 
+## Agent Collaboration Workflow
+- Testing: The maintainer will run tests after each commit. Do not assume automatic test runs.
+- Push policy: Do not push to remote. The maintainer performs all `git push` operations.
+- Push commands: You may suggest the exact `git push` command in output, but never execute it.
+- Branching: Use `feature/<short-slug>` for new work and keep commits focused per issue.
