@@ -189,14 +189,32 @@
 
         <!-- Job Search and Filters -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <div>
+          <div class="relative" @keydown.escape="showJobSuggestions=false">
             <input
               type="text"
               class="input input-bordered w-full"
               x-model="jobSearch"
-              @input="filterJobs()"
+              @input="onJobSearchInput"
+              @focus="onJobSearchInput"
+              @keydown.arrow-down.prevent="moveSuggestion(1)"
+              @keydown.arrow-up.prevent="moveSuggestion(-1)"
+              @keydown.enter.prevent="applyHighlightedSuggestion()"
               placeholder="Search jobs..."
             />
+            <!-- Autocomplete dropdown -->
+            <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-60 overflow-auto"
+                 x-show="showJobSuggestions && jobSuggestions.length > 0"
+                 x-transition
+                 @click.outside="showJobSuggestions=false">
+              <template x-for="(s, i) in jobSuggestions" :key="s.value + '-' + s.type">
+                <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+                        :class="{'bg-gray-100': i === suggestionIndex}"
+                        @click="selectSuggestion(s)">
+                  <span class="badge badge-sm" :class="s.type === 'job_number' ? 'badge-primary' : s.type === 'client' ? 'badge-secondary' : 'badge-ghost'" x-text="s.type"></span>
+                  <span x-text="s.label"></span>
+                </button>
+              </template>
+            </div>
           </div>
           <div>
             <select
@@ -1091,6 +1109,11 @@
           jobSearch: "",
           statusFilter: "",
           deletedJobSearch: "",
+          // Autocomplete (issue #21)
+          jobSuggestions: [],
+          showJobSuggestions: false,
+          suggestionIndex: -1,
+          _jobSearchTimer: null,
           
           // Sorting
           sortField: 'job_number',
@@ -1179,6 +1202,61 @@
 
           init() {
             this.loadData();
+          },
+
+          // Autocomplete handlers
+          onJobSearchInput() {
+            // Always apply client-side filter for instant feedback
+            this.filterJobs();
+            // Debounce server-side suggestions
+            clearTimeout(this._jobSearchTimer);
+            const q = this.jobSearch.trim();
+            if (q.length < 2) {
+              this.jobSuggestions = [];
+              this.showJobSuggestions = false;
+              return;
+            }
+            this._jobSearchTimer = setTimeout(() => this.fetchJobSuggestions(q), 200);
+          },
+
+          async fetchJobSuggestions(q) {
+            try {
+              const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=8`);
+              const data = await resp.json();
+              this.jobSuggestions = data.suggestions || [];
+              this.suggestionIndex = this.jobSuggestions.length ? 0 : -1;
+              this.showJobSuggestions = this.jobSuggestions.length > 0;
+            } catch (e) {
+              console.warn('Autocomplete fetch failed', e);
+              this.jobSuggestions = [];
+              this.showJobSuggestions = false;
+            }
+          },
+
+          moveSuggestion(delta) {
+            if (!this.showJobSuggestions || this.jobSuggestions.length === 0) return;
+            const max = this.jobSuggestions.length - 1;
+            let idx = this.suggestionIndex + delta;
+            if (idx < 0) idx = max;
+            if (idx > max) idx = 0;
+            this.suggestionIndex = idx;
+          },
+
+          applyHighlightedSuggestion() {
+            if (this.suggestionIndex >= 0 && this.jobSuggestions[this.suggestionIndex]) {
+              this.selectSuggestion(this.jobSuggestions[this.suggestionIndex]);
+            } else {
+              // No suggestion highlighted; just apply filter
+              this.filterJobs();
+              this.showJobSuggestions = false;
+            }
+          },
+
+          selectSuggestion(s) {
+            this.jobSearch = s.value;
+            this.showJobSuggestions = false;
+            this.suggestionIndex = -1;
+            this.filterJobs();
           },
           
           // Computed properties
