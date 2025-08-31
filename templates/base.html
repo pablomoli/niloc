@@ -59,6 +59,7 @@
   </script>
 
   <!-- Shared CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind-compat.css') }}">
 
   {% block head_extra %}{% endblock %}
@@ -73,4 +74,3 @@
   {% block scripts %}{% endblock %}
 </body>
 </html>
-
