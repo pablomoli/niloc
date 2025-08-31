@@ -11,51 +11,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS v3.4.1 -->
-  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-
-  <!-- DaisyUI v4.6.0 -->
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <!-- Compiled Tailwind + DaisyUI (production build) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='dist/app.css') }}">
 
   <!-- Bootstrap CSS removed (issue #28) -->
 
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-  <!-- Tailwind + DaisyUI configuration for EpicMap theme -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'epic-pink': '#FF1393',
-            'epic-gray': '#AAAAAA',
-            'epic-white': '#FFFFFF'
-          },
-          fontFamily: {
-            'sans': ['Montserrat', 'system-ui', 'sans-serif']
-          }
-        }
-      },
-      daisyui: {
-        themes: [
-          {
-            epicmap: {
-              "primary": "#FF1393",
-              "secondary": "#AAAAAA",
-              "accent": "#FFFFFF",
-              "neutral": "#2B2D31",
-              "base-100": "#FFFFFF",
-              "info": "#3ABFF8",
-              "success": "#36D399",
-              "warning": "#FBBD23",
-              "error": "#F87272"
-            }
-          }
-        ]
-      }
-    }
-  </script>
+  <!-- Theme variables and compat layer -->
 
   <!-- Shared CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">

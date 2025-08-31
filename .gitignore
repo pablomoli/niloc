@@ -9,4 +9,5 @@ frontend_backup_20250606_233919/
 .claude/
 .codacy/
 static/data/BCPAO_Reference.gdb/
-
+node_modules/
+static/dist/
