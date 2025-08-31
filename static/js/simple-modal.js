@@ -47,6 +47,9 @@ window.SimpleModal = {
                 } else if (field === 'client') {
                     const input = document.getElementById('client-input');
                     if (input) input.value = this.currentJob.client;
+                } else if (field === 'address') {
+                    const input = document.getElementById('address-input');
+                    if (input) input.value = this.currentJob.address || '';
                 }
             } else {
                 // Enter edit mode
@@ -56,6 +59,12 @@ window.SimpleModal = {
                 // Focus input
                 if (field === 'client') {
                     const input = document.getElementById('client-input');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                } else if (field === 'address') {
+                    const input = document.getElementById('address-input');
                     if (input) {
                         input.focus();
                         input.select();
@@ -76,6 +85,9 @@ window.SimpleModal = {
             newValue = select ? select.value : null;
         } else if (field === 'client') {
             const input = document.getElementById('client-input');
+            newValue = input ? input.value.trim() : null;
+        } else if (field === 'address') {
+            const input = document.getElementById('address-input');
             newValue = input ? input.value.trim() : null;
         }
         
@@ -149,6 +161,20 @@ window.SimpleModal = {
                     if (clientText) {
                         clientText.textContent = newValue;
                     }
+                } else if (field === 'address') {
+                    const addrText = document.getElementById('address-view-text');
+                    const copyBtn = document.getElementById('copyAddressBtn');
+                    // Update using formatted address if returned
+                    const updatedAddr = (data.job && data.job.address) ? data.job.address : newValue;
+                    if (addrText) addrText.textContent = updatedAddr;
+                    if (copyBtn) {
+                        copyBtn.setAttribute('onclick', `SimpleModal.copyAddress('${(updatedAddr || '').replace(/'/g, "\\'")}')`);
+                    }
+                    // Update county if returned
+                    if (data.job && data.job.county) {
+                        const countyEl = document.getElementById('county-view-text');
+                        if (countyEl) countyEl.textContent = data.job.county;
+                    }
                 }
                 
                 // Exit edit mode
@@ -157,8 +183,8 @@ window.SimpleModal = {
                 // Show success feedback
                 this.showNotification(`${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`, 'success');
                 
-                // Update marker on map if status changed
-                if (field === 'status' && window.updateJobMarker) {
+                // Update marker on map if status or address changed
+                if ((field === 'status' || field === 'address') && window.updateJobMarker) {
                     // Pass the full updated job data if available
                     const jobToUpdate = data.job || this.currentJob;
                     window.updateJobMarker(this.currentJob.job_number, jobToUpdate);
@@ -363,24 +389,35 @@ window.SimpleModal = {
                         
                         <div>
                             <h4 class="text-gray-400 text-sm font-medium mb-1">Address</h4>
-                            <div class="flex items-center gap-3">
-                                <p class="text-gray-700 flex-1">${job.address || 'N/A'}</p>
-                                ${job.address && job.address !== 'N/A' ? `
-                                    <button 
-                                        id="copyAddressBtn"
-                                        onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')" 
-                                        class="btn btn-sm btn-primary"
-                                        title="Copy address to clipboard">
-                                        <i class="bi bi-clipboard mr-1"></i>
-                                        <span id="copyBtnText">Copy</span>
-                                    </button>
-                                ` : ''}
+                            <div id="address-view" style="display: block;">
+                                <div class="flex items-center gap-3">
+                                    <p id="address-view-text" class="text-gray-700 flex-1 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 -mx-2 -my-1" onclick="SimpleModal.toggleEdit('address')" title="Click to edit">${job.address || 'N/A'}</p>
+                                    ${job.address && job.address !== 'N/A' ? `
+                                        <button 
+                                            id="copyAddressBtn"
+                                            onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')" 
+                                            class="btn btn-sm btn-primary"
+                                            title="Copy address to clipboard">
+                                            <i class="bi bi-clipboard mr-1"></i>
+                                            <span id="copyBtnText">Copy</span>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div id="address-edit" style="display: none;" class="flex items-center gap-2">
+                                <input type="text" id="address-input" class="input input-bordered input-sm flex-1" value="${(job.address || '').replace(/"/g,'&quot;') }" onkeypress="if(event.key==='Enter') SimpleModal.saveField('address')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('address')">
+                                <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('address')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('address')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </div>
                         </div>
                         
                         <div>
                             <h4 class="text-gray-400 text-sm font-medium mb-1">County</h4>
-                            <p class="text-gray-700">${job.county || 'N/A'}</p>
+                            <p id="county-view-text" class="text-gray-700">${job.county || 'N/A'}</p>
                         </div>
                         
                         ${femaLink ? `
