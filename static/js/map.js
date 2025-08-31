@@ -546,38 +546,61 @@ function handleMarkerClick(e, job) {
 
 // Update a job marker (e.g., after status change)
 function updateJobMarker(jobNumber, updatedJob) {
-    const marker = AppState.markers.get(jobNumber);
-    if (marker && window.MarkerUtils) {
-        const isSelected = AppState.selectedJobs.has(jobNumber);
-        
-        // Update marker icon with new status
-        marker.setIcon(MarkerUtils.getStatusIcon(updatedJob.status, isSelected));
-        
-        // Update the job in our local state (already done in SimpleModal but double-check)
-        const jobIndex = AppState.allJobs.findIndex(j => j.job_number === jobNumber);
-        if (jobIndex !== -1) {
-            // Preserve any fields not in updatedJob
-            AppState.allJobs[jobIndex] = { ...AppState.allJobs[jobIndex], ...updatedJob };
+    let marker = AppState.markers.get(jobNumber);
+    const hasMarkerUtils = Boolean(window.MarkerUtils);
+
+    // Update cached job data so future operations use fresh values
+    const mergeIntoCache = (arr) => {
+        const idx = arr.findIndex(j => j.job_number === jobNumber);
+        if (idx !== -1) arr[idx] = { ...arr[idx], ...updatedJob };
+    };
+    if (Array.isArray(AppState.allJobs)) mergeIntoCache(AppState.allJobs);
+    if (Array.isArray(AppState.filteredJobs)) mergeIntoCache(AppState.filteredJobs);
+
+    const isSelected = AppState.selectedJobs.has(jobNumber);
+    const lat = updatedJob.latitude || updatedJob.lat;
+    const lng = updatedJob.longitude || updatedJob.long;
+
+    // Ensure a marker exists; create one if missing and we have coords
+    if (!marker && lat && lng) {
+        const icon = hasMarkerUtils ? MarkerUtils.getStatusIcon(updatedJob.status, isSelected) : undefined;
+        marker = L.marker([lat, lng], icon ? { icon } : undefined);
+        // Click handler uses the latest cached job
+        marker.on('click', function (e) {
+            const j = (AppState.allJobs || []).find(x => x.job_number === jobNumber) || updatedJob;
+            handleMarkerClick(e, j);
+        });
+        AppState.markers.set(jobNumber, marker);
+        if (AppState.markerCluster && AppState.markerCluster.addLayer) {
+            AppState.markerCluster.addLayer(marker);
+        } else if (AppState.map) {
+            marker.addTo(AppState.map);
         }
-        
-        const filteredIndex = AppState.filteredJobs.findIndex(j => j.job_number === jobNumber);
-        if (filteredIndex !== -1) {
-            AppState.filteredJobs[filteredIndex] = { ...AppState.filteredJobs[filteredIndex], ...updatedJob };
+    }
+
+    if (marker) {
+        // Update icon to reflect new status/selection
+        if (hasMarkerUtils) {
+            marker.setIcon(MarkerUtils.getStatusIcon(updatedJob.status, isSelected));
         }
-        
-        // Update the marker's stored job reference for next click
-        // This ensures the marker always has the latest data
-        const lat = updatedJob.latitude || updatedJob.lat;
-        const lng = updatedJob.longitude || updatedJob.long;
-        if (lat && lng) {
-            // Re-bind the click handler with updated job data
-            marker.off('click'); // Remove old handler
-            marker.on('click', function(e) {
-                handleMarkerClick(e, AppState.allJobs[jobIndex] || updatedJob);
-            });
+
+        // Move marker if coordinates changed
+        if (lat && lng && marker.setLatLng) {
+            marker.setLatLng([lat, lng]);
+            // Refresh clusters if available
+            if (AppState.markerCluster && typeof AppState.markerCluster.refreshClusters === 'function') {
+                try { AppState.markerCluster.refreshClusters(marker); } catch (_) {}
+            }
         }
-        
-        // Update popup content if needed
+
+        // Re-bind click to latest job data
+        marker.off('click');
+        marker.on('click', function (e) {
+            const j = (AppState.allJobs || []).find(x => x.job_number === jobNumber) || updatedJob;
+            handleMarkerClick(e, j);
+        });
+
+        // Update popup content if exists
         if (marker.getPopup) {
             const popup = marker.getPopup();
             if (popup) {
