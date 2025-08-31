@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 {% endblock %}
 
-{% block body_attrs %}x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content"{% endblock %}
+{% block body_attrs %}x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content admin-spa"{% endblock %}
 {% block content %}
     <!-- Header -->
     <header class="app-header">
@@ -26,42 +26,34 @@
     </header>
 
     <!-- Main Container -->
-    <div class="container-fluid py-4">
+    <div class="max-w-7xl mx-auto px-4 py-4">
       <!-- Navigation Tabs -->
-      <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-          <button
-            @click="activeTab = 'dashboard'"
-            :class="activeTab === 'dashboard' ? 'nav-link active' : 'nav-link'"
-          >
-            <i class="bi bi-bar-chart"></i> Dashboard
-          </button>
-        </li>
-        <li class="nav-item">
-          <button
-            @click="activeTab = 'jobs'"
-            :class="activeTab === 'jobs' ? 'nav-link active' : 'nav-link'"
-          >
-            <i class="bi bi-briefcase"></i> Jobs
-          </button>
-        </li>
-        <li class="nav-item">
-          <button
-            @click="activeTab = 'deleted'"
-            :class="activeTab === 'deleted' ? 'nav-link active' : 'nav-link'"
-          >
-            <i class="bi bi-trash"></i> Deleted Jobs
-          </button>
-        </li>
-        <li class="nav-item">
-          <button
-            @click="activeTab = 'users'"
-            :class="activeTab === 'users' ? 'nav-link active' : 'nav-link'"
-          >
-            <i class="bi bi-people"></i> Users
-          </button>
-        </li>
-      </ul>
+      <div role="tablist" class="tabs tabs-bordered mb-4">
+        <button role="tab"
+                class="tab"
+                @click="activeTab = 'dashboard'"
+                :class="{'tab-active': activeTab === 'dashboard'}">
+          <i class="bi bi-bar-chart"></i> <span class="ml-2">Dashboard</span>
+        </button>
+        <button role="tab"
+                class="tab"
+                @click="activeTab = 'jobs'"
+                :class="{'tab-active': activeTab === 'jobs'}">
+          <i class="bi bi-briefcase"></i> <span class="ml-2">Jobs</span>
+        </button>
+        <button role="tab"
+                class="tab"
+                @click="activeTab = 'deleted'"
+                :class="{'tab-active': activeTab === 'deleted'}">
+          <i class="bi bi-trash"></i> <span class="ml-2">Deleted Jobs</span>
+        </button>
+        <button role="tab"
+                class="tab"
+                @click="activeTab = 'users'"
+                :class="{'tab-active': activeTab === 'users'}">
+          <i class="bi bi-people"></i> <span class="ml-2">Users</span>
+        </button>
+      </div>
 
       <!-- Dashboard Tab -->
       <div x-show="activeTab === 'dashboard'">
@@ -70,8 +62,8 @@
           <h3 class="mb-3">Job Status Overview</h3>
 
           <!-- Row 1: Priority Statuses -->
-          <div class="row mb-3">
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #28a745; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
@@ -80,7 +72,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #e09132; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-rulers text-2xl mb-2 opacity-90"></i>
@@ -89,7 +81,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #dc3545; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
@@ -98,7 +90,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #0066cc; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-printer text-2xl mb-2 opacity-90"></i>
@@ -110,8 +102,8 @@
           </div>
 
           <!-- Row 2: Workflow Statuses -->
-          <div class="row mb-3">
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #6f42c1; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
@@ -120,7 +112,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #f5c842; color: #2d3748;">
                 <div class="card-body py-3">
                   <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
@@ -129,7 +121,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #e685b5; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
@@ -138,7 +130,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="background-color: #a8a8a8; color: white;">
                 <div class="card-body py-3">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
@@ -150,8 +142,8 @@
           </div>
 
           <!-- Row 3: Quote Status -->
-          <div class="row">
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+          <div>
+            <div class="max-w-xs">
               <div class="card text-center shadow-lg" style="background-color: #6c757d; color: white;">
                 <div class="card-body py-3">
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Quote Available</h6>
@@ -165,8 +157,8 @@
         <!-- Business Metrics Section -->
         <div class="mb-4">
           <h3 class="mb-3">Business Metrics</h3>
-          <div class="row">
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
               <div class="card text-center shadow-lg" style="border: 2px solid #17a2b8; background: white;">
                 <div class="card-body py-3">
                   <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Unique Clients</h6>
@@ -174,7 +166,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 mb-3 mb-md-0">
+            <div>
               <div class="card text-center shadow-lg" style="border: 2px solid #dc3545; background: white;">
                 <div class="card-body py-3">
                   <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Deleted Jobs</h6>
@@ -188,7 +180,7 @@
 
       <!-- Jobs Tab -->
       <div x-show="activeTab === 'jobs'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <h3>Job Management</h3>
           <button @click="openAddJobModal()" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Job
@@ -196,19 +188,19 @@
         </div>
 
         <!-- Job Search and Filters -->
-        <div class="row mb-3">
-          <div class="col-md-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div>
             <input
               type="text"
-              class="form-control"
+              class="input input-bordered w-full"
               x-model="jobSearch"
               @input="filterJobs()"
               placeholder="Search jobs..."
             />
           </div>
-          <div class="col-md-6">
+          <div>
             <select
-              class="form-control"
+              class="select select-bordered w-full"
               x-model="statusFilter"
               @change="filterJobs()"
             >
@@ -238,7 +230,7 @@
 
         <!-- Jobs Table -->
         <div class="overflow-x-auto">
-          <table class="table table-striped w-full">
+          <table class="table table-zebra w-full">
             <thead>
               <tr>
                 <th class="cursor-pointer" @click="sortJobs('job_number')">
@@ -291,7 +283,7 @@
                   <td>
                     <button
                       @click="openFieldworkModal(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 me-1"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 mr-1"
                       title="Manage Time Tracking"
                     >
                       <i class="bi bi-clock-history"></i>
@@ -299,7 +291,7 @@
                     <template x-if="!job.is_parcel_job">
                       <button
                         @click="editJob(job)"
-                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 me-1"
+                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
                       >
                         <i class="bi bi-pencil"></i>
                       </button>
@@ -331,7 +323,7 @@
           <!-- Results per page selector -->
           <div class="flex items-center gap-2">
             <span class="text-sm">Show:</span>
-            <select class="form-control form-control-sm" x-model="jobsPerPage" @change="updatePagination()">
+            <select class="select select-bordered select-sm" x-model="jobsPerPage" @change="updatePagination()">
               <option value="10">10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -378,7 +370,7 @@
 
       <!-- Users Tab -->
       <div x-show="activeTab === 'users'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <h3>User Management</h3>
           <button @click="openAddUserModal()" class="btn btn-primary">
             <i class="bi bi-person-plus"></i> Add User
@@ -387,7 +379,7 @@
 
         <!-- Users Table -->
         <div class="overflow-x-auto">
-          <table class="table table-striped w-full">
+          <table class="table table-zebra w-full">
             <thead>
               <tr>
                 <th>Username</th>
@@ -404,7 +396,7 @@
                   <td x-text="user.name"></td>
                   <td>
                     <span
-                      :class="`badge bg-${user.role === 'admin' ? 'danger' : 'secondary'}`"
+                      :class="`badge ${user.role === 'admin' ? 'badge-error' : 'badge-secondary'}`"
                       x-text="user.role"
                     ></span>
                   </td>
@@ -412,7 +404,7 @@
                   <td>
                     <button
                       @click="editUser(user)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 me-1"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
                     >
                       <i class="bi bi-pencil"></i>
                     </button>
@@ -432,16 +424,16 @@
 
       <!-- Deleted Jobs Tab -->
       <div x-show="activeTab === 'deleted'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <h3>Deleted Jobs</h3>
         </div>
 
         <!-- Deleted Job Search -->
-        <div class="row mb-3">
-          <div class="col-md-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div>
             <input
               type="text"
-              class="form-control"
+              class="input input-bordered w-full"
               x-model="deletedJobSearch"
               @input="filterDeletedJobs()"
               placeholder="Search deleted jobs..."
@@ -451,7 +443,7 @@
 
         <!-- Deleted Jobs Table -->
         <div class="overflow-x-auto">
-          <table class="table table-striped w-full">
+          <table class="table table-zebra w-full">
             <thead>
               <tr>
                 <th>Original Job Number</th>
@@ -475,7 +467,7 @@
                   <td>
                     <button
                       @click="restoreJob(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 me-1"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
                       title="Restore"
                     >
                       <i class="bi bi-arrow-counterclockwise"></i> Restore
@@ -511,12 +503,12 @@
         <div
           :class="`notification ${notification.type} ${notification.show ? 'show' : ''}`"
         >
-          <div class="d-flex justify-content-between align-items-start">
-            <span x-text="notification.message"></span>
+        <div class="flex justify-between items-start">
+          <span x-text="notification.message"></span>
             <button
               @click="$store.notifications.remove(notification.id)"
-              class="btn-close btn-close-sm ms-2"
-            ></button>
+              class="btn btn-sm btn-ghost ml-2"
+            >Close</button>
           </div>
         </div>
       </template>
@@ -707,7 +699,7 @@
                 <label for="editJobNumber" class="form-label">Job Number</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="editJobNumber"
                   x-model="editingJob.job_number"
                   readonly
@@ -718,7 +710,7 @@
                 <label for="editJobClient" class="form-label">Client</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="editJobClient"
                   x-model="editingJob.client"
                   required
@@ -730,7 +722,7 @@
                 >
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="editJobAddress"
                   x-model="editingJob.address"
                   required
@@ -739,7 +731,7 @@
               <div class="mb-3">
                 <label for="editJobStatus" class="form-label">Status</label>
                 <select
-                  class="form-control"
+                  class="select select-bordered w-full"
                   id="editJobStatus"
                   x-model="editingJob.status"
                 >
@@ -768,7 +760,7 @@
               <div class="mb-3">
                 <label for="editJobNotes" class="form-label">Notes</label>
                 <textarea
-                  class="form-control"
+                  class="textarea textarea-bordered w-full"
                   id="editJobNotes"
                   x-model="editingJob.notes"
                   rows="3"
@@ -810,7 +802,7 @@
                 <label for="newJobNumber" class="form-label">Job Number</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="newJobNumber"
                   x-model="newJob.job_number"
                   required
@@ -820,7 +812,7 @@
                 <label for="newJobClient" class="form-label">Client</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="newJobClient"
                   x-model="newJob.client"
                   required
@@ -830,7 +822,7 @@
                 <label for="newJobAddress" class="form-label">Address</label>
                 <input
                   type="text"
-                  class="form-control"
+                  class="input input-bordered w-full"
                   id="newJobAddress"
                   x-model="newJob.address"
                   required
@@ -839,7 +831,7 @@
               <div class="mb-3">
                 <label for="newJobStatus" class="form-label">Status</label>
                 <select
-                  class="form-control"
+                  class="select select-bordered w-full"
                   id="newJobStatus"
                   x-model="newJob.status"
                 >
@@ -868,7 +860,7 @@
               <div class="mb-3">
                 <label for="newJobNotes" class="form-label">Notes</label>
                 <textarea
-                  class="form-control"
+                  class="textarea textarea-bordered w-full"
                   id="newJobNotes"
                   x-model="newJob.notes"
                   rows="3"
@@ -933,32 +925,32 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
-                <input type="date" x-model="newFieldworkEntry.work_date" class="form-control form-control-sm" required>
+                <input type="date" x-model="newFieldworkEntry.work_date" class="input input-bordered input-sm w-full" required>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
-                <input type="text" x-model="calculatedTotalTime" class="form-control form-control-sm bg-gray-100" readonly>
+                <input type="text" x-model="calculatedTotalTime" class="input input-bordered input-sm w-full bg-gray-100" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <input type="time" x-model="newFieldworkEntry.start_time" @change="updateCalculatedTime()" class="form-control form-control-sm" required>
+                <input type="time" x-model="newFieldworkEntry.start_time" @change="updateCalculatedTime()" class="input input-bordered input-sm w-full" required>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                <input type="time" x-model="newFieldworkEntry.end_time" @change="updateCalculatedTime()" class="form-control form-control-sm" required>
+                <input type="time" x-model="newFieldworkEntry.end_time" @change="updateCalculatedTime()" class="input input-bordered input-sm w-full" required>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
-                <input type="text" x-model="newFieldworkEntry.crew" class="form-control form-control-sm" placeholder="Optional">
+                <input type="text" x-model="newFieldworkEntry.crew" class="input input-bordered input-sm w-full" placeholder="Optional">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
-                <input type="text" x-model="newFieldworkEntry.drone_card" class="form-control form-control-sm" placeholder="Optional">
+                <input type="text" x-model="newFieldworkEntry.drone_card" class="input input-bordered input-sm w-full" placeholder="Optional">
               </div>
             </div>
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea x-model="newFieldworkEntry.notes" class="form-control form-control-sm" rows="2" placeholder="Optional notes"></textarea>
+              <textarea x-model="newFieldworkEntry.notes" class="textarea textarea-bordered w-full" rows="2" placeholder="Optional notes"></textarea>
             </div>
             <div class="flex gap-2">
               <button type="submit" class="btn btn-success btn-sm">
@@ -974,7 +966,7 @@
 
         <!-- Fieldwork Entries Table -->
         <div class="overflow-x-auto">
-          <table class="table table-striped w-full">
+          <table class="table table-zebra w-full">
             <thead>
               <tr>
                 <th>Date</th>
@@ -997,7 +989,7 @@
                   <td x-text="entry.notes || '-'"></td>
                   <td>
                     <button @click="editFieldworkEntry(entry)" 
-                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 me-1">
+                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1">
                       <i class="bi bi-pencil"></i>
                     </button>
                     <button @click="deleteFieldworkEntry(entry)" 
@@ -1058,9 +1050,6 @@
 {% endblock %}
 
 {% block scripts %}
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <!-- Admin JavaScript -->
     <script>
       document.addEventListener("alpine:init", () => {
