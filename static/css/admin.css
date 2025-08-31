@@ -72,6 +72,20 @@ a,
   overflow-y: visible !important;
 }
 
+/* DaisyUI table zebra overrides for readability on light theme */
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(odd) > *),
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(even) > *) {
+  color: #1f2937; /* gray-800 */
+}
+
+.admin-spa .table.table-zebra :where(tbody tr > *) {
+  background-color: #ffffff; /* ensure default white */
+}
+
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(even) > *) {
+  background-color: #f3f4f6; /* tailwind gray-100 */
+}
+
 /* Fix tab content scrolling */
 .tab-content {
   height: auto;
