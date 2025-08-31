@@ -253,7 +253,7 @@
                   Created
                   <i class="bi" :class="getSortIcon('created_at')"></i>
                 </th>
-                <th>Actions</th>
+                <th class="actions-col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +280,8 @@
                     ></span>
                   </td>
                   <td x-text="formatDate(job.created_at)"></td>
-                  <td>
+                  <td class="actions-col">
+                    <div class="flex items-center gap-2 whitespace-nowrap">
                     <button
                       @click="openFieldworkModal(job)"
                       class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 mr-1"
@@ -311,6 +312,7 @@
                     >
                       <i class="bi bi-trash"></i>
                     </button>
+                    </div>
                   </td>
                 </tr>
               </template>
@@ -335,28 +337,30 @@
           
           <!-- Page info and navigation -->
           <div class="flex items-center gap-4">
-            <span class="text-sm text-muted" x-text="getPageInfo()"></span>
-            <div class="btn-group">
-              <button class="btn btn-sm" :disabled="currentPage === 1" @click="currentPage = 1">
-                <i class="bi bi-chevron-double-left"></i>
-              </button>
-              <button class="btn btn-sm" :disabled="currentPage === 1" @click="currentPage--">
-                <i class="bi bi-chevron-left"></i>
-              </button>
-              <template x-for="page in getVisiblePages()" :key="page">
-                <button 
-                  class="btn btn-sm" 
-                  :class="page === currentPage ? 'btn-primary' : ''"
-                  @click="currentPage = page"
-                  x-text="page"
-                ></button>
+            <span class="text-sm text-gray-500" x-text="getPageInfo()"></span>
+            <div class="join">
+              <template x-if="currentPage > 1">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage = 1" title="First page">«</button>
               </template>
-              <button class="btn btn-sm" :disabled="currentPage === totalPages" @click="currentPage++">
-                <i class="bi bi-chevron-right"></i>
-              </button>
-              <button class="btn btn-sm" :disabled="currentPage === totalPages" @click="currentPage = totalPages">
-                <i class="bi bi-chevron-double-right"></i>
-              </button>
+              <template x-if="currentPage > 1">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage--" title="Previous page">‹</button>
+              </template>
+              <template x-for="page in getVisiblePages()" :key="page">
+                <button class="btn btn-sm join-item"
+                        :class="page === currentPage ? 'btn-primary' : 'btn-outline'"
+                        @click="currentPage = page"
+                        x-text="page"></button>
+              </template>
+              <template x-if="currentPage < totalPages">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage++" title="Next page">›</button>
+              </template>
+              <template x-if="currentPage < totalPages">
+                <button class="btn btn-sm join-item btn-ghost"
+                        @click="currentPage = totalPages" title="Last page">»</button>
+              </template>
             </div>
           </div>
         </div>
@@ -1395,24 +1399,24 @@
           },
 
           getStatusBadgeClass(status) {
-            // Return Bootstrap badge classes
-            return "badge rounded-pill";
+            // DaisyUI badge with no wrap so text stays inside
+            return "badge badge-lg whitespace-nowrap";
           },
 
           getStatusBadgeStyle(status) {
-            // Match the exact colors from the dashboard cards
+            // Match the dashboard colors using inline styles
             const statusStyles = {
-              "Completed/To Be Filed": "background-color: #28a745; color: white; border: 2px solid #1e7e34;",
-              "Needs Fieldwork": "background-color: #e09132; color: white; border: 2px solid #c7791c;",
-              "Set/Flag Pins": "background-color: #dc3545; color: white; border: 2px solid #bd2130;",
-              "To Be Printed/Packaged": "background-color: #0066cc; color: white; border: 2px solid #004c99;",  // Royal blue
-              "Fieldwork Complete/Needs Office Work": "background-color: #6f42c1; color: white; border: 2px solid #59359a;",
-              "Survey Complete/Invoice Sent/Unpaid": "background-color: #f5c842; color: #2d3748; border: 2px solid #d4a91a;",
-              "Ongoing Site Plan": "background-color: #e685b5; color: white; border: 2px solid #d961a3;",
-              "On Hold/Pending": "background-color: #a8a8a8; color: white; border: 2px solid #868686;",
-              "Estimate/Quote Available": "background-color: #a8a8a8; color: white; border: 2px solid #868686;",
+              "Completed/To Be Filed": "background-color: #28a745; color: #ffffff; border-color: #1e7e34; border-width: 2px;",
+              "Needs Fieldwork": "background-color: #e09132; color: #ffffff; border-color: #c7791c; border-width: 2px;",
+              "Set/Flag Pins": "background-color: #dc3545; color: #ffffff; border-color: #bd2130; border-width: 2px;",
+              "To Be Printed/Packaged": "background-color: #0066cc; color: #ffffff; border-color: #004c99; border-width: 2px;",
+              "Fieldwork Complete/Needs Office Work": "background-color: #6f42c1; color: #ffffff; border-color: #59359a; border-width: 2px;",
+              "Survey Complete/Invoice Sent/Unpaid": "background-color: #f5c842; color: #2d3748; border-color: #d4a91a; border-width: 2px;",
+              "Ongoing Site Plan": "background-color: #e685b5; color: #ffffff; border-color: #d961a3; border-width: 2px;",
+              "On Hold/Pending": "background-color: #a8a8a8; color: #ffffff; border-color: #868686; border-width: 2px;",
+              "Estimate/Quote Available": "background-color: #a8a8a8; color: #ffffff; border-color: #868686; border-width: 2px;",
             };
-            return statusStyles[status] || "background-color: #6c757d; color: white; border: 2px solid #545b62;";
+            return statusStyles[status] || "background-color: #6c757d; color: #ffffff; border-color: #545b62; border-width: 2px;";
           },
 
           formatDate(dateString) {

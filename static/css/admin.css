@@ -72,6 +72,48 @@ a,
   overflow-y: visible !important;
 }
 
+/* DaisyUI table zebra overrides for readability on light theme */
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(odd) > *),
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(even) > *) {
+  color: #1f2937; /* gray-800 */
+}
+
+.admin-spa .table.table-zebra :where(tbody tr > *) {
+  background-color: #ffffff; /* ensure default white */
+}
+
+.admin-spa .table.table-zebra :where(tbody tr:nth-child(even) > *) {
+  background-color: #f3f4f6; /* tailwind gray-100 */
+}
+
+/* Ensure long status text stays inside badges */
+.admin-spa .badge {
+  white-space: nowrap;
+}
+
+/* Ensure Actions column stays wide enough for 3 buttons inline */
+.admin-spa th.actions-col,
+.admin-spa td.actions-col {
+  min-width: 160px;
+}
+
+/* Table header: use base-content (#1D232A) and stronger weight */
+.admin-spa table thead th {
+  color: #1D232A !important;
+  font-weight: 600;
+}
+
+/* Tabs: make labels darker and active state clearly accented */
+.admin-spa .tabs .tab {
+  color: #374151; /* gray-700 */
+  font-weight: 600;
+}
+
+.admin-spa .tabs .tab.tab-active {
+  color: #1D232A !important; /* base-content */
+  border-color: #1D232A !important; /* stronger underline/border */
+}
+
 /* Fix tab content scrolling */
 .tab-content {
   height: auto;
