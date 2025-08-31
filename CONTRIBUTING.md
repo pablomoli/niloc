@@ -16,6 +16,37 @@ Commands:
   - `git checkout master && git pull --ff-only`
   - `git checkout -b feature/<short-slug>`
 
+## Sync Before New Work
+- Always sync your base branch before starting or merging new work to avoid divergence.
+
+Commands:
+- Update local `master` to the latest remote state:
+  - `git fetch origin`
+  - `git switch master`
+  - `git pull --ff-only`
+- Start your branch from up-to-date `master`:
+  - `git switch -c feature/<short-slug>`
+
+## Rebasing Feature Branches
+- If `master` moved while you were working, rebase your feature onto the latest `origin/master` before pushing or opening a PR.
+
+Commands:
+- Rebase your feature branch on latest master:
+  - `git fetch origin`
+  - `git rebase origin/master`
+  - Resolve any conflicts, then continue: `git rebase --continue`
+  - Push the branch (force-with-lease if already pushed):
+    - first push: `git push -u origin feature/<short-slug>`
+    - subsequent after rebase: `git push --force-with-lease`
+
+## Recommended Git Config Defaults
+- Make pulls rebase by default, and only fast-forward when possible; auto-stash during rebase.
+
+Commands (run once):
+- `git config --global pull.rebase true`
+- `git config --global pull.ff only`
+- `git config --global rebase.autostash true`
+
 ## Working on an Issue
 - Reference the GitHub issue number in the branch name and PR title/body.
 - Keep changes focused and scoped to a single issue.
@@ -71,6 +102,10 @@ Commands:
   - `git push -u origin feature/<slug>`
 - PR:
   - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<slug> -B master`
+
+- Sync + Rebase:
+  - `git fetch origin && git switch master && git pull --ff-only`
+  - `git switch feature/<slug> && git rebase origin/master`
 - Merge & close:
   - `gh pr merge <PR#> --squash --delete-branch`
   - `gh issue close <issue#> -r completed -c "Closed via PR #<PR#>."`
