@@ -1,104 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}Login - Epic Map{% endblock %}
 
-{% block head_extra %}
-<style>
-  body {
-    background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Montserrat', sans-serif;
-  }
+{% block head_extra %}{% endblock %}
 
-  /* iOS Zoom Prevention */
-  input[type="text"],
-  input[type="password"] {
-    font-size: 16px !important;
-  }
-
-  /* Touch interaction improvements */
-  button,
-  .btn,
-  input {
-    touch-action: manipulation;
-  }
-
-  .login-card {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .login-header {
-    background: #FF1393;
-    color: white;
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .login-header h1 {
-    margin: 0;
-    font-size: 2rem;
-  }
-
-  .login-body {
-    padding: 2rem;
-  }
-
-  .form-control {
-    border-radius: 10px;
-    border: 2px solid #e9ecef;
-    padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
-  }
-
-  .form-control:focus {
-    border-color: #FF1393;
-    box-shadow: 0 0 0 3px rgba(255, 19, 147, 0.1);
-  }
-
-  .btn-login {
-    background: linear-gradient(135deg, #FF1393 0%, #AAAAAA 100%);
-    border: none;
-    border-radius: 10px;
-    padding: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: transform 0.2s ease;
-  }
-
-  .btn-login:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  }
-
-  .alert {
-    border-radius: 10px;
-    border: none;
-  }
-</style>
-{% endblock %}
+{% block body_attrs %}data-theme="epicmap" class="min-h-screen flex items-center justify-center font-sans bg-gradient-to-br from-epic-pink to-epic-gray"{% endblock %}
 
 {% block content %}
-<div class="login-card">
-  <div class="login-header">
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 64px; height: 64px;">
-      <div style="display: flex; flex-direction: column; align-items: center;">
-        <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 48px; color: white; letter-spacing: -1px;">EMS</span>
-        <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 14px; color: rgba(255, 255, 255, 0.9); letter-spacing: 1px; text-transform: uppercase;">Epic Map System</span>
+<div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+  <div class="bg-epic-pink text-white text-center p-8">
+    <div class="flex flex-col items-center gap-2">
+      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" class="w-16 h-16">
+      <div class="flex flex-col items-center">
+        <span class="font-sans font-bold text-[48px] text-white tracking-[-1px]">EMS</span>
+        <span class="font-sans font-normal text-[14px] text-white/90 tracking-[1px] uppercase">Epic Map System</span>
       </div>
-      <p class="mb-0" style="font-family: 'Montserrat', sans-serif; font-weight: 300; font-size: 14px; margin-top: 10px;">Survey Job Management</p>
+      <p class="mb-0 font-sans font-light text-sm mt-2">Survey Job Management</p>
     </div>
   </div>
 
-  <div class="login-body">
+  <div class="p-8">
     {% if error %}
       <div class="alert alert-error">
         <i class="bi bi-exclamation-triangle"></i> {{ error }}
@@ -110,17 +30,17 @@
         <label for="username" class="form-label block text-gray-700 mb-1">
           <i class="bi bi-person"></i> Username
         </label>
-        <input type="text" class="form-control" id="username" name="username" required autofocus autocomplete="username">
+        <input type="text" class="input input-bordered w-full" id="username" name="username" required autofocus autocomplete="username">
       </div>
 
       <div class="mb-4">
         <label for="password" class="form-label block text-gray-700 mb-1">
           <i class="bi bi-lock"></i> Password
         </label>
-        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+        <input type="password" class="input input-bordered w-full" id="password" name="password" required autocomplete="current-password">
       </div>
 
-      <button type="submit" class="btn btn-primary btn-login w-full">
+      <button type="submit" class="btn btn-primary w-full">
         <i class="bi bi-box-arrow-in-right"></i> Sign In
       </button>
     </form>

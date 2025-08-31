@@ -49,6 +49,20 @@
   align-items: center;
 }
 
+/* Notification container (replaces inline styles) */
+#notification-container.notification-container {
+  position: fixed;
+  bottom: 100px; /* Above FAB menu */
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  pointer-events: none;
+  padding: 0 15px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+}
+
 .top-controls .btn-sm {
   padding: 6px 12px !important;
   line-height: 1.2 !important;
@@ -268,4 +282,3 @@
   .layer-container { width: 95%; padding: 15px; }
   .layer-option, .layer-toggle { padding: 15px; font-size: 16px; }
 }
-

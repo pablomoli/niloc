@@ -11,17 +11,17 @@
 {% block content %}
     <!-- Header -->
     <header class="app-header">
-      <div style="display: flex; align-items: center; gap: 20px;">
-        <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" style="width: 32px; height: 32px;">
-        <div style="display: flex; flex-direction: column;">
-          <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 20px; color: #FF1393; letter-spacing: -0.5px;">EMS</span>
-          <span style="font-family: 'Montserrat', sans-serif; font-weight: 400; font-size: 10px; color: #AAAAAA; letter-spacing: 0.5px; text-transform: uppercase;">Epic Map System</span>
+      <div class="flex items-center gap-5">
+        <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" class="w-8 h-8">
+        <div class="flex flex-col">
+          <span class="font-sans font-bold text-[20px] text-epic-pink tracking-[-0.5px]">EMS</span>
+          <span class="font-sans font-normal text-[10px] text-epic-gray tracking-[0.5px] uppercase">Epic Map System</span>
         </div>
-        <h1 style="margin: 0; font-size: 1.5rem; font-family: 'Montserrat', sans-serif; font-weight: 700; color: #333;">Admin Dashboard</h1>
+        <h1 class="m-0 text-xl font-bold text-gray-800 font-sans">Admin Dashboard</h1>
       </div>
       <nav class="app-nav">
-        <a href="/" style="color: #333;"><i class="bi bi-map"></i> Map</a>
-        <a href="/logout" style="color: #333;"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        <a href="/" class="text-gray-800"><i class="bi bi-map"></i> Map</a>
+        <a href="/logout" class="text-gray-800"><i class="bi bi-box-arrow-right"></i> Logout</a>
       </nav>
     </header>
 
@@ -64,7 +64,7 @@
           <!-- Row 1: Priority Statuses -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #28a745; color: white;">
+              <div class="card text-center shadow-lg bg-[#28a745] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Completed</h6>
@@ -73,7 +73,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #e09132; color: white;">
+              <div class="card text-center shadow-lg bg-[#e09132] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-rulers text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Needs Fieldwork</h6>
@@ -82,7 +82,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #dc3545; color: white;">
+              <div class="card text-center shadow-lg bg-[#dc3545] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
@@ -91,7 +91,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #0066cc; color: white;">
+              <div class="card text-center shadow-lg bg-[#0066cc] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-printer text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">To Be Printed</h6>
@@ -104,7 +104,7 @@
           <!-- Row 2: Workflow Statuses -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #6f42c1; color: white;">
+              <div class="card text-center shadow-lg bg-[#6f42c1] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Office Work</h6>
@@ -113,7 +113,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #f5c842; color: #2d3748;">
+              <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748]">
                 <div class="card-body py-3">
                   <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-80">Invoice Sent</h6>
@@ -122,7 +122,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #e685b5; color: white;">
+              <div class="card text-center shadow-lg bg-[#e685b5] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Site Plan</h6>
@@ -131,7 +131,7 @@
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="background-color: #a8a8a8; color: white;">
+              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white">
                 <div class="card-body py-3">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending</h6>
@@ -144,7 +144,7 @@
           <!-- Row 3: Quote Status -->
           <div>
             <div class="max-w-xs">
-              <div class="card text-center shadow-lg" style="background-color: #6c757d; color: white;">
+              <div class="card text-center shadow-lg bg-[#6c757d] text-white">
                 <div class="card-body py-3">
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Quote Available</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.estimateAvailable">-</h2>
@@ -159,18 +159,18 @@
           <h3 class="mb-3">Business Metrics</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <div class="card text-center shadow-lg" style="border: 2px solid #17a2b8; background: white;">
+              <div class="card text-center shadow-lg border-2 border-[#17a2b8] bg-white">
                 <div class="card-body py-3">
-                  <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Unique Clients</h6>
-                  <h2 class="text-3xl font-bold mb-0" style="color: #17a2b8;" x-text="stats.uniqueClients">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 text-gray-500">Unique Clients</h6>
+                  <h2 class="text-3xl font-bold mb-0 text-[#17a2b8]" x-text="stats.uniqueClients">-</h2>
                 </div>
               </div>
             </div>
             <div>
-              <div class="card text-center shadow-lg" style="border: 2px solid #dc3545; background: white;">
+              <div class="card text-center shadow-lg border-2 border-[#dc3545] bg-white">
                 <div class="card-body py-3">
-                  <h6 class="text-sm font-semibold mb-2" style="color: #6c757d;">Deleted Jobs</h6>
-                  <h2 class="text-3xl font-bold mb-0" style="color: #dc3545;" x-text="stats.deletedJobs">-</h2>
+                  <h6 class="text-sm font-semibold mb-2 text-gray-500">Deleted Jobs</h6>
+                  <h2 class="text-3xl font-bold mb-0 text-[#dc3545]" x-text="stats.deletedJobs">-</h2>
                 </div>
               </div>
             </div>
@@ -275,7 +275,6 @@
                   <td>
                     <span
                       :class="getStatusBadgeClass(job.status)"
-                      :style="getStatusBadgeStyle(job.status)"
                       x-text="job.status"
                     ></span>
                   </td>
@@ -520,9 +519,8 @@
 
     <!-- Edit User Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="editUserModal"
-      style="z-index: 2000;"
       @click.self="document.getElementById('editUserModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
@@ -534,12 +532,11 @@
           <div class="space-y-4">
             <div class="form-control">
               <label for="editUsername" class="label">
-                <span class="label-text" style="color: #1f2937;">Username</span>
+                <span class="label-text text-gray-800">Username</span>
               </label>
               <input
                 type="text"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="editUsername"
                 x-model="editingUser.username"
                 required
@@ -547,12 +544,11 @@
             </div>
             <div class="form-control">
               <label for="editName" class="label">
-                <span class="label-text" style="color: #1f2937;">Name</span>
+                <span class="label-text text-gray-800">Name</span>
               </label>
               <input
                 type="text"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="editName"
                 x-model="editingUser.name"
                 required
@@ -560,23 +556,21 @@
             </div>
             <div class="form-control">
               <label for="editPassword" class="label">
-                <span class="label-text" style="color: #1f2937;">Password (leave blank to keep current)</span>
+                <span class="label-text text-gray-800">Password (leave blank to keep current)</span>
               </label>
               <input
                 type="password"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="editPassword"
                 x-model="editingUser.password"
               />
             </div>
             <div class="form-control">
               <label for="editRole" class="label">
-                <span class="label-text" style="color: #1f2937;">Role</span>
+                <span class="label-text text-gray-800">Role</span>
               </label>
               <select
                 class="select select-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="editRole"
                 x-model="editingUser.role"
                 required
@@ -604,9 +598,8 @@
 
     <!-- Add User Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="addUserModal"
-      style="z-index: 2000;"
       @click.self="document.getElementById('addUserModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
@@ -618,12 +611,11 @@
           <div class="space-y-4">
             <div class="form-control">
               <label for="newUsername" class="label">
-                <span class="label-text" style="color: #1f2937;">Username</span>
+                <span class="label-text text-gray-800">Username</span>
               </label>
               <input
                 type="text"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="newUsername"
                 x-model="newUser.username"
                 required
@@ -631,12 +623,11 @@
             </div>
             <div class="form-control">
               <label for="newName" class="label">
-                <span class="label-text" style="color: #1f2937;">Name</span>
+                <span class="label-text text-gray-800">Name</span>
               </label>
               <input
                 type="text"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="newName"
                 x-model="newUser.name"
                 required
@@ -644,12 +635,11 @@
             </div>
             <div class="form-control">
               <label for="newPassword" class="label">
-                <span class="label-text" style="color: #1f2937;">Password</span>
+                <span class="label-text text-gray-800">Password</span>
               </label>
               <input
                 type="password"
                 class="input input-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="newPassword"
                 x-model="newUser.password"
                 required
@@ -657,11 +647,10 @@
             </div>
             <div class="form-control">
               <label for="newRole" class="label">
-                <span class="label-text" style="color: #1f2937;">Role</span>
+                <span class="label-text text-gray-800">Role</span>
               </label>
               <select
                 class="select select-bordered w-full"
-                style="background-color: white; color: #333;"
                 id="newRole"
                 x-model="newUser.role"
                 required
@@ -687,9 +676,8 @@
 
     <!-- Edit Job Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="editJobModal"
-      style="z-index: 2000;"
       @click.self="document.getElementById('editJobModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
@@ -703,11 +691,10 @@
                 <label for="editJobNumber" class="form-label">Job Number</label>
                 <input
                   type="text"
-                  class="input input-bordered w-full"
+                  class="input input-bordered w-full bg-base-200"
                   id="editJobNumber"
                   x-model="editingJob.job_number"
                   readonly
-                  style="background-color: #f8f9fa"
                 />
               </div>
               <div class="mb-3">
@@ -790,9 +777,8 @@
 
     <!-- Add Job Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="addJobModal"
-      style="z-index: 2000;"
       @click.self="document.getElementById('addJobModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
@@ -888,9 +874,8 @@
 
     <!-- Fieldwork Management Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="fieldworkModal"
-      style="z-index: 2000;"
       @click.self="document.getElementById('fieldworkModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-4xl relative max-h-[90vh] overflow-y-auto">
@@ -907,8 +892,8 @@
           <h4 class="font-medium text-gray-700" x-text="'Job #' + (fieldworkModal.job?.job_number || '')"></h4>
           <div class="text-right">
             <span class="text-gray-400 text-xs font-medium mr-2">Total Time</span>
-            <div class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium" 
-                 style="background-color: #FF1393;" x-text="formatDuration(getTotalFieldworkTime())">
+            <div class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium bg-epic-pink" 
+                 x-text="formatDuration(getTotalFieldworkTime())">
             </div>
           </div>
         </div>
@@ -1018,9 +1003,8 @@
 
     <!-- Confirmation Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
       id="confirmModal"
-      style="z-index: 2000;"
       @click.self="hideConfirmModal()"
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
@@ -1399,24 +1383,20 @@
           },
 
           getStatusBadgeClass(status) {
-            // DaisyUI badge with no wrap so text stays inside
-            return "badge badge-lg whitespace-nowrap";
-          },
-
-          getStatusBadgeStyle(status) {
-            // Match the dashboard colors using inline styles
-            const statusStyles = {
-              "Completed/To Be Filed": "background-color: #28a745; color: #ffffff; border-color: #1e7e34; border-width: 2px;",
-              "Needs Fieldwork": "background-color: #e09132; color: #ffffff; border-color: #c7791c; border-width: 2px;",
-              "Set/Flag Pins": "background-color: #dc3545; color: #ffffff; border-color: #bd2130; border-width: 2px;",
-              "To Be Printed/Packaged": "background-color: #0066cc; color: #ffffff; border-color: #004c99; border-width: 2px;",
-              "Fieldwork Complete/Needs Office Work": "background-color: #6f42c1; color: #ffffff; border-color: #59359a; border-width: 2px;",
-              "Survey Complete/Invoice Sent/Unpaid": "background-color: #f5c842; color: #2d3748; border-color: #d4a91a; border-width: 2px;",
-              "Ongoing Site Plan": "background-color: #e685b5; color: #ffffff; border-color: #d961a3; border-width: 2px;",
-              "On Hold/Pending": "background-color: #a8a8a8; color: #ffffff; border-color: #868686; border-width: 2px;",
-              "Estimate/Quote Available": "background-color: #a8a8a8; color: #ffffff; border-color: #868686; border-width: 2px;",
+            // DaisyUI badge + theme-specific color classes per status
+            const base = "badge badge-lg whitespace-nowrap border-2";
+            const map = {
+              "Completed/To Be Filed": "badge-completed",
+              "Needs Fieldwork": "badge-needs-fieldwork",
+              "Set/Flag Pins": "badge-set-flag",
+              "To Be Printed/Packaged": "badge-to-be-printed",
+              "Fieldwork Complete/Needs Office Work": "badge-office-work",
+              "Survey Complete/Invoice Sent/Unpaid": "badge-invoice-sent",
+              "Ongoing Site Plan": "badge-ongoing-plan",
+              "On Hold/Pending": "badge-on-hold",
+              "Estimate/Quote Available": "badge-estimate",
             };
-            return statusStyles[status] || "background-color: #6c757d; color: #ffffff; border-color: #545b62; border-width: 2px;";
+            return `${base} ${map[status] || 'badge-default'}`;
           },
 
           formatDate(dateString) {

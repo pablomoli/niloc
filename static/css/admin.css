@@ -97,6 +97,18 @@ a,
   min-width: 160px;
 }
 
+/* Status badge color classes (replaces inline styles) */
+.admin-spa .badge-default { background-color: #6c757d; color: #ffffff; border-color: #545b62; }
+.admin-spa .badge-completed { background-color: #28a745; color: #ffffff; border-color: #1e7e34; }
+.admin-spa .badge-needs-fieldwork { background-color: #e09132; color: #ffffff; border-color: #c7791c; }
+.admin-spa .badge-set-flag { background-color: #dc3545; color: #ffffff; border-color: #bd2130; }
+.admin-spa .badge-to-be-printed { background-color: #0066cc; color: #ffffff; border-color: #004c99; }
+.admin-spa .badge-office-work { background-color: #6f42c1; color: #ffffff; border-color: #59359a; }
+.admin-spa .badge-invoice-sent { background-color: #f5c842; color: #2d3748; border-color: #d4a91a; }
+.admin-spa .badge-ongoing-plan { background-color: #e685b5; color: #ffffff; border-color: #d961a3; }
+.admin-spa .badge-on-hold { background-color: #a8a8a8; color: #ffffff; border-color: #868686; }
+.admin-spa .badge-estimate { background-color: #a8a8a8; color: #ffffff; border-color: #868686; }
+
 /* Table header: use base-content (#1D232A) and stronger weight */
 .admin-spa table thead th {
   color: #1D232A !important;
