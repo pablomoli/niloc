@@ -53,6 +53,12 @@
                 :class="{'tab-active': activeTab === 'users'}">
           <i class="bi bi-people"></i> <span class="ml-2">Users</span>
         </button>
+        <button role="tab"
+                class="tab"
+                @click="activeTab = 'tags'"
+                :class="{'tab-active': activeTab === 'tags'}">
+          <i class="bi bi-tags"></i> <span class="ml-2">Tags</span>
+        </button>
       </div>
 
       <!-- Dashboard Tab -->
@@ -182,7 +188,7 @@
       <div x-show="activeTab === 'jobs'">
         <div class="flex justify-between items-center mb-3">
           <h3>Job Management</h3>
-          <button @click="openAddJobModal()" class="btn btn-primary">
+          <button @click="openAddJobModal()" class="btn btn-primary" title="Add Job">
             <i class="bi bi-plus-circle"></i> Add Job
           </button>
         </div>
@@ -216,33 +222,29 @@
               </template>
             </div>
           </div>
-          <div>
-            <select
-              class="select select-bordered w-full"
-              x-model="statusFilter"
-              @change="filterJobs()"
-            >
-              <option value="">All Statuses</option>
-              <option value="On Hold/Pending">On Hold/Pending</option>
-              <option value="Needs Fieldwork">Needs Fieldwork</option>
-              <option value="Fieldwork Complete/Needs Office Work">
-                Fieldwork Complete/Needs Office Work
-              </option>
-              <option value="To Be Printed/Packaged">
-                To Be Printed/Packaged
-              </option>
-              <option value="Survey Complete/Invoice Sent/Unpaid">
-                Survey Complete/Invoice Sent/Unpaid
-              </option>
-              <option value="Set/Flag Pins">Set/Flag Pins</option>
-              <option value="Completed/To Be Filed">
-                Completed/To Be Filed
-              </option>
-              <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-              <option value="Estimate/Quote Available">
-                Estimate/Quote Available
-              </option>
-            </select>
+          <div class="relative">
+            <button type="button" class="btn btn-outline w-full hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800"
+                    @click="statusDropdownOpen = !statusDropdownOpen"
+                    :aria-expanded="statusDropdownOpen" title="Filter by Status">
+              <i class="bi bi-funnel"></i>
+              <span class="ml-2" x-text="statusSummary()"></span>
+            </button>
+            <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-xl"
+                 x-show="statusDropdownOpen" @click.outside="statusDropdownOpen=false">
+              <div class="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
+                <button class="btn btn-ghost btn-xs" @click="selectAllStatuses()">Select All</button>
+                <button class="btn btn-ghost btn-xs" @click="clearAllStatuses()">Clear</button>
+              </div>
+              <div class="py-1">
+                <template x-for="s in statuses" :key="s">
+                  <label class="flex items-center px-3 py-2 cursor-pointer gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm" :checked="selectedStatuses.includes(s)"
+                           @change="toggleStatusOption(s, $event.target.checked)" :title="s">
+                    <span x-text="s"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -267,6 +269,7 @@
                   Status
                   <i class="bi" :class="getSortIcon('status')"></i>
                 </th>
+                <th>Tags</th>
                 <th class="cursor-pointer " @click="sortJobs('created_at')">
                   Created
                   <i class="bi" :class="getSortIcon('created_at')"></i>
@@ -296,6 +299,21 @@
                       x-text="job.status"
                     ></span>
                   </td>
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <div class="flex flex-wrap gap-1 max-w-[260px] overflow-hidden">
+                        <template x-for="(t, idx) in (job.tags || []).slice(0,2)" :key="t.id">
+                          <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`" x-text="t.name"></span>
+                        </template>
+                        <template x-if="(job.tags || []).length > 2">
+                          <span class="badge badge-ghost" x-text="'+' + ((job.tags||[]).length - 2)"></span>
+                        </template>
+                      </div>
+                      <button class="btn btn-outline btn-xs" title="Manage tags" @click.stop="openJobTags(job)">
+                        Manage
+                      </button>
+                    </div>
+                  </td>
                   <td x-text="formatDate(job.created_at)"></td>
                   <td class="actions-col">
                     <div class="flex items-center gap-2 whitespace-nowrap">
@@ -310,6 +328,7 @@
                       <button
                         @click="editJob(job)"
                         class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
+                        title="Edit Job"
                       >
                         <i class="bi bi-pencil"></i>
                       </button>
@@ -326,6 +345,7 @@
                     <button
                       @click="deleteJob(job)"
                       class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200"
+                      title="Delete Job"
                     >
                       <i class="bi bi-trash"></i>
                     </button>
@@ -393,7 +413,7 @@
       <div x-show="activeTab === 'users'">
         <div class="flex justify-between items-center mb-3">
           <h3>User Management</h3>
-          <button @click="openAddUserModal()" class="btn btn-primary">
+          <button @click="openAddUserModal()" class="btn btn-primary" title="Add User">
             <i class="bi bi-person-plus"></i> Add User
           </button>
         </div>
@@ -426,15 +446,58 @@
                     <button
                       @click="editUser(user)"
                       class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
+                      title="Edit User"
                     >
                       <i class="bi bi-pencil"></i>
                     </button>
                     <button
                       @click="deleteUser(user)"
                       class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200"
+                      title="Delete User"
                     >
                       <i class="bi bi-trash"></i>
                     </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tags Tab -->
+      <div x-show="activeTab === 'tags'">
+        <div class="flex justify-between items-center mb-3">
+          <h3>Manage Tags</h3>
+          <div class="flex gap-2">
+            <input class="input input-bordered input-sm" placeholder="New tag name" x-model="newTag.name">
+            <input type="color" class="input input-bordered input-sm w-12 p-0" x-model="newTag.color">
+            <button class="btn btn-sm btn-primary" @click="createTag()" title="Create Tag"><i class="bi bi-plus-lg"></i> Create</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Color</th>
+                <th>Jobs</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="t in tagsWithUsage" :key="t.id">
+                <tr>
+                  <td>
+                    <input class="input input-bordered input-sm w-full max-w-xs" x-model="t.name">
+                  </td>
+                  <td>
+                    <input type="color" class="input input-bordered input-sm w-12 p-0" x-model="t.color">
+                  </td>
+                  <td x-text="t.job_count || 0"></td>
+                  <td class="flex gap-2">
+                    <button class="btn btn-sm" @click="saveTag(t)" title="Save Changes"><i class="bi bi-save"></i></button>
+                    <button class="btn btn-sm btn-error" :disabled="(t.job_count||0) > 0" @click="deleteTag(t)" title="Delete Tag"><i class="bi bi-trash"></i></button>
                   </td>
                 </tr>
               </template>
@@ -512,6 +575,38 @@
             <p class="text-muted">No deleted jobs found</p>
           </div>
         </template>
+      </div>
+    </div>
+
+    <!-- Job Tags Modal -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]" id="jobTagsModal" @click.self="document.getElementById('jobTagsModal').classList.add('hidden')">
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="document.getElementById('jobTagsModal').classList.add('hidden')">✕</button>
+        <h3 class="font-bold text-lg mb-3 text-primary">Manage Tags for <span x-text="jobTagsModal.job?.job_number"></span></h3>
+        <div class="mb-3">
+          <div class="flex flex-wrap gap-2 mb-2">
+            <template x-for="t in (jobTagsModal.job?.tags || [])" :key="t.id">
+              <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`">
+                <span x-text="t.name"></span>
+                <button class="ml-1 text-xs" title="Remove tag" @click.stop="removeTagFromJob(jobTagsModal.job, t)">✕</button>
+              </span>
+            </template>
+          </div>
+          <div class="relative">
+            <input class="input input-bordered w-full" placeholder="Type to search or create..." x-model="jobTagsModal.input" @input="filterTagSuggestions()" @keydown.enter.prevent="addTagFromInput()">
+            <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-52 overflow-auto" x-show="tagSuggestions.length > 0">
+              <template x-for="s in tagSuggestions" :key="s.id">
+                <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2" @click.prevent="addExistingTag(s)">
+                  <span class="badge badge-ghost" :style="`color:${s.color||'#007bff'}; border-color:${s.color||'#007bff'}`" x-text="s.name"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">Press Enter to create a new tag if no match.</p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button class="btn btn-ghost" @click="document.getElementById('jobTagsModal').classList.add('hidden')">Close</button>
+        </div>
       </div>
     </div>
 
@@ -996,11 +1091,11 @@
                   <td x-text="entry.notes || '-'"></td>
                   <td>
                     <button @click="editFieldworkEntry(entry)" 
-                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1">
+                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1" title="Edit Entry">
                       <i class="bi bi-pencil"></i>
                     </button>
                     <button @click="deleteFieldworkEntry(entry)" 
-                            class="px-2 py-1 rounded text-xs font-medium border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200">
+                            class="px-2 py-1 rounded text-xs font-medium border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200" title="Delete Entry">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -1104,11 +1199,29 @@
           filteredJobs: [],
           deletedJobs: [],
           filteredDeletedJobs: [],
+          tags: [],
+
+          // Tag modal state
+          jobTagsModal: { job: null, input: '' },
+          tagSuggestions: [],
 
           // Filters
           jobSearch: "",
-          statusFilter: "",
           deletedJobSearch: "",
+          // Multi-status filter
+          statuses: [
+            "On Hold/Pending",
+            "Needs Fieldwork",
+            "Fieldwork Complete/Needs Office Work",
+            "To Be Printed/Packaged",
+            "Survey Complete/Invoice Sent/Unpaid",
+            "Set/Flag Pins",
+            "Completed/To Be Filed",
+            "Ongoing Site Plan",
+            "Estimate/Quote Available",
+          ],
+          selectedStatuses: [],
+          statusDropdownOpen: false,
           // Autocomplete (issue #21)
           jobSuggestions: [],
           showJobSuggestions: false,
@@ -1121,7 +1234,7 @@
           
           // Pagination
           currentPage: 1,
-          jobsPerPage: 25,
+          jobsPerPage: 10,
           totalPages: 1,
 
           // Stats
@@ -1149,6 +1262,10 @@
             password: "",
             role: "user",
           },
+
+          // Tags management
+          newTag: { name: '', color: '#007bff' },
+          tagsWithUsage: [],
           newUser: {
             username: "",
             name: "",
@@ -1202,6 +1319,18 @@
 
           init() {
             this.loadData();
+            this.loadTags(true);
+            // Initialize status filter (all selected by default or from localStorage)
+            try {
+              const saved = JSON.parse(localStorage.getItem('admin_status_filters') || '[]');
+              if (Array.isArray(saved) && saved.length > 0) {
+                this.selectedStatuses = this.statuses.filter(s => saved.includes(s));
+              } else {
+                this.selectedStatuses = [...this.statuses];
+              }
+            } catch (_) {
+              this.selectedStatuses = [...this.statuses];
+            }
           },
 
           // Autocomplete handlers
@@ -1348,11 +1477,67 @@
               const data = await response.json();
               // Handle both array response (legacy) and object response (new API)
               this.jobs = Array.isArray(data) ? data : data.jobs || [];
-              this.filteredJobs = this.jobs;
+              // Ensure tags arrays
+              this.jobs.forEach(j => { if (!Array.isArray(j.tags)) j.tags = []; });
+              // Default view: job_number descending
+              this.filteredJobs = [...this.jobs];
+              this.sortField = 'job_number';
+              this.sortDirection = 'desc';
+              this.applySorting();
+              // Apply status filters on initial load
+              this.filterJobs();
+              this.currentPage = 1;
+              this.updatePagination();
             } catch (error) {
               console.error("Failed to load jobs:", error);
               Alpine.store("notifications").add("Failed to load jobs", "error");
             }
+          },
+
+          async loadTags(includeUsage = false) {
+            try {
+              const resp = await fetch('/api/tags' + (includeUsage ? '?include_usage=true' : ''));
+              const arr = await resp.json();
+              this.tags = arr;
+              this.tagsWithUsage = arr;
+            } catch (e) {
+              console.error('Failed to load tags', e);
+            }
+          },
+
+          async createTag() {
+            const name = (this.newTag.name || '').trim();
+            if (!name) return;
+            try {
+              const resp = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(this.newTag)});
+              const tag = await resp.json();
+              if (!resp.ok) throw new Error(tag.error || 'Create failed');
+              this.newTag = { name: '', color: '#007bff' };
+              await this.loadTags(true);
+              Alpine.store('notifications').add('Tag created','success');
+            } catch (e) { console.error(e); Alpine.store('notifications').add(e.message,'error'); }
+          },
+
+          async saveTag(tag) {
+            try {
+              const resp = await fetch(`/api/tags/${tag.id}`, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: tag.name, color: tag.color }) });
+              if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || 'Save failed'); }
+              Alpine.store('notifications').add('Tag saved','success');
+              await this.loadTags(true);
+            } catch (e) { console.error(e); Alpine.store('notifications').add(e.message,'error'); }
+          },
+
+          async deleteTag(tag) {
+            if ((tag.job_count||0) > 0) { Alpine.store('notifications').add('Tag in use; cannot delete','warning'); return; }
+            this.showConfirm('Delete Tag', `Delete '${tag.name}'?`, async () => {
+              try {
+                const resp = await fetch(`/api/tags/${tag.id}`, { method:'DELETE' });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Delete failed');
+                await this.loadTags(true);
+                Alpine.store('notifications').add('Tag deleted','success');
+              } catch (e) { console.error(e); Alpine.store('notifications').add(e.message,'error'); }
+            }, 'Delete');
           },
 
           async loadUsers() {
@@ -1445,19 +1630,109 @@
                 (job) =>
                   job.job_number.toLowerCase().includes(term) ||
                   job.client.toLowerCase().includes(term) ||
-                  job.address.toLowerCase().includes(term),
+                  job.address.toLowerCase().includes(term) ||
+                  (Array.isArray(job.tags) && job.tags.some(t => (t.name||'').toLowerCase().includes(term))),
               );
             }
 
-            if (this.statusFilter) {
-              filtered = filtered.filter(
-                (job) => job.status === this.statusFilter,
-              );
+            // Apply multi-status filter when not all selected
+            if (Array.isArray(this.selectedStatuses) && this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length) {
+              const set = new Set(this.selectedStatuses);
+              filtered = filtered.filter(job => set.has(job.status || ''));
             }
 
             this.filteredJobs = filtered;
             this.applySorting();
             this.updatePagination();
+          },
+
+          // Multi-status helpers
+          statusSummary() {
+            if (!this.selectedStatuses || this.selectedStatuses.length === 0) return 'Statuses: None';
+            if (this.selectedStatuses.length === this.statuses.length) return 'Statuses: All';
+            return `Statuses: ${this.selectedStatuses.length} selected`;
+          },
+          toggleStatusOption(status, checked) {
+            const exists = this.selectedStatuses.includes(status);
+            if (checked && !exists) this.selectedStatuses.push(status);
+            if (!checked && exists) this.selectedStatuses = this.selectedStatuses.filter(s => s !== status);
+            localStorage.setItem('admin_status_filters', JSON.stringify(this.selectedStatuses));
+            this.filterJobs();
+          },
+          selectAllStatuses() {
+            this.selectedStatuses = [...this.statuses];
+            localStorage.setItem('admin_status_filters', JSON.stringify(this.selectedStatuses));
+            this.filterJobs();
+          },
+          clearAllStatuses() {
+            this.selectedStatuses = [];
+            localStorage.setItem('admin_status_filters', JSON.stringify(this.selectedStatuses));
+            this.filterJobs();
+          },
+
+          // Tag helpers
+          openJobTags(job) {
+            this.jobTagsModal.job = job;
+            this.jobTagsModal.input = '';
+            this.tagSuggestions = [];
+            // Refresh job tags from API to ensure fresh
+            fetch(`/api/jobs/${job.job_number}/tags`).then(r => r.json()).then(ts => { this.jobTagsModal.job.tags = ts; this.syncJobRowTags(job, ts); });
+            document.getElementById('jobTagsModal').classList.remove('hidden');
+          },
+
+          syncJobRowTags(job, tags) {
+            const idx = this.jobs.findIndex(j => j.id === job.id);
+            if (idx !== -1) this.jobs[idx].tags = tags;
+          },
+
+          filterTagSuggestions() {
+            const q = (this.jobTagsModal.input || '').toLowerCase();
+            if (!q) { this.tagSuggestions = []; return; }
+            this.tagSuggestions = this.tags.filter(t => t.name.toLowerCase().includes(q) && !(this.jobTagsModal.job?.tags || []).some(jt => jt.id === t.id)).slice(0, 8);
+          },
+
+          async addExistingTag(tag) {
+            if (!this.jobTagsModal.job) return;
+            try {
+              const resp = await fetch(`/api/jobs/${this.jobTagsModal.job.job_number}/tags`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tag_id: tag.id })});
+              const data = await resp.json();
+              if (resp.ok) {
+                this.jobTagsModal.job.tags = data.tags || [];
+                this.syncJobRowTags(this.jobTagsModal.job, this.jobTagsModal.job.tags);
+                this.jobTagsModal.input=''; this.tagSuggestions=[];
+              } else {
+                throw new Error(data.error || 'Failed to add tag');
+              }
+            } catch(e){ console.error(e); }
+          },
+
+          async addTagFromInput() {
+            const name = (this.jobTagsModal.input || '').trim();
+            if (!name) return;
+            // Check existing
+            const existing = this.tags.find(t => t.name.toLowerCase() === name.toLowerCase());
+            if (existing) return this.addExistingTag(existing);
+            // Create then add
+            try {
+              const create = await fetch('/api/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name })});
+              const tag = await create.json();
+              if (!create.ok) throw new Error(tag.error || 'Create failed');
+              this.tags.push(tag);
+              await this.addExistingTag(tag);
+            } catch(e){ console.error(e); }
+          },
+
+          async removeTagFromJob(job, tag) {
+            try {
+              const resp = await fetch(`/api/jobs/${job.job_number}/tags/${tag.id}`, { method:'DELETE' });
+              const data = await resp.json();
+              if (resp.ok) {
+                job.tags = data.tags || (job.tags || []).filter(t => t.id !== tag.id);
+                this.syncJobRowTags(job, job.tags);
+              } else {
+                throw new Error(data.error || 'Failed to remove tag');
+              }
+            } catch(e){ console.error(e); }
           },
 
           getStatusBadgeClass(status) {

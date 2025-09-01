@@ -5,6 +5,14 @@ from sqlalchemy import or_
 db = SQLAlchemy()
 
 
+# Association table for many-to-many relation between jobs and tags
+job_tags = db.Table(
+    "job_tags",
+    db.Column("job_id", db.Integer, db.ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("tag_id", db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class Job(db.Model):
     __tablename__ = "jobs"
 
@@ -53,6 +61,12 @@ class Job(db.Model):
     # Relationships
     field_work = db.relationship(
         "FieldWork", backref="job", lazy=True, cascade="all, delete-orphan"
+    )
+    tags = db.relationship(
+        "Tag",
+        secondary=job_tags,
+        backref=db.backref("jobs", lazy="dynamic"),
+        lazy="joined",
     )
     created_by = db.relationship(
         "User", foreign_keys=[created_by_id], backref="created_jobs"
@@ -191,6 +205,7 @@ class Job(db.Model):
             "deleted_by_id": self.deleted_by_id,
             "created_by_id": self.created_by_id,
             "is_deleted": self.is_deleted(),
+            "tags": [tag.to_dict() for tag in getattr(self, "tags", [])],
         }
 
     def __repr__(self):
