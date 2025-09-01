@@ -533,12 +533,11 @@ function handleMarkerClick(e, job) {
         AppState.selectedJobs.clear();
         AppState.selectedJobs.add(latestJob.job_number);
         updateMapMarkers();
-        
-        // Use simple modal instead of Alpine
-        if (window.SimpleModal) {
+
+        // Open details modal (no fallback)
+        if (window.SimpleModal && typeof window.SimpleModal.show === 'function') {
             window.SimpleModal.show(latestJob);
         } else {
-            // Fallback
             console.error('SimpleModal not available');
         }
     }

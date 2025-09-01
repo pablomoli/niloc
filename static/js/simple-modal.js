@@ -1,7 +1,27 @@
 // Simple modal handler without Alpine
+// In-memory Tag cache for the map session
+window.TagCache = {
+    items: [],
+    loaded: false,
+    async loadOnce() {
+        if (this.loaded && Array.isArray(this.items) && this.items.length) return this.items;
+        try {
+            const resp = await fetch('/api/tags');
+            this.items = await resp.json();
+        } catch (_) {
+            this.items = [];
+        }
+        this.loaded = true;
+        return this.items;
+    },
+    invalidate() { this.loaded = false; },
+    add(tag) { if (tag && tag.id && !this.items.find(t => t.id === tag.id)) this.items.push(tag); }
+};
 window.SimpleModal = {
     currentJob: null,
     fieldworkData: [],
+    fieldworkLoaded: false,
+    allTags: [],
     confirmModal: {
         title: '',
         message: '',
@@ -223,20 +243,30 @@ window.SimpleModal = {
     },
 
     show(job) {
-        console.log('SimpleModal.show called with job:', job);
-        this.currentJob = { ...job }; // Store a copy of the job data
-        
-        // Generate FEMA link if job has address
+        this.currentJob = { ...job };
+        this.fieldworkLoaded = false;
         const femaLink = this.generateFEMALink(job.address);
-        
-        // Fetch fieldwork data and render modal
+        // Render immediately with placeholders
+        this.renderModal(job, femaLink);
+        // Warm tags cache
+        this.fetchAllTags();
+        // Load fieldwork and refresh section
         this.fetchFieldworkData(job.job_number).then(() => {
-            this.renderModal(job, femaLink);
+            this.fieldworkLoaded = true;
+            this.refreshFieldworkDisplay();
+            this.updateTotalTimeDisplay();
         });
     },
 
     // Generate fieldwork entries HTML
     generateFieldworkHTML() {
+        if (!this.fieldworkLoaded) {
+            return `
+                <div class="text-center py-4 text-gray-400">
+                    <i class="bi bi-hourglass-split"></i> Loading fieldwork...
+                </div>
+            `;
+        }
         if (this.fieldworkData.length === 0) {
             return `
                 <div class="text-center py-4 text-gray-500">
@@ -265,6 +295,143 @@ window.SimpleModal = {
                 </div>
             </div>
         `).join('');
+    },
+
+    // Generate tags HTML (read-only chips)
+    generateTagsHTML(job) {
+        try {
+            const tags = Array.isArray(job?.tags) ? job.tags : [];
+            if (!tags.length) return '<span class="text-gray-500">None</span>';
+            const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+            return tags.map(t => `
+                <span class="badge border-2" style="border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}">
+                    ${esc(t.name)}
+                    <button class="ml-1 text-xs" onclick="SimpleModal.removeTag(${t.id})" title="Remove">✕</button>
+                </span>
+            `).join('');
+        } catch (_) {
+            return '<span class="text-gray-500">None</span>';
+        }
+    },
+
+    // Fetch all tags for suggestions
+    async fetchAllTags() {
+        try {
+            const items = await window.TagCache.loadOnce();
+            this.allTags = items || [];
+        } catch (_) { this.allTags = []; }
+    },
+
+    // Add tag to the current job by name (create allowed only for admin via backend)
+    async addTag() {
+        const input = document.getElementById('modal-tag-input');
+        if (!input) return;
+        const name = (input.value || '').trim();
+        if (!name) return;
+        const existing = (this.allTags || []).find(t => (t.name||'').toLowerCase() === name.toLowerCase());
+        let payload;
+        if (existing) {
+            payload = { tag_id: existing.id };
+        } else {
+            // attempt create (admin only)
+            payload = { name };
+        }
+        try {
+            const resp = await fetch(`/api/jobs/${this.currentJob.job_number}/tags`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Failed to add tag');
+            // Update job tags in modal and AppState
+            this.currentJob.tags = data.tags || [];
+            this.updateTagsSection();
+            if (window.AppState) {
+                const idx = window.AppState.allJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx !== -1) window.AppState.allJobs[idx].tags = this.currentJob.tags;
+                const idx2 = window.AppState.filteredJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx2 !== -1) window.AppState.filteredJobs[idx2].tags = this.currentJob.tags;
+            }
+            input.value = '';
+            // refresh tags cache if a new tag got created
+            if (!existing) { window.TagCache.invalidate(); this.fetchAllTags(); }
+            this.showNotification('Tag added', 'success');
+        } catch (e) {
+            this.showNotification(e.message || 'Failed to add tag', 'error');
+        }
+    },
+
+    // Add an existing tag by id (from suggestions)
+    async addExistingTag(tagId) {
+        try {
+            const resp = await fetch(`/api/jobs/${this.currentJob.job_number}/tags`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tag_id: tagId })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Failed to add tag');
+            this.currentJob.tags = data.tags || [];
+            this.updateTagsSection();
+            if (window.AppState) {
+                const idx = window.AppState.allJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx !== -1) window.AppState.allJobs[idx].tags = this.currentJob.tags;
+                const idx2 = window.AppState.filteredJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx2 !== -1) window.AppState.filteredJobs[idx2].tags = this.currentJob.tags;
+            }
+            const input = document.getElementById('modal-tag-input');
+            if (input) input.value = '';
+            this.updateTagSuggestions();
+            this.showNotification('Tag added', 'success');
+        } catch (e) {
+            this.showNotification(e.message || 'Failed to add tag', 'error');
+        }
+    },
+
+    // Update dropdown suggestions as user types
+    updateTagSuggestions() {
+        const input = document.getElementById('modal-tag-input');
+        const panel = document.getElementById('modal-tag-suggestions');
+        if (!input || !panel) return;
+        const q = (input.value || '').toLowerCase().trim();
+        const assigned = new Set((Array.isArray(this.currentJob.tags) ? this.currentJob.tags : []).map(t => t.id));
+        if (!q) { panel.innerHTML = ''; panel.style.display = 'none'; return; }
+        const matches = (this.allTags || [])
+            .filter(t => !assigned.has(t.id) && (t.name || '').toLowerCase().includes(q))
+            .slice(0, 8);
+        if (matches.length === 0) { panel.innerHTML = ''; panel.style.display = 'none'; return; }
+        panel.innerHTML = matches.map(t => `
+            <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2" onclick="SimpleModal.addExistingTag(${t.id})">
+                <span class="badge badge-ghost" style="color:${t.color||'#007bff'}; border-color:${t.color||'#007bff'}">${(t.name||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</span>
+            </button>
+        `).join('');
+        panel.style.display = 'block';
+    },
+
+    hideTagSuggestions() {
+        const panel = document.getElementById('modal-tag-suggestions');
+        if (panel) { panel.innerHTML = ''; panel.style.display = 'none'; }
+    },
+
+    async removeTag(tagId) {
+        try {
+            const resp = await fetch(`/api/jobs/${this.currentJob.job_number}/tags/${tagId}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Failed to remove tag');
+            this.currentJob.tags = data.tags || (this.currentJob.tags || []).filter(t => t.id !== tagId);
+            this.updateTagsSection();
+            if (window.AppState) {
+                const idx = window.AppState.allJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx !== -1) window.AppState.allJobs[idx].tags = this.currentJob.tags;
+                const idx2 = window.AppState.filteredJobs.findIndex(j => j.job_number === this.currentJob.job_number);
+                if (idx2 !== -1) window.AppState.filteredJobs[idx2].tags = this.currentJob.tags;
+            }
+            this.showNotification('Tag removed', 'success');
+        } catch (e) {
+            this.showNotification(e.message || 'Failed to remove tag', 'error');
+        }
+    },
+
+    updateTagsSection() {
+        const container = document.getElementById('modal-tags-container');
+        if (container) container.innerHTML = this.generateTagsHTML(this.currentJob);
     },
 
     // Calculate total time from start and end times
@@ -360,6 +527,22 @@ window.SimpleModal = {
                     </div>
                     
                     <div class="space-y-4">
+                        <!-- Tags (read-only) -->
+                        <div>
+                            <h4 class="text-gray-400 text-sm font-medium mb-1">Tags</h4>
+                            <div id="modal-tags-container" class="flex flex-wrap gap-2">${this.generateTagsHTML(job)}</div>
+                            <div class="mt-2">
+                                <div class="relative">
+                                    <div class="flex gap-2 items-center">
+                                        <input id="modal-tag-input" class="input input-bordered input-sm flex-1" placeholder="Add Tags" 
+                                               oninput="SimpleModal.updateTagSuggestions()" onfocus="SimpleModal.updateTagSuggestions()" onkeydown="if(event.key==='Enter') SimpleModal.addTag()">
+                                        <button class="btn btn-sm" onclick="SimpleModal.addTag()">Add</button>
+                                    </div>
+                                    <div id="modal-tag-suggestions" class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg" style="display:none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Editable Client -->
                         <div>
                             <h4 class="text-gray-400 text-sm font-medium mb-1">Client</h4>
