@@ -49,6 +49,16 @@
   align-items: center;
 }
 
+/* iOS Safe Areas (notch/dynamic island) */
+@supports (padding: env(safe-area-inset-top)) {
+  .logo-container {
+    top: calc(10px + env(safe-area-inset-top));
+  }
+  .top-controls {
+    top: calc(10px + env(safe-area-inset-top));
+  }
+}
+
 /* Notification container (replaces inline styles) */
 #notification-container.notification-container {
   position: fixed;
