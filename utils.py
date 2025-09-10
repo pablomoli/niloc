@@ -48,12 +48,12 @@ def get_brevard_property_link(address):
         pass
     return None
 
-def geocode_brevard_parcel(tax_account=None, parcel_id=None):
+def geocode_brevard_parcel(tax_account: str):
     """
-    Geocode a Brevard County parcel by tax account or parcel ID using CSV lookup.
+    Geocode a Brevard County parcel by tax account using CSV lookup.
     Returns coordinates and parcel information from local CSV file.
     """
-    if not tax_account and not parcel_id:
+    if not tax_account:
         return None
     
     try:
@@ -63,17 +63,12 @@ def geocode_brevard_parcel(tax_account=None, parcel_id=None):
             return None
         
         # Search for the parcel
-        result = None
-        if tax_account:
-            # Convert tax_account to integer for exact matching
-            try:
-                tax_account_int = int(tax_account)
-                matches = df[df['TaxAcct'] == tax_account_int]
-            except (ValueError, TypeError):
-                return None
-        else:
-            # Search by parcel_id (Name column) - exact string match
-            matches = df[df['Name'] == parcel_id]
+        # Convert tax_account to integer for exact matching
+        try:
+            tax_account_int = int(tax_account)
+            matches = df[df['TaxAcct'] == tax_account_int]
+        except (ValueError, TypeError):
+            return None
         
         if matches.empty:
             return None
