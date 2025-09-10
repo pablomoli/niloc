@@ -59,6 +59,16 @@
   }
 }
 
+/* Legacy iOS safe-area syntax for older versions */
+.logo-container { top: calc(10px + constant(safe-area-inset-top)); }
+.top-controls { top: calc(10px + constant(safe-area-inset-top)); }
+
+/* Hide nav text in PWA standalone or small screens; keep icons visible */
+@media (max-width: 768px), (display-mode: standalone) {
+  .top-controls a { font-size: 0; padding: 6px 8px; }
+  .top-controls a i { font-size: 16px; margin: 0; }
+}
+
 /* Notification container (replaces inline styles) */
 #notification-container.notification-container {
   position: fixed;
