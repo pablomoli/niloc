@@ -492,9 +492,9 @@ window.SimpleModal = {
                     <h3 class="font-bold text-lg mb-2 text-primary">Job #${job.job_number || 'N/A'}</h3>
                     ${job.is_parcel_job ? `
                     <div class="mb-3">
-                        <button class="btn btn-sm btn-primary" onclick="SimpleModal.promptPromotion('${job.job_number}')" title="Convert to address job"> 
+                        <button class="btn btn-sm btn-primary" onclick="SimpleModal.openPromotion('${job.job_number}')" title="Upgrade to address job"> 
                             <i class="bi bi-arrow-up-right-square mr-1"></i>
-                            Promote to Address Job
+                            Upgrade
                         </button>
                         <p class="text-xs text-gray-500 mt-1">Requires an address to replace parcel location.</p>
                     </div>
@@ -651,7 +651,7 @@ window.SimpleModal = {
                         <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" onclick="SimpleModal.hide()">Close</button>
                     </div>
                 </div>
-                
+
                 <!-- Confirmation Modal -->
                 <div id="fieldwork-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2001;">
                     <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
@@ -668,6 +668,22 @@ window.SimpleModal = {
                             <button type="button" class="btn btn-error" onclick="SimpleModal.confirmAction()">
                                 Delete
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promotion Modal (Upgrade) -->
+                <div id="promotion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2002;">
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.closePromotion()">✕</button>
+                        <h3 class="font-bold text-lg mb-4 text-primary">Upgrade to Address Job</h3>
+                        <div class="mb-3">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
+                            <input type="text" id="promotion-address-input" class="input input-bordered w-full" placeholder="Enter full address" />
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-2">
+                            <button type="button" class="btn btn-ghost" onclick="SimpleModal.closePromotion()">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="SimpleModal.submitPromotion()">Upgrade</button>
                         </div>
                     </div>
                 </div>
@@ -721,14 +737,27 @@ window.SimpleModal = {
         document.body.style.overflow = '';
     },
     
-    // Prompt for address and promote parcel job to address job
-    async promptPromotion(jobNumber) {
-        const address = window.prompt('Enter the full address to promote this job:');
-        if (!address || !address.trim()) {
-            this.showNotification('Address is required to promote this job', 'error');
+    // Open in-app promotion modal
+    openPromotion(jobNumber) {
+        this._promotionJobNumber = jobNumber;
+        const modal = document.getElementById('promotion-modal');
+        const input = document.getElementById('promotion-address-input');
+        if (modal) modal.classList.remove('hidden');
+        if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+    },
+    closePromotion() {
+        const modal = document.getElementById('promotion-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+    async submitPromotion() {
+        const input = document.getElementById('promotion-address-input');
+        const address = (input?.value || '').trim();
+        if (!address) {
+            this.showNotification('Address is required to upgrade this job', 'error');
             return;
         }
-        await this.promoteToAddress(jobNumber, address.trim());
+        await this.promoteToAddress(this._promotionJobNumber, address);
+        this.closePromotion();
     },
     
     async promoteToAddress(jobNumber, address) {

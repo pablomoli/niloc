@@ -333,9 +333,9 @@
                     </button>
                     <template x-if="job.is_parcel_job">
                       <button
-                        @click="promoteToAddress(job)"
+                        @click="openPromoteModal(job)"
                         class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
-                        title="Promote to Address Job"
+                        title="Upgrade"
                       >
                         <i class="bi bi-arrow-up-right-square"></i>
                       </button>
@@ -890,6 +890,26 @@
       </div>
     </div>
 
+    <!-- Promote to Address Modal -->
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
+      id="promoteAddressModal"
+      @click.self="closePromoteModal()"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closePromoteModal()">✕</button>
+        <h3 class="font-bold text-lg mb-4 text-primary">Upgrade to Address Job</h3>
+        <div class="mb-3">
+          <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
+          <input type="text" id="promoteAddressInput" class="input input-bordered w-full" x-model="promotionAddress" placeholder="Enter full address" />
+        </div>
+        <div class="flex justify-end space-x-3 mt-2">
+          <button type="button" class="btn btn-ghost" @click="closePromoteModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" @click="submitPromote()">Upgrade</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Add Job Modal -->
     <div
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
@@ -1180,42 +1200,46 @@
             }, duration);
           },
           
-          async promoteToAddress(job) {
-            const address = window.prompt(`Enter full address to promote ${job.job_number}:`);
-            if (!address || !address.trim()) {
-              Alpine.store("notifications").add(
-                "Address is required to promote this job",
-                "error",
-              );
+          // Upgrade modal state
+          promotionJob: null,
+          promotionAddress: "",
+
+          openPromoteModal(job) {
+            this.promotionJob = job;
+            this.promotionAddress = "";
+            document.getElementById('promoteAddressModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('promoteAddressInput')?.focus(), 50);
+          },
+          closePromoteModal() {
+            document.getElementById('promoteAddressModal').classList.add('hidden');
+          },
+          async submitPromote() {
+            const address = (this.promotionAddress || "").trim();
+            if (!address) {
+              Alpine.store("notifications").add("Address is required to upgrade this job", "error");
               return;
             }
             try {
-              const response = await fetch(`/api/jobs/${job.job_number}/promote-to-address`, {
+              const response = await fetch(`/api/jobs/${this.promotionJob.job_number}/promote-to-address`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ address: address.trim() })
+                body: JSON.stringify({ address })
               });
               const data = await response.json();
               if (response.ok) {
-                Alpine.store("notifications").add(
-                  "Job promoted to address job successfully",
-                  "success"
-                );
-                // Update the job in the list
-                const jobIndex = this.jobs.findIndex(j => j.job_number === job.job_number);
+                Alpine.store("notifications").add("Job upgraded successfully", "success");
+                const jobIndex = this.jobs.findIndex(j => j.job_number === this.promotionJob.job_number);
                 if (jobIndex !== -1) {
                   this.jobs[jobIndex].is_parcel_job = false;
-                  this.jobs[jobIndex].address = address.trim();
+                  this.jobs[jobIndex].address = address;
                 }
+                this.closePromoteModal();
               } else {
-                throw new Error(data.error || "Failed to promote job");
+                throw new Error(data.error || "Failed to upgrade job");
               }
             } catch (error) {
-              console.error("Error promoting job:", error);
-              Alpine.store("notifications").add(
-                error.message || "Failed to promote job",
-                "error",
-              );
+              console.error("Error upgrading job:", error);
+              Alpine.store("notifications").add(error.message || "Failed to upgrade job", "error");
             }
           },
 
