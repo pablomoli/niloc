@@ -1,5 +1,5 @@
 # app.py - Updated to use consolidated API while keeping all existing functionality
-from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime, timezone, timedelta
@@ -109,12 +109,6 @@ def get_fieldwork_for_job(job_number):
     from api_routes import get_job_fieldwork
 
     return get_job_fieldwork(job_number)
-
-
-@app.route('/manifest.json')
-def manifest():
-    """Serve the PWA web manifest with correct MIME type."""
-    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
 
 
 @app.route("/fieldwork/<int:entry_id>", methods=["PUT"])
