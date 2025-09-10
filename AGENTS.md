@@ -34,7 +34,64 @@
 - Never commit secrets or `.env`. Use timeouts for network calls (see geocoding logic) and prefer soft‑delete helpers in models over hard deletes.
 
 ## Agent Collaboration Workflow
-- Testing: The maintainer will run tests after each commit. Do not assume automatic test runs.
-- Push policy: Do not push to remote. The maintainer performs all `git push` operations.
-- Push commands: You may suggest the exact `git push` command in output, but never execute it.
-- Branching: Use `feature/<short-slug>` for new work and keep commits focused per issue.
+- Audience: This section is for code agents (Codex CLI, Claude Code, etc.). Follow it exactly.
+- Never push: Do not push to remote. The maintainer performs all `git push`/merge operations. You may suggest push commands, but never execute them.
+- Allowed actions: Create local branches, add/commit files, run local commands, and open PRs using GitHub CLI (`gh`).
+- Base branch: `master` (not `main`).
+- Branching: Use `feature/<short-slug>` (or `fix/`, `docs/`) and keep commits focused per issue.
+- Testing: The maintainer runs tests after commits. Prefer small, targeted validations locally.
+
+### Agent Workflow (Detailed)
+
+1) Sync and branch
+- `git fetch origin`
+- `git checkout master && git pull --rebase`
+- `git checkout -b feature/<short-slug>`
+
+2) Implement with discipline
+- Keep scope tight (one purpose per branch). Avoid unrelated refactors.
+- Follow structure and style above; add endpoints only in `api_routes.py` under `/api`.
+- Parcel rules: Brevard uses `tax_account` only; Orange uses `parcel_id` with dashes.
+
+3) Validate locally
+- Run: `flask --app app run --reload` (requires `.env`).
+- Health: `curl http://localhost:5000/api/health`.
+- Manual flows: job create, fieldwork CRUD, soft delete/restore, FAB flows, parcel searches.
+
+4) Migrations when required
+- `flask --app app db migrate -m "<message>"`
+- `flask --app app db upgrade`
+- Include migration files in commits and note rollback in the PR.
+
+5) Commit etiquette
+- Imperative, concise subjects; reference issues (e.g., `refs #19`, `closes #15`).
+- Make logical, atomic commits; avoid giant “misc” changes.
+
+6) Open a PR with GitHub CLI (do not push)
+- Stage + commit normally, then:
+```
+gh pr create \
+  --base master \
+  --title "<Title> (refs/closes #<issue>)" \
+  --body  "What/Why/How, screenshots, DB notes (migrations, rollback)" \
+  --draft
+```
+- Helpers: `gh pr edit --add-label <label>`, `gh pr view --web`, `gh pr checks --watch`.
+
+7) Iterate on feedback
+- Add commits locally; keep PR updated with `gh`. If needed: `git fetch origin && git rebase origin/master`.
+
+### PR Review Checklist (for agents)
+- Scope: Single-purpose, minimal diff; commit messages are clear and linked to issues.
+- Style: PEP 8, naming conventions, concise docstrings.
+- API: JSON responses via `jsonify`; routes live in `/api` blueprint; timeouts on network I/O.
+- Security: No secrets or `.env` committed; respect soft-delete patterns over hard deletes.
+- Parcel logic: Brevard tax account only; Orange parcel ID format with dashes.
+- UI: DaisyUI/Tailwind; Admin and Map modals consistent; FAB parcel flows tested.
+- DB: Migrations included and rollback plan noted.
+- Evidence: Screenshots/GIFs for UI; manual test notes.
+
+### Definition of Done
+- Critical flows validated locally; code is small and readable.
+- PR opened via `gh` (draft by default) with clear What/Why/How and DB notes.
+- No direct pushes performed by the agent.
