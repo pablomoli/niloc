@@ -66,12 +66,13 @@ Commands:
 
 ## Push & Pull Request
 - Maintainer pushes branches and opens PRs.
+- Contributors: do not push. You may commit locally and open PRs using GitHub CLI (`gh`).
 
 Commands:
 - Push branch (first time):
   - `git push -u origin feature/<short-slug>`
 - Create PR against `master` (using GitHub CLI):
-  - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<short-slug> -B master -l refactor -l css`
+  - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<short-slug> -B master -l refactor -l css --draft`
 - Open PR in browser:
   - `gh pr view --web`
 - Check PR status:
@@ -100,8 +101,11 @@ Commands:
   - `git add -p && git commit -m "<Message> (refs #<issue>)"`
 - Push (maintainer):
   - `git push -u origin feature/<slug>`
-- PR:
-  - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<slug> -B master`
+- PR (contributor):
+  - `gh pr create -t "<Title> (closes #<issue>)" -b "<Body>" -H feature/<slug> -B master --draft`
+
+## Detailed Workflow
+- See `CONTRIBUTING_WORKFLOW.md` for a step‑by‑step process, gh CLI cookbook, and a review checklist.
 
 ## Production CSS Build (Tailwind + DaisyUI)
 - We compile CSS locally instead of using the Tailwind CDN in production.
