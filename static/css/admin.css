@@ -156,6 +156,22 @@ body.text-base-content {
   min-height: 100vh;
 }
 
+/* Safe areas in standalone PWA for the header */
+@supports (padding: env(safe-area-inset-top)) {
+  .pwa-standalone .app-header { padding-top: calc(10px + env(safe-area-inset-top)); }
+}
+.pwa-standalone .app-header { padding-top: calc(10px + constant(safe-area-inset-top)); }
+@media (display-mode: standalone) {
+  .app-header { padding-top: calc(10px + env(safe-area-inset-top)); }
+}
+
+/* Hide header/nav text in standalone or small screens; keep icons visible */
+@media (max-width: 768px), (display-mode: standalone) {
+  .app-nav a { font-size: 0; padding: 0.5rem; }
+  .app-nav a i { font-size: 18px; margin: 0; }
+  .tabs .tab span { display: none; }
+}
+
 .admin-spa input,
 .admin-spa select,
 .admin-spa textarea {

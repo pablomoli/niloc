@@ -1,5 +1,13 @@
 /* Map page specific styles (extracted from templates/map.html) */
 
+/* Safe-area variable for PWA standalone */
+:root { --safe-top: 0px; }
+@supports (padding: env(safe-area-inset-top)) {
+  html.pwa-standalone { --safe-top: env(safe-area-inset-top); }
+  html.pwa-standalone { --safe-top: env(safe-area-inset-top); }
+}
+html.pwa-standalone { --safe-top: constant(safe-area-inset-top); }
+
 #map {
   height: 100vh;
   width: 100%;
@@ -8,7 +16,7 @@
 /* Logo and branding */
 .logo-container {
   position: absolute;
-  top: 10px;
+  top: calc(10px + var(--safe-top));
   left: 10px;
   z-index: 1000;
   background: white;
@@ -37,7 +45,7 @@
 
 .top-controls {
   position: absolute;
-  top: 10px;
+  top: calc(10px + var(--safe-top));
   right: 10px;
   z-index: 1000;
   background: white;
@@ -49,14 +57,16 @@
   align-items: center;
 }
 
-/* iOS Safe Areas (notch/dynamic island) */
-@supports (padding: env(safe-area-inset-top)) {
-  .logo-container {
-    top: calc(10px + env(safe-area-inset-top));
-  }
-  .top-controls {
-    top: calc(10px + env(safe-area-inset-top));
-  }
+/* Additional targeting for installed PWA */
+@media (display-mode: standalone) {
+  .logo-container { top: calc(10px + var(--safe-top)); }
+  .top-controls { top: calc(10px + var(--safe-top)); }
+}
+
+/* Hide nav text in PWA standalone or small screens; keep icons visible */
+@media (max-width: 768px), (display-mode: standalone) {
+  .top-controls a { font-size: 0; padding: 6px 8px; }
+  .top-controls a i { font-size: 16px; margin: 0; }
 }
 
 /* Notification container (replaces inline styles) */
