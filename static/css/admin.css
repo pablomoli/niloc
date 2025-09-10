@@ -161,6 +161,9 @@ body.text-base-content {
   .pwa-standalone .app-header { padding-top: calc(10px + env(safe-area-inset-top)); }
 }
 .pwa-standalone .app-header { padding-top: calc(10px + constant(safe-area-inset-top)); }
+@media (display-mode: standalone) {
+  .app-header { padding-top: calc(10px + env(safe-area-inset-top)); }
+}
 
 /* Hide header/nav text in standalone or small screens; keep icons visible */
 @media (max-width: 768px), (display-mode: standalone) {
