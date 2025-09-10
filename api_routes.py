@@ -680,6 +680,54 @@ def restore_job(job_number):
         return jsonify({"error": "Database error occurred"}), 500
 
 
+@api_bp.route("/jobs/<job_number>/promote-to-address", methods=["POST"])
+@login_required
+def promote_parcel_to_address(job_number: str):
+    """POST /api/jobs/JOB123/promote-to-address - Promote parcel job to address job
+
+    Requires JSON body: { "address": "..." }
+    - Validates presence of address.
+    - Attempts to geocode provided address (if API key configured) to set lat/lng/county.
+    - Sets is_parcel_job = False.
+    """
+    # Find active job by job number
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    if not job.is_parcel_job:
+        return jsonify({"error": "Job is already an address job"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    address = (payload.get("address") or "").strip()
+    if not address:
+        return jsonify({"error": "Address is required to promote this job"}), 400
+
+    try:
+        # Try to geocode to enrich coordinates/county
+        geo = geocode_address(address)
+
+        job.address = geo.get("formatted_address") if geo and geo.get("formatted_address") else address
+        if geo:
+            job.lat = str(geo.get("lat")) if geo.get("lat") is not None else job.lat
+            job.long = str(geo.get("lng")) if geo.get("lng") is not None else job.long
+            if geo.get("county"):
+                job.county = geo.get("county")
+        job.is_parcel_job = False
+
+        db.session.commit()
+
+        return jsonify({
+            "message": f"Job {job_number} promoted to address job successfully",
+            "job": job.to_dict()
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Promote job error: {e}")
+        return jsonify({"error": "Database error occurred"}), 500
+
+
 @api_bp.route("/jobs/deleted", methods=["GET"])
 @login_required
 def get_deleted_jobs():
@@ -1188,22 +1236,19 @@ def reverse_geocode():
 def geocode_brevard_parcel_endpoint():
     """
     GET /api/geocode/brevard-parcel - Geocode Brevard County parcel
-    Query params: tax_account OR parcel_id
+    Query params: tax_account (required)
+    Note: Parcel ID lookup removed due to reliability issues
     """
     tax_account = request.args.get("tax_account", "").strip()
-    parcel_id = request.args.get("parcel_id", "").strip()
-    
-    if not tax_account and not parcel_id:
-        return jsonify({"error": "Either tax_account or parcel_id parameter required"}), 400
-    
-    result = geocode_brevard_parcel(
-        tax_account=tax_account if tax_account else None,
-        parcel_id=parcel_id if parcel_id else None
-    )
-    
+
+    if not tax_account:
+        return jsonify({"error": "tax_account parameter required"}), 400
+
+    result = geocode_brevard_parcel(tax_account=tax_account)
+
     if not result:
         return jsonify({"error": "Could not geocode parcel"}), 404
-    
+
     return jsonify(result)
 
 

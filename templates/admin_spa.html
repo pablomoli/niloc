@@ -324,22 +324,20 @@
                     >
                       <i class="bi bi-clock-history"></i>
                     </button>
-                    <template x-if="!job.is_parcel_job">
-                      <button
-                        @click="editJob(job)"
-                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
-                        title="Edit Job"
-                      >
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                    </template>
+                    <button
+                      @click="editJob(job)"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
+                      title="Edit Job"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
                     <template x-if="job.is_parcel_job">
                       <button
-                        disabled
-                        class="btn btn-ghost btn-xs btn-disabled mr-1"
-                        title="Parcel jobs cannot be edited"
+                        @click="openPromoteModal(job)"
+                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
+                        title="Upgrade"
                       >
-                        <i class="bi bi-lock"></i>
+                        <i class="bi bi-arrow-up-right-square"></i>
                       </button>
                     </template>
                     <button
@@ -829,8 +827,12 @@
                   class="input input-bordered w-full"
                   id="editJobAddress"
                   x-model="editingJob.address"
-                  required
+                  :disabled="editingJob.is_parcel_job"
+                  :required="!editingJob.is_parcel_job"
                 />
+                <template x-if="editingJob.is_parcel_job">
+                  <p class="text-xs text-gray-500 mt-1">Address is managed by parcel lookup. Promote this job to edit the address.</p>
+                </template>
               </div>
               <div class="mb-3">
                 <label for="editJobStatus" class="form-label">Status</label>
@@ -888,102 +890,27 @@
       </div>
     </div>
 
-    <!-- Add Job Modal -->
+    <!-- Promote to Address Modal -->
     <div
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
-      id="addJobModal"
-      @click.self="document.getElementById('addJobModal').classList.add('hidden')"
+      id="promoteAddressModal"
+      @click.self="closePromoteModal()"
     >
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                  onclick="document.getElementById('addJobModal').classList.add('hidden')">✕</button>
-          
-          <h3 class="font-bold text-lg mb-4 text-primary">Add New Job</h3>
-          <form @submit.prevent="saveNewJob()">
-            <div class="modal-body">
-              <div class="mb-3">
-                <label for="newJobNumber" class="form-label">Job Number</label>
-                <input
-                  type="text"
-                  class="input input-bordered w-full"
-                  id="newJobNumber"
-                  x-model="newJob.job_number"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="newJobClient" class="form-label">Client</label>
-                <input
-                  type="text"
-                  class="input input-bordered w-full"
-                  id="newJobClient"
-                  x-model="newJob.client"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="newJobAddress" class="form-label">Address</label>
-                <input
-                  type="text"
-                  class="input input-bordered w-full"
-                  id="newJobAddress"
-                  x-model="newJob.address"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="newJobStatus" class="form-label">Status</label>
-                <select
-                  class="select select-bordered w-full"
-                  id="newJobStatus"
-                  x-model="newJob.status"
-                >
-                  <option value="">Select Status</option>
-                  <option value="On Hold/Pending">On Hold/Pending</option>
-                  <option value="Needs Fieldwork">Needs Fieldwork</option>
-                  <option value="Fieldwork Complete/Needs Office Work">
-                    Fieldwork Complete/Needs Office Work
-                  </option>
-                  <option value="To Be Printed/Packaged">
-                    To Be Printed/Packaged
-                  </option>
-                  <option value="Survey Complete/Invoice Sent/Unpaid">
-                    Survey Complete/Invoice Sent/Unpaid
-                  </option>
-                  <option value="Set/Flag Pins">Set/Flag Pins</option>
-                  <option value="Completed/To Be Filed">
-                    Completed/To Be Filed
-                  </option>
-                  <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-                  <option value="Estimate/Quote Available">
-                    Estimate/Quote Available
-                  </option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="newJobNotes" class="form-label">Notes</label>
-                <textarea
-                  class="textarea textarea-bordered w-full"
-                  id="newJobNotes"
-                  x-model="newJob.notes"
-                  rows="3"
-                ></textarea>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                @click="document.getElementById('addJobModal').classList.add('hidden')"
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">Create Job</button>
-            </div>
-          </form>
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closePromoteModal()">✕</button>
+        <h3 class="font-bold text-lg mb-4 text-primary">Upgrade to Address Job</h3>
+        <div class="mb-3">
+          <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
+          <input type="text" id="promoteAddressInput" class="input input-bordered w-full" x-model="promotionAddress" placeholder="Enter full address" />
+        </div>
+        <div class="flex justify-end space-x-3 mt-2">
+          <button type="button" class="btn btn-ghost" @click="closePromoteModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" @click="submitPromote()">Upgrade</button>
         </div>
       </div>
     </div>
+
+    <!-- Legacy Add Job Modal removed in favor of shared CreateJobModal -->
 
     <!-- Fieldwork Management Modal -->
     <div
@@ -1152,6 +1079,7 @@
 
 {% block scripts %}
     <!-- Admin JavaScript -->
+    <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
     <script>
       document.addEventListener("alpine:init", () => {
         // Notifications Store (reuse from main app)
@@ -1177,6 +1105,8 @@
               this.remove(notification.id);
             }, duration);
           },
+          
+          // notifications store functions continue below
 
           remove(id) {
             const index = this.items.findIndex((item) => item.id === id);
@@ -1289,6 +1219,10 @@
             notes: "",
           },
 
+          // Upgrade modal state
+          promotionJob: null,
+          promotionAddress: "",
+
           // Modal management
           confirmModal: {
             title: "",
@@ -1320,6 +1254,10 @@
           init() {
             this.loadData();
             this.loadTags(true);
+            document.addEventListener('jobCreated', async () => {
+              await Promise.all([this.loadJobs(), this.loadStats()]);
+              Alpine.store('notifications').add('Job created', 'success');
+            });
             // Initialize status filter (all selected by default or from localStorage)
             try {
               const saved = JSON.parse(localStorage.getItem('admin_status_filters') || '[]');
@@ -1680,6 +1618,46 @@
             document.getElementById('jobTagsModal').classList.remove('hidden');
           },
 
+          // Upgrade actions
+          openPromoteModal(job) {
+            this.promotionJob = job;
+            this.promotionAddress = '';
+            document.getElementById('promoteAddressModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('promoteAddressInput')?.focus(), 50);
+          },
+          closePromoteModal() {
+            document.getElementById('promoteAddressModal').classList.add('hidden');
+          },
+          async submitPromote() {
+            const address = (this.promotionAddress || '').trim();
+            if (!address) {
+              Alpine.store('notifications').add('Address is required to upgrade this job', 'error');
+              return;
+            }
+            try {
+              const response = await fetch(`/api/jobs/${this.promotionJob.job_number}/promote-to-address`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+              });
+              const data = await response.json();
+              if (response.ok) {
+                Alpine.store('notifications').add('Job upgraded successfully', 'success');
+                const jobIndex = this.jobs.findIndex(j => j.job_number === this.promotionJob.job_number);
+                if (jobIndex !== -1) {
+                  this.jobs[jobIndex].is_parcel_job = false;
+                  this.jobs[jobIndex].address = address;
+                }
+                this.closePromoteModal();
+              } else {
+                throw new Error(data.error || 'Failed to upgrade job');
+              }
+            } catch (error) {
+              console.error('Error upgrading job:', error);
+              Alpine.store('notifications').add(error.message || 'Failed to upgrade job', 'error');
+            }
+          },
+
           syncJobRowTags(job, tags) {
             const idx = this.jobs.findIndex(j => j.id === job.id);
             if (idx !== -1) this.jobs[idx].tags = tags;
@@ -1758,29 +1736,15 @@
           },
 
           openAddJobModal() {
-            // Reset form
-            this.newJob = {
-              job_number: "",
-              client: "",
-              address: "",
-              status: "",
-              notes: "",
-            };
-
-            // Show modal
-            document.getElementById("addJobModal").classList.remove("hidden");
+            // Use shared Create Job modal (map-style)
+            if (window.CreateJobModal?.show) {
+              window.CreateJobModal.show(null, null, '');
+            } else {
+              console.warn('CreateJobModal not loaded; ensure create-job-modal.js is included');
+            }
           },
 
           editJob(job) {
-            // Prevent editing parcel jobs
-            if (job.is_parcel_job) {
-              Alpine.store("notifications").add(
-                "Parcel jobs cannot be edited",
-                "warning",
-              );
-              return;
-            }
-
             // Copy job data for editing
             this.editingJob = {
               job_number: job.job_number,
@@ -1788,6 +1752,7 @@
               address: job.address,
               status: job.status || "",
               notes: job.notes || "",
+              is_parcel_job: !!job.is_parcel_job,
             };
 
             // Show modal
