@@ -64,13 +64,8 @@ window.CreateJobModal = {
                             <!-- Brevard County Inputs -->
                             <div id="brevardInputs" style="display: none;">
                                 <div class="mb-3">
-                                    <label class="block text-gray-600 text-sm font-medium mb-2">Tax Account Number</label>
-                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number">
-                                </div>
-                                <div class="text-center my-3 text-gray-400 font-medium">OR</div>
-                                <div class="mb-3">
-                                    <label class="block text-gray-600 text-sm font-medium mb-2">Parcel ID</label>
-                                    <input type="text" id="brevard_parcel_id" class="input input-bordered w-full" placeholder="Enter Parcel ID">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">Tax Account Number *</label>
+                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number" required>
                                 </div>
                             </div>
                             
@@ -246,20 +241,13 @@ window.CreateJobModal = {
                 
                 if (county === 'brevard') {
                     const taxAccount = document.getElementById('brevard_tax_account').value.trim();
-                    const parcelId = document.getElementById('brevard_parcel_id').value.trim();
-                    
-                    if (!taxAccount && !parcelId) {
+                    if (!taxAccount) {
                         if (window.showNotification) {
-                            window.showNotification('Please enter either Tax Account Number or Parcel ID', 'error');
+                            window.showNotification('Please enter Tax Account Number', 'error');
                         }
                         return;
                     }
-                    
-                    const params = new URLSearchParams();
-                    if (taxAccount) params.append('tax_account', taxAccount);
-                    if (parcelId) params.append('parcel_id', parcelId);
-                    
-                    parcelResponse = await fetch(`/api/geocode/brevard-parcel?${params.toString()}`);
+                    parcelResponse = await fetch(`/api/geocode/brevard-parcel?tax_account=${encodeURIComponent(taxAccount)}`);
                 } else if (county === 'orange') {
                     const parcelId = document.getElementById('orange_parcel_id').value.trim();
                     

@@ -136,21 +136,61 @@ function fabMenu() {
             }
         },
         
-        performParcelSearch() {
+        async performParcelSearch() {
             if (this.selectedCounty && this.parcelSearch.trim()) {
-                const searchData = {
-                    county: this.selectedCounty,
-                    value: this.parcelSearch.trim(),
-                    type: this.selectedCounty === 'brevard' ? this.brevardSearchType : 'parcel-id'
-                };
-                
-                if (window.searchParcel) {
-                    window.searchParcel(searchData);
-                } else {
-                    // Fallback to address search with parcel format
-                    window.searchAddress(`${this.selectedCounty} ${this.parcelSearch}`);
+                try {
+                    let response;
+                    const value = this.parcelSearch.trim();
+
+                    if (this.selectedCounty === 'brevard') {
+                        response = await fetch(`/api/geocode/brevard-parcel?tax_account=${encodeURIComponent(value)}`);
+                    } else if (this.selectedCounty === 'orange') {
+                        response = await fetch(`/api/geocode/orange-parcel?parcel_id=${encodeURIComponent(value)}`);
+                    }
+
+                    if (!response?.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        throw new Error(error.error || 'Parcel not found');
+                    }
+
+                    const result = await response.json();
+
+                    if (window.showParcelSearchResult) {
+                        window.showParcelSearchResult(result, this.selectedCounty);
+                    } else {
+                        const lat = result.lat || result.latitude;
+                        const lng = result.lng || result.longitude || result.lon;
+                        const address = result.address || result.formatted_address || 'Parcel Location';
+
+                        if (lat && lng && window.map) {
+                            window.map.setView([lat, lng], 18);
+                            if (window.searchMarker) window.map.removeLayer(window.searchMarker);
+                            window.searchMarker = L.marker([lat, lng], {
+                                icon: L.divIcon({
+                                    className: 'parcel-search-marker',
+                                    html: `<div class="pulse-marker"><div class="pulse-marker-dot"></div></div>`,
+                                    iconSize: [30, 30],
+                                    iconAnchor: [15, 15]
+                                })
+                            }).addTo(window.map);
+                            const popupContent = `
+                                <div class="parcel-popup">
+                                    <h5>${this.selectedCounty === 'brevard' ? 'Brevard' : 'Orange'} County Parcel</h5>
+                                    <p><strong>${this.selectedCounty === 'brevard' ? 'Tax Account' : 'Parcel ID'}:</strong> ${value}</p>
+                                    <p><strong>Address:</strong> ${address}</p>
+                                </div>
+                            `;
+                            window.searchMarker.bindPopup(popupContent).openPopup();
+                        }
+                    }
+
+                    this.closeAdvancedSearch();
+                } catch (error) {
+                    console.error('Parcel search error:', error);
+                    if (window.showNotification) {
+                        window.showNotification(error.message || 'Failed to search parcel', 'error');
+                    }
                 }
-                this.closeAdvancedSearch();
             }
         },
         

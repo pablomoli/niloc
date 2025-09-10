@@ -324,22 +324,20 @@
                     >
                       <i class="bi bi-clock-history"></i>
                     </button>
-                    <template x-if="!job.is_parcel_job">
-                      <button
-                        @click="editJob(job)"
-                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
-                        title="Edit Job"
-                      >
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                    </template>
+                    <button
+                      @click="editJob(job)"
+                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
+                      title="Edit Job"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
                     <template x-if="job.is_parcel_job">
                       <button
-                        disabled
-                        class="btn btn-ghost btn-xs btn-disabled mr-1"
-                        title="Parcel jobs cannot be edited"
+                        @click="promoteToAddress(job)"
+                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
+                        title="Promote to Address Job"
                       >
-                        <i class="bi bi-lock"></i>
+                        <i class="bi bi-arrow-up-right-square"></i>
                       </button>
                     </template>
                     <button
@@ -829,8 +827,12 @@
                   class="input input-bordered w-full"
                   id="editJobAddress"
                   x-model="editingJob.address"
-                  required
+                  :disabled="editingJob.is_parcel_job"
+                  :required="!editingJob.is_parcel_job"
                 />
+                <template x-if="editingJob.is_parcel_job">
+                  <p class="text-xs text-gray-500 mt-1">Address is managed by parcel lookup. Promote this job to edit the address.</p>
+                </template>
               </div>
               <div class="mb-3">
                 <label for="editJobStatus" class="form-label">Status</label>
@@ -1176,6 +1178,45 @@
             setTimeout(() => {
               this.remove(notification.id);
             }, duration);
+          },
+          
+          async promoteToAddress(job) {
+            const address = window.prompt(`Enter full address to promote ${job.job_number}:`);
+            if (!address || !address.trim()) {
+              Alpine.store("notifications").add(
+                "Address is required to promote this job",
+                "error",
+              );
+              return;
+            }
+            try {
+              const response = await fetch(`/api/jobs/${job.job_number}/promote-to-address`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address: address.trim() })
+              });
+              const data = await response.json();
+              if (response.ok) {
+                Alpine.store("notifications").add(
+                  "Job promoted to address job successfully",
+                  "success"
+                );
+                // Update the job in the list
+                const jobIndex = this.jobs.findIndex(j => j.job_number === job.job_number);
+                if (jobIndex !== -1) {
+                  this.jobs[jobIndex].is_parcel_job = false;
+                  this.jobs[jobIndex].address = address.trim();
+                }
+              } else {
+                throw new Error(data.error || "Failed to promote job");
+              }
+            } catch (error) {
+              console.error("Error promoting job:", error);
+              Alpine.store("notifications").add(
+                error.message || "Failed to promote job",
+                "error",
+              );
+            }
           },
 
           remove(id) {
@@ -1772,15 +1813,6 @@
           },
 
           editJob(job) {
-            // Prevent editing parcel jobs
-            if (job.is_parcel_job) {
-              Alpine.store("notifications").add(
-                "Parcel jobs cannot be edited",
-                "warning",
-              );
-              return;
-            }
-
             // Copy job data for editing
             this.editingJob = {
               job_number: job.job_number,
@@ -1788,6 +1820,7 @@
               address: job.address,
               status: job.status || "",
               notes: job.notes || "",
+              is_parcel_job: !!job.is_parcel_job,
             };
 
             // Show modal

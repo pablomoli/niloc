@@ -490,6 +490,15 @@ window.SimpleModal = {
                     <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.hide()">✕</button>
                     
                     <h3 class="font-bold text-lg mb-2 text-primary">Job #${job.job_number || 'N/A'}</h3>
+                    ${job.is_parcel_job ? `
+                    <div class="mb-3">
+                        <button class="btn btn-sm btn-primary" onclick="SimpleModal.promptPromotion('${job.job_number}')" title="Convert to address job"> 
+                            <i class="bi bi-arrow-up-right-square mr-1"></i>
+                            Promote to Address Job
+                        </button>
+                        <p class="text-xs text-gray-500 mt-1">Requires an address to replace parcel location.</p>
+                    </div>
+                    ` : ''}
                     
                     <!-- Editable Status with Total Time -->
                     <div class="mb-4 flex justify-between items-start">
@@ -710,6 +719,47 @@ window.SimpleModal = {
             modal.remove();
         }
         document.body.style.overflow = '';
+    },
+    
+    // Prompt for address and promote parcel job to address job
+    async promptPromotion(jobNumber) {
+        const address = window.prompt('Enter the full address to promote this job:');
+        if (!address || !address.trim()) {
+            this.showNotification('Address is required to promote this job', 'error');
+            return;
+        }
+        await this.promoteToAddress(jobNumber, address.trim());
+    },
+    
+    async promoteToAddress(jobNumber, address) {
+        try {
+            const response = await fetch(`/api/jobs/${jobNumber}/promote-to-address`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || 'Failed to promote job');
+            }
+            const data = await response.json();
+            // Update current job data
+            this.currentJob.is_parcel_job = false;
+            if (address) this.currentJob.address = address;
+            this.renderModal(this.currentJob, this.generateFEMALink(this.currentJob.address));
+            this.showNotification('Job promoted to address job successfully', 'success');
+            // Update job in global state if available
+            if (window.AppState && window.AppState.allJobs) {
+                const idx = window.AppState.allJobs.findIndex(j => j.job_number === jobNumber);
+                if (idx !== -1) {
+                    window.AppState.allJobs[idx].is_parcel_job = false;
+                    window.AppState.allJobs[idx].address = address;
+                }
+            }
+        } catch (error) {
+            console.error('Promotion error:', error);
+            this.showNotification(error.message || 'Failed to promote job', 'error');
+        }
     },
     
     async copyAddress(address) {
