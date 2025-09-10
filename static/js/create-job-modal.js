@@ -1,5 +1,7 @@
 // Create Job Modal Handler
 window.CreateJobModal = {
+    _allTags: [],
+    _selectedTagIds: new Set(),
     show(lat, lng, address) {
         console.log('CreateJobModal.show called with:', lat, lng, address);
         
@@ -97,9 +99,18 @@ window.CreateJobModal = {
                             </select>
                         </div>
                         
-                        <div class="mb-6">
+                        <div class="mb-4">
                             <label class="block text-gray-600 text-sm font-medium mb-2">Notes</label>
                             <textarea id="job_notes" rows="3" class="textarea textarea-bordered w-full"></textarea>
+                        </div>
+
+                        <!-- Tags selection -->
+                        <div class="mb-6">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Tags</label>
+                            <input id="job_tags_input" type="text" class="input input-bordered w-full mb-2" placeholder="Type to search existing tags" oninput="CreateJobModal.updateTagSuggestions()" />
+                            <div id="job_tag_suggestions" class="bg-white border rounded-md shadow-sm divide-y max-h-40 overflow-auto hidden"></div>
+                            <div id="job_selected_tags" class="flex flex-wrap gap-2 mt-2"></div>
+                            <small class="text-gray-400">Only existing tags can be added here.</small>
                         </div>
                         
                         <div class="flex justify-end space-x-3">
@@ -121,6 +132,9 @@ window.CreateJobModal = {
         
         // Add modal to body
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        // Initialize tag state
+        this._selectedTagIds = new Set();
+        this.loadTagsOnce();
         
         // Prevent body scroll
         document.body.style.overflow = 'hidden';
@@ -133,6 +147,64 @@ window.CreateJobModal = {
                 document.getElementById('job_number').focus();
             }
         }, 100);
+    },
+    
+    async loadTagsOnce() {
+        try {
+            const resp = await fetch('/api/tags');
+            const tags = await resp.json();
+            if (Array.isArray(tags)) this._allTags = tags; else this._allTags = [];
+        } catch (_) {
+            this._allTags = [];
+        }
+    },
+    
+    updateTagSuggestions() {
+        const input = document.getElementById('job_tags_input');
+        const q = (input?.value || '').toLowerCase().trim();
+        const box = document.getElementById('job_tag_suggestions');
+        if (!box) return;
+        const results = (this._allTags || []).filter(t => t.name.toLowerCase().includes(q) && !this._selectedTagIds.has(t.id)).slice(0, 10);
+        if (!q || results.length === 0) {
+            box.innerHTML = '';
+            box.classList.add('hidden');
+            return;
+        }
+        box.innerHTML = results.map(t => `<button type=\"button\" class=\"w-full text-left px-3 py-2 hover:bg-gray-50\" onclick=\"CreateJobModal.addTagById(${t.id})\">${t.name}</button>`).join('');
+        box.classList.remove('hidden');
+    },
+    
+    addTagById(id) {
+        const tag = (this._allTags || []).find(t => t.id === id);
+        if (!tag) return;
+        this._selectedTagIds.add(tag.id);
+        const sel = document.getElementById('job_selected_tags');
+        if (sel) {
+            const chip = document.createElement('span');
+            chip.className = 'badge border-2';
+            chip.style.borderColor = tag.color || '#007bff';
+            chip.style.color = tag.color || '#007bff';
+            chip.dataset.tagId = String(tag.id);
+            chip.innerHTML = `${tag.name} <button type=\"button\" class=\"ml-1 text-xs\" onclick=\"CreateJobModal.removeSelectedTag(${tag.id})\">✕</button>`;
+            sel.appendChild(chip);
+        }
+        const box = document.getElementById('job_tag_suggestions');
+        if (box) { box.innerHTML = ''; box.classList.add('hidden'); }
+        const input = document.getElementById('job_tags_input');
+        if (input) input.value = '';
+    },
+    
+    removeSelectedTag(id) {
+        this._selectedTagIds.delete(id);
+        const sel = document.getElementById('job_selected_tags');
+        if (!sel) return;
+        const chips = Array.from(sel.children);
+        for (const c of chips) {
+            if (c.dataset && c.dataset.tagId === String(id)) {
+                sel.removeChild(c);
+                break;
+            }
+        }
     },
     
     hide() {
@@ -405,7 +477,23 @@ window.CreateJobModal = {
                     result = responseText;
                 }
                 console.log('Job created:', result);
-                
+                const createdJob = (result && result.job) ? result.job : null;
+                const jobNumber = createdJob?.job_number || jobData.job_number;
+
+                // Attach selected tags if any
+                if (jobNumber && this._selectedTagIds && this._selectedTagIds.size > 0) {
+                    try {
+                        const tagIds = Array.from(this._selectedTagIds);
+                        await Promise.all(tagIds.map(id => fetch(`/api/jobs/${jobNumber}/tags`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tag_id: id })
+                        })));
+                    } catch (e) {
+                        console.warn('Failed assigning tags to new job', e);
+                    }
+                }
+
                 // Close modal
                 CreateJobModal.hide();
                 
@@ -415,10 +503,12 @@ window.CreateJobModal = {
                     window.currentSearchMarker = null;
                 }
                 
-                // Reload jobs to show the new one
+                // Reload jobs to show the new one (map)
                 if (window.loadJobs) {
                     window.loadJobs();
                 }
+                // Broadcast creation for listeners (admin)
+                try { document.dispatchEvent(new CustomEvent('jobCreated', { detail: createdJob || jobData })); } catch(_) {}
                 
                 // Show success notification
                 if (window.showNotification) {

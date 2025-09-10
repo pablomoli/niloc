@@ -1174,6 +1174,7 @@
 
 {% block scripts %}
     <!-- Admin JavaScript -->
+    <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
     <script>
       document.addEventListener("alpine:init", () => {
         // Notifications Store (reuse from main app)
@@ -1348,6 +1349,10 @@
           init() {
             this.loadData();
             this.loadTags(true);
+            document.addEventListener('jobCreated', async () => {
+              await Promise.all([this.loadJobs(), this.loadStats()]);
+              Alpine.store('notifications').add('Job created', 'success');
+            });
             // Initialize status filter (all selected by default or from localStorage)
             try {
               const saved = JSON.parse(localStorage.getItem('admin_status_filters') || '[]');
