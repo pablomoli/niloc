@@ -1200,48 +1200,7 @@
             }, duration);
           },
           
-          // Upgrade modal state
-          promotionJob: null,
-          promotionAddress: "",
-
-          openPromoteModal(job) {
-            this.promotionJob = job;
-            this.promotionAddress = "";
-            document.getElementById('promoteAddressModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('promoteAddressInput')?.focus(), 50);
-          },
-          closePromoteModal() {
-            document.getElementById('promoteAddressModal').classList.add('hidden');
-          },
-          async submitPromote() {
-            const address = (this.promotionAddress || "").trim();
-            if (!address) {
-              Alpine.store("notifications").add("Address is required to upgrade this job", "error");
-              return;
-            }
-            try {
-              const response = await fetch(`/api/jobs/${this.promotionJob.job_number}/promote-to-address`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ address })
-              });
-              const data = await response.json();
-              if (response.ok) {
-                Alpine.store("notifications").add("Job upgraded successfully", "success");
-                const jobIndex = this.jobs.findIndex(j => j.job_number === this.promotionJob.job_number);
-                if (jobIndex !== -1) {
-                  this.jobs[jobIndex].is_parcel_job = false;
-                  this.jobs[jobIndex].address = address;
-                }
-                this.closePromoteModal();
-              } else {
-                throw new Error(data.error || "Failed to upgrade job");
-              }
-            } catch (error) {
-              console.error("Error upgrading job:", error);
-              Alpine.store("notifications").add(error.message || "Failed to upgrade job", "error");
-            }
-          },
+          // notifications store functions continue below
 
           remove(id) {
             const index = this.items.findIndex((item) => item.id === id);
@@ -1353,6 +1312,10 @@
             status: "",
             notes: "",
           },
+
+          // Upgrade modal state
+          promotionJob: null,
+          promotionAddress: "",
 
           // Modal management
           confirmModal: {
@@ -1743,6 +1706,46 @@
             // Refresh job tags from API to ensure fresh
             fetch(`/api/jobs/${job.job_number}/tags`).then(r => r.json()).then(ts => { this.jobTagsModal.job.tags = ts; this.syncJobRowTags(job, ts); });
             document.getElementById('jobTagsModal').classList.remove('hidden');
+          },
+
+          // Upgrade actions
+          openPromoteModal(job) {
+            this.promotionJob = job;
+            this.promotionAddress = '';
+            document.getElementById('promoteAddressModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('promoteAddressInput')?.focus(), 50);
+          },
+          closePromoteModal() {
+            document.getElementById('promoteAddressModal').classList.add('hidden');
+          },
+          async submitPromote() {
+            const address = (this.promotionAddress || '').trim();
+            if (!address) {
+              Alpine.store('notifications').add('Address is required to upgrade this job', 'error');
+              return;
+            }
+            try {
+              const response = await fetch(`/api/jobs/${this.promotionJob.job_number}/promote-to-address`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+              });
+              const data = await response.json();
+              if (response.ok) {
+                Alpine.store('notifications').add('Job upgraded successfully', 'success');
+                const jobIndex = this.jobs.findIndex(j => j.job_number === this.promotionJob.job_number);
+                if (jobIndex !== -1) {
+                  this.jobs[jobIndex].is_parcel_job = false;
+                  this.jobs[jobIndex].address = address;
+                }
+                this.closePromoteModal();
+              } else {
+                throw new Error(data.error || 'Failed to upgrade job');
+              }
+            } catch (error) {
+              console.error('Error upgrading job:', error);
+              Alpine.store('notifications').add(error.message || 'Failed to upgrade job', 'error');
+            }
           },
 
           syncJobRowTags(job, tags) {
