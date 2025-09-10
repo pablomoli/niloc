@@ -162,9 +162,10 @@ function fabMenu() {
                         const lng = result.lng || result.longitude || result.lon;
                         const address = result.address || result.formatted_address || 'Parcel Location';
 
-                        if (lat && lng && window.map) {
-                            window.map.setView([lat, lng], 18);
-                            if (window.searchMarker) window.map.removeLayer(window.searchMarker);
+                        const map = window.AppState?.map || window.map;
+                        if (lat && lng && map && typeof map.setView === 'function') {
+                            map.setView([lat, lng], 18);
+                            if (window.searchMarker && typeof map.removeLayer === 'function') map.removeLayer(window.searchMarker);
                             window.searchMarker = L.marker([lat, lng], {
                                 icon: L.divIcon({
                                     className: 'parcel-search-marker',
@@ -172,7 +173,7 @@ function fabMenu() {
                                     iconSize: [30, 30],
                                     iconAnchor: [15, 15]
                                 })
-                            }).addTo(window.map);
+                            }).addTo(map);
                             const popupContent = `
                                 <div class="parcel-popup">
                                     <h5>${this.selectedCounty === 'brevard' ? 'Brevard' : 'Orange'} County Parcel</h5>

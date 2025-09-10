@@ -174,16 +174,24 @@ window.CreateJobModal = {
         const county = document.getElementById('parcel_county').value;
         const brevardInputs = document.getElementById('brevardInputs');
         const orangeInputs = document.getElementById('orangeInputs');
+        const brevardTax = document.getElementById('brevard_tax_account');
+        const orangeParcel = document.getElementById('orange_parcel_id');
         
         if (county === 'brevard') {
             brevardInputs.style.display = 'block';
             orangeInputs.style.display = 'none';
+            if (brevardTax) brevardTax.required = true;
+            if (orangeParcel) orangeParcel.required = false;
         } else if (county === 'orange') {
             brevardInputs.style.display = 'none';
             orangeInputs.style.display = 'block';
+            if (brevardTax) brevardTax.required = false;
+            if (orangeParcel) orangeParcel.required = true;
         } else {
             brevardInputs.style.display = 'none';
             orangeInputs.style.display = 'none';
+            if (brevardTax) brevardTax.required = false;
+            if (orangeParcel) orangeParcel.required = false;
         }
     },
     
