@@ -450,8 +450,9 @@
                     </button>
                     <button
                       @click="deleteUser(user)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200"
-                      title="Delete User"
+                      :disabled="user.role === 'admin'"
+                      :title="user.role === 'admin' ? 'Cannot delete admin users' : 'Delete User'"
+                      class="px-2 py-1 rounded text-xs font-medium inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i class="bi bi-trash"></i>
                     </button>
@@ -1838,12 +1839,18 @@
                       "success",
                     );
                   } else {
-                    throw new Error("Failed to delete user");
+                    // Try to surface server-provided error message
+                    let msg = 'Failed to delete user';
+                    try {
+                      const data = await response.json();
+                      msg = data.error || msg;
+                    } catch(_) {}
+                    throw new Error(msg);
                   }
                 } catch (error) {
                   console.error("Delete user error:", error);
                   Alpine.store("notifications").add(
-                    "Failed to delete user",
+                    error.message || "Failed to delete user",
                     "error",
                   );
                 }
