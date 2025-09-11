@@ -9,6 +9,7 @@ click-plugins==1.1.1
 cligj==0.7.2
 fiona==1.10.1
 Flask==3.1.1
+Flask-Compress==1.15
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
 geographiclib==2.0
