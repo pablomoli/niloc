@@ -20,7 +20,7 @@ class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_number = db.Column(db.String(50), unique=True, nullable=False)
     client = db.Column(db.String(100), nullable=False)
-    address = db.Column(db.Text, nullable=False)
+    address = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(100))
     county = db.Column(db.String(50))
     notes = db.Column(db.Text)

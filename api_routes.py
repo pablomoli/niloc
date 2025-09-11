@@ -34,8 +34,15 @@ def validate_job_data(data):
         errors.append("Job number is required")
     if not data.get("client", "").strip():
         errors.append("Client is required")
-    if not data.get("address", "").strip():
-        errors.append("Address is required")
+    # Address is only required for non-parcel jobs
+    is_parcel_job = bool(data.get("is_parcel_job"))
+    if not is_parcel_job:
+        if not data.get("address", "").strip():
+            errors.append("Address is required")
+    else:
+        # For parcel jobs, latitude and longitude are required
+        if data.get("latitude") in (None, "") or data.get("longitude") in (None, ""):
+            errors.append("Latitude and longitude are required for parcel jobs")
 
     # Business rules
     job_number = data.get("job_number", "").strip().upper()
@@ -303,9 +310,10 @@ def create_job():
         return jsonify({"error": "Job number already exists"}), 409
 
     # Handle geocoding based on job type
-    address = data["address"].strip()
+    is_parcel = bool(data.get("is_parcel_job"))
+    address = (data.get("address") or "").strip()
     
-    if data.get("is_parcel_job"):
+    if is_parcel:
         # For parcel jobs, use the coordinates provided from frontend
         parcel_info = data.get("parcel_data", {})
         print(f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}")
@@ -315,6 +323,8 @@ def create_job():
         lat = data.get("latitude")
         lng = data.get("longitude")
         county = parcel_info.get("county", "").title() if parcel_info else None
+        # Do not store any address for parcel-created jobs
+        address = None
     else:
         # For regular address jobs, geocode the address
         geocode_result = geocode_address(address)
@@ -341,7 +351,7 @@ def create_job():
     }
 
     # Add property appraiser link for Brevard County
-    if county and county.lower() == "brevard":
+    if (not is_parcel) and county and county.lower() == "brevard":
         job_data["prop_appr_link"] = get_brevard_property_link(address)
 
     # Save to database
@@ -369,9 +379,8 @@ def update_job(job_number):
     if not job:
         return jsonify({"error": "Job not found"}), 404
     
-    # Prevent editing parcel jobs
-    if job.is_parcel_job:
-        return jsonify({"error": "Parcel jobs cannot be edited"}), 403
+    # Note: Parcel jobs can be edited, but address is managed by parcel lookup
+    # and should not be modified directly via this endpoint.
 
     data = request.get_json()
     if not data:
@@ -389,6 +398,9 @@ def update_job(job_number):
         "fema_link",
         "document_url",
     ]
+    # For parcel jobs, prevent updating address directly
+    if job.is_parcel_job and "address" in updateable_fields:
+        updateable_fields.remove("address")
 
     address_changed = False
     for field in updateable_fields:
@@ -398,8 +410,8 @@ def update_job(job_number):
                 address_changed = True
             setattr(job, field, value)
 
-    # Re-geocode if address changed
-    if address_changed and job.address:
+    # Re-geocode if address changed (only for non-parcel jobs)
+    if (not job.is_parcel_job) and address_changed and job.address:
         geocode_result = geocode_address(job.address)
         if geocode_result:
             job.lat = geocode_result["lat"]

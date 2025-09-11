@@ -443,7 +443,8 @@ window.CreateJobModal = {
             const jobData = {
                 job_number: document.getElementById('job_number').value,
                 client: document.getElementById('job_client').value,
-                address: geocodeData.formatted_address || document.getElementById('job_address_input').value.trim(),
+                // Do not store any address for parcel-created jobs
+                address: isAddressMode ? (document.getElementById('job_address_input').value.trim()) : undefined,
                 status: document.getElementById('job_status').value,
                 notes: document.getElementById('job_notes').value || null,
                 latitude: parseFloat(geocodeData.lat),

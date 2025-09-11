@@ -174,11 +174,17 @@ function fabMenu() {
                                     iconAnchor: [15, 15]
                                 })
                             }).addTo(map);
+                            const safeAddress = String(address).replace(/'/g, "\\'");
                             const popupContent = `
-                                <div class="parcel-popup">
+                                <div class="parcel-popup" style="min-width:220px;">
                                     <h5>${this.selectedCounty === 'brevard' ? 'Brevard' : 'Orange'} County Parcel</h5>
                                     <p><strong>${this.selectedCounty === 'brevard' ? 'Tax Account' : 'Parcel ID'}:</strong> ${value}</p>
                                     <p><strong>Address:</strong> ${address}</p>
+                                    <div style="margin-top:10px; text-align:center;">
+                                        <button class="btn btn-primary btn-sm" onclick="createJobFromParcel('${this.selectedCounty}', '${value}', ${lat}, ${lng}, '${safeAddress}')">
+                                            <i class="bi bi-plus-circle"></i> Create Job Here
+                                        </button>
+                                    </div>
                                 </div>
                             `;
                             window.searchMarker.bindPopup(popupContent).openPopup();
@@ -436,5 +442,37 @@ window.debugStatusFilter = function() {
     if (window.AppState?.allJobs?.length > 0) {
         const statuses = [...new Set(window.AppState.allJobs.map(job => job.status).filter(Boolean))];
         console.log('Unique job statuses:', statuses);
+    }
+};
+
+// Create a job from a parcel search result
+window.createJobFromParcel = function(county, parcelId, lat, lng, address) {
+    try {
+        if (!window.CreateJobModal) {
+            if (window.showNotification) window.showNotification('Create job UI not available', 'error');
+            return;
+        }
+        // Open the create modal and prefill with parcel info
+        window.CreateJobModal.show(lat, lng, address || 'Parcel Location');
+        // Switch to parcel tab and set values after modal renders
+        setTimeout(() => {
+            try {
+                window.CreateJobModal.switchTab('parcel');
+                const countySelect = document.getElementById('parcel_county');
+                if (countySelect) {
+                    countySelect.value = county;
+                    window.CreateJobModal.updateParcelInputs();
+                }
+                if (county === 'brevard') {
+                    const el = document.getElementById('brevard_tax_account');
+                    if (el) el.value = parcelId;
+                } else if (county === 'orange') {
+                    const el = document.getElementById('orange_parcel_id');
+                    if (el) el.value = parcelId;
+                }
+            } catch (_) { /* no-op */ }
+        }, 50);
+    } catch (e) {
+        console.error('createJobFromParcel error:', e);
     }
 };
