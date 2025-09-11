@@ -408,12 +408,7 @@ window.CreateJobModal = {
                 // Pan to location
                 window.AppState.map.setView([lat, lng], 17);
                 
-                // Add a popup to make it more visible for debugging
-                window.tempParcelMarker.bindPopup(`
-                    <strong>Parcel Location</strong><br>
-                    Lat: ${lat}<br>
-                    Lng: ${lng}
-                `).openPopup();
+                // No popup here; confirmation UI shows details on the side
                 
                 // Show confirmation dialog
                 const confirmResult = await CreateJobModal.showParcelConfirmation(geocodeData, parcelData);
