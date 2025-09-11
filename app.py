@@ -1,11 +1,17 @@
 # app.py - Updated to use consolidated API while keeping all existing functionality
-from flask import Flask, render_template, request, jsonify, redirect, session
+from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_compress import Compress
 from flask_migrate import Migrate
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import os
+try:
+    from flask_compress import Compress  # type: ignore
+    _compress_available = True
+except Exception:
+    Compress = None  # type: ignore
+    _compress_available = False
 
 from auth_utils import hash_password, check_password, login_required
 from models import db, Job, FieldWork, Tag, User
@@ -34,6 +40,22 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 app.secret_key = os.getenv("SESSION_KEY")
 app.permanent_session_lifetime = timedelta(days=30)
+
+# Enable gzip/brotli compression for text assets and JSON
+if _compress_available:
+    app.config.update(
+        COMPRESS_MIMETYPES=[
+            "text/html",
+            "text/css",
+            "text/javascript",
+            "application/javascript",
+            "application/json",
+            "image/svg+xml",
+        ],
+        COMPRESS_LEVEL=6,
+        COMPRESS_BR=True,
+    )
+    Compress(app)
 
 # Register blueprints
 app.register_blueprint(admin_bp, url_prefix="/admin")
@@ -71,6 +93,16 @@ if not STATIC_VERSION:
 def _inject_static_version():
     return {"static_version": STATIC_VERSION}
 
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serve favicon from existing PNG to stop 404s."""
+    return send_from_directory(
+        os.path.join(app.root_path, "static", "data"),
+        "EMS-llc-4.png",
+        mimetype="image/png",
+        conditional=True,
+    )
 
 # =============================================================================
 # MAIN ROUTES - Updated to use consolidated API logic

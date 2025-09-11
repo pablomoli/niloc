@@ -103,12 +103,16 @@ def api_dashboard():
             status = job.status or "Unknown"
             status_counts[status] = status_counts.get(status, 0) + 1
 
+        # Compute unique clients (simple case-insensitive set)
+        unique_clients = len({(j.client or "").strip().lower() for j in jobs if j.client})
+
         return jsonify(
             {
                 "total_jobs": total_jobs,
                 "total_users": total_users,
                 "status_counts": status_counts,
                 "recent_jobs": recent_jobs,
+                "unique_clients": unique_clients,
             }
         )
 

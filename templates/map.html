@@ -28,8 +28,8 @@
     
     <!-- Top Right Controls -->
     <div class="top-controls app-nav">
-        <a href="/admin"><i class="bi bi-gear"></i> Admin</a>
-        <a href="/logout" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        <a href="{{ url_for('admin.admin_spa') }}"><i class="bi bi-gear"></i> Admin</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
     
     <!-- Map Container -->

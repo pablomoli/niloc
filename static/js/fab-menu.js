@@ -210,7 +210,10 @@ function fabMenu() {
             }
             this.clientSearchTimer = setTimeout(async () => {
                 try {
-                    const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(term)}&limit=8`);
+                    // Cancel any in-flight request
+                    if (this._clientSearchAbort) this._clientSearchAbort.abort();
+                    this._clientSearchAbort = new AbortController();
+                    const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(term)}&limit=8`, { signal: this._clientSearchAbort.signal });
                     const data = await resp.json();
                     // Prefer server suggestions for clients, fall back to local if empty
                     let suggestions = (data.suggestions || [])
@@ -232,7 +235,7 @@ function fabMenu() {
                     console.error('Error searching clients:', error);
                     this.clientSuggestions = [];
                 }
-            }, 200);
+            }, 300);
         },
         
         selectClient(client) {
