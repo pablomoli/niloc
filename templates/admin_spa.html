@@ -2,9 +2,8 @@
 {% block title %}Admin Dashboard - Epic Map{% endblock %}
 
 {% block head_extra %}
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/app.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <!-- Admin-specific CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ static_version }}">
 {% endblock %}
 
 {% block body_attrs %}x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content admin-spa"{% endblock %}

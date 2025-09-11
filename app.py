@@ -43,6 +43,7 @@ app.register_blueprint(api_bp)  # This adds all our new /api/* endpoints
 db.init_app(app)
 migrate = Migrate(app, db)
 
+
 # Enable gzip compression for JSON, CSS, JS, HTML
 app.config.setdefault("COMPRESS_MIMETYPES", [
     "text/html",
@@ -54,6 +55,22 @@ app.config.setdefault("COMPRESS_MIMETYPES", [
 app.config.setdefault("COMPRESS_LEVEL", 6)
 app.config.setdefault("COMPRESS_MIN_SIZE", 1024)
 Compress(app)
+
+# Expose a stable static version for cache-busting (env or file mtime)
+STATIC_VERSION = os.getenv("STATIC_VERSION")
+if not STATIC_VERSION:
+    try:
+        css_path = os.path.join(app.root_path, "static", "dist", "app.css")
+        mtime = int(os.path.getmtime(css_path))
+        STATIC_VERSION = str(mtime)
+    except Exception:
+        STATIC_VERSION = "1"
+
+
+@app.context_processor
+def _inject_static_version():
+    return {"static_version": STATIC_VERSION}
+
 
 # =============================================================================
 # MAIN ROUTES - Updated to use consolidated API logic
@@ -173,9 +190,13 @@ def logout():
 @app.after_request
 def add_cache_headers(response):
     """Add cache headers to static files"""
-    if request.endpoint == 'static' and '.css' in request.path:
-        response.cache_control.max_age = 300  # 5 minutes
-        response.cache_control.public = True
+    if request.endpoint == "static":
+        # If versioned, allow long-lived immutable caching
+        if request.args.get("v"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            # Shorter default to allow timely updates
+            response.headers["Cache-Control"] = "public, max-age=300"
     return response
 
 
