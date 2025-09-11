@@ -67,7 +67,7 @@ window.CreateJobModal = {
                             <div id="brevardInputs" style="display: none;">
                                 <div class="mb-3">
                                     <label class="block text-gray-600 text-sm font-medium mb-2">Tax Account Number *</label>
-                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number" required>
+                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number">
                                 </div>
                             </div>
                             
