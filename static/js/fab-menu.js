@@ -179,7 +179,6 @@ function fabMenu() {
                                 <div class="parcel-popup" style="min-width:220px;">
                                     <h5>${this.selectedCounty === 'brevard' ? 'Brevard' : 'Orange'} County Parcel</h5>
                                     <p><strong>${this.selectedCounty === 'brevard' ? 'Tax Account' : 'Parcel ID'}:</strong> ${value}</p>
-                                    <p><strong>Address:</strong> ${address}</p>
                                     <div style="margin-top:10px; text-align:center;">
                                         <button class="btn btn-primary btn-sm" onclick="createJobFromParcel('${this.selectedCounty}', '${value}', ${lat}, ${lng}, '${safeAddress}')">
                                             <i class="bi bi-plus-circle"></i> Create Job Here
