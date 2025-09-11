@@ -1284,12 +1284,15 @@
               this.showJobSuggestions = false;
               return;
             }
-            this._jobSearchTimer = setTimeout(() => this.fetchJobSuggestions(q), 200);
+            this._jobSearchTimer = setTimeout(() => this.fetchJobSuggestions(q), 300);
           },
 
           async fetchJobSuggestions(q) {
             try {
-              const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=8`);
+              // Cancel any in-flight request
+              if (this._jobSearchAbort) this._jobSearchAbort.abort();
+              this._jobSearchAbort = new AbortController();
+              const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=8`, { signal: this._jobSearchAbort.signal });
               const data = await resp.json();
               this.jobSuggestions = data.suggestions || [];
               this.suggestionIndex = this.jobSuggestions.length ? 0 : -1;
