@@ -1,7 +1,6 @@
 # app.py - Updated to use consolidated API while keeping all existing functionality
 from flask import Flask, render_template, request, jsonify, redirect, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_compress import Compress
 from flask_migrate import Migrate
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -42,18 +41,6 @@ app.register_blueprint(api_bp)  # This adds all our new /api/* endpoints
 # Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
-
-# Enable gzip compression for JSON, CSS, JS, HTML
-app.config.setdefault("COMPRESS_MIMETYPES", [
-    "text/html",
-    "text/css",
-    "text/plain",
-    "application/json",
-    "application/javascript",
-])
-app.config.setdefault("COMPRESS_LEVEL", 6)
-app.config.setdefault("COMPRESS_MIN_SIZE", 1024)
-Compress(app)
 
 # Expose a stable static version for cache-busting (env or file mtime)
 STATIC_VERSION = os.getenv("STATIC_VERSION")
