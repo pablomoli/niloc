@@ -1532,130 +1532,204 @@ def search_autocomplete():
         if len(search_term) < 2:  # Don't search for very short terms
             return jsonify({"suggestions": []})
 
-        # Create fuzzy search patterns
-        normalized = normalize_search_term(search_term)
-        patterns = [
-            f"%{search_term.lower()}%",
-            f"%{normalized}%",
-            f"{search_term.lower()}%",  # Starts with
-            f"{normalized}%",  # Normalized starts with
-        ]
+        # Prefer fast prefix search for autocomplete; then fallback to contains
+        prefix = f"{search_term}%"
+        contains = f"%{search_term}%"
 
         suggestions = []
 
-        # Search job numbers with fuzzy matching - SIMPLIFIED
-        for pattern in patterns[:2]:  # Use first 2 patterns for job numbers
+        # Jobs: job_number prefix
+        try:
+            job_numbers = (
+                db.session.query(Job.job_number)
+                .filter(Job.deleted_at.is_(None), Job.job_number.ilike(prefix))
+                .distinct()
+                .limit(max(1, limit // 3))
+                .all()
+            )
+            for (job_number,) in job_numbers:
+                if not any(s["value"] == job_number for s in suggestions):
+                    suggestions.append(
+                        {
+                            "value": job_number,
+                            "type": "job_number",
+                            "label": f"Job: {job_number}",
+                            "priority": 1,
+                        }
+                    )
+        except Exception as e:
+            print(f"Job number autocomplete error: {e}")
+
+        # Jobs: client prefix
+        try:
+            clients = (
+                db.session.query(Job.client)
+                .filter(Job.deleted_at.is_(None), Job.client.ilike(prefix))
+                .distinct()
+                .limit(max(1, limit // 3))
+                .all()
+            )
+            for (client,) in clients:
+                if client and not any(s["value"] == client for s in suggestions):
+                    suggestions.append(
+                        {
+                            "value": client,
+                            "type": "client",
+                            "label": f"Client: {client}",
+                            "priority": 1,
+                        }
+                    )
+        except Exception as e:
+            print(f"Client autocomplete error: {e}")
+
+        # Jobs: address prefix
+        try:
+            addresses = (
+                db.session.query(Job.address)
+                .filter(Job.deleted_at.is_(None), Job.address.ilike(prefix))
+                .distinct()
+                .limit(max(1, limit // 3))
+                .all()
+            )
+            for (address,) in addresses:
+                if address and not any(s["value"] == address for s in suggestions):
+                    display_address = address[:50] + "..." if len(address) > 50 else address
+                    suggestions.append(
+                        {
+                            "value": address,
+                            "type": "address",
+                            "label": f"Address: {display_address}",
+                            "priority": 1,
+                        }
+                    )
+        except Exception as e:
+            print(f"Address autocomplete error: {e}")
+
+        # Tags: prefix
+        try:
+            tag_names = (
+                db.session.query(Tag.name)
+                .filter(Tag.name.ilike(prefix))
+                .distinct()
+                .limit(max(1, limit // 4))
+                .all()
+            )
+            for (tag_name,) in tag_names:
+                if tag_name and not any(
+                    s["value"] == tag_name and s["type"] == "tag" for s in suggestions
+                ):
+                    suggestions.append(
+                        {
+                            "value": tag_name,
+                            "type": "tag",
+                            "label": f"Tag: {tag_name}",
+                            "priority": 1,
+                        }
+                    )
+        except Exception as e:
+            print(f"Tag autocomplete error: {e}")
+
+        # Fallback: contains search using trigram index when term is longer and results are few
+        if len(search_term) >= 3 and len(suggestions) < limit:
+            remaining = max(0, limit - len(suggestions))
+            # Job numbers contains
             try:
-                job_numbers = (
+                job_numbers_ct = (
                     db.session.query(Job.job_number)
-                    .filter(Job.deleted_at.is_(None), Job.job_number.ilike(pattern))
+                    .filter(Job.deleted_at.is_(None), Job.job_number.ilike(contains))
                     .distinct()
-                    .limit(limit // 3)
+                    .limit(max(1, remaining // 3) or 1)
                     .all()
                 )
-
-                for (job_number,) in job_numbers:
+                for (job_number,) in job_numbers_ct:
                     if not any(s["value"] == job_number for s in suggestions):
-                        suggestions.append(
-                            {
-                                "value": job_number,
-                                "type": "job_number",
-                                "label": f"Job: {job_number}",
-                                "priority": 1
-                                if job_number.lower().startswith(search_term.lower())
-                                else 2,
-                            }
-                        )
+                        suggestions.append({
+                            "value": job_number,
+                            "type": "job_number",
+                            "label": f"Job: {job_number}",
+                            "priority": 2,
+                        })
+                        if len(suggestions) >= limit:
+                            break
             except Exception as e:
-                print(f"Job number autocomplete error: {e}")
+                print(f"Job number contains error: {e}")
 
-        # Search clients with fuzzy matching - SIMPLIFIED
-        for pattern in patterns:
-            try:
-                clients = (
-                    db.session.query(Job.client)
-                    .filter(Job.deleted_at.is_(None), Job.client.ilike(pattern))
-                    .distinct()
-                    .limit(limit // 3)
-                    .all()
-                )
-
-                for (client,) in clients:
-                    if not any(s["value"] == client for s in suggestions):
-                        suggestions.append(
-                            {
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Clients contains
+                try:
+                    clients_ct = (
+                        db.session.query(Job.client)
+                        .filter(Job.deleted_at.is_(None), Job.client.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 3) or 1)
+                        .all()
+                    )
+                    for (client,) in clients_ct:
+                        if client and not any(s["value"] == client for s in suggestions):
+                            suggestions.append({
                                 "value": client,
                                 "type": "client",
                                 "label": f"Client: {client}",
-                                "priority": 1
-                                if client.lower().startswith(search_term.lower())
-                                else 2,
-                            }
-                        )
-            except Exception as e:
-                print(f"Client autocomplete error: {e}")
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Client contains error: {e}")
 
-        # Search addresses with fuzzy matching - SIMPLIFIED
-        for pattern in patterns:
-            try:
-                addresses = (
-                    db.session.query(Job.address)
-                    .filter(Job.deleted_at.is_(None), Job.address.ilike(pattern))
-                    .distinct()
-                    .limit(limit // 3)
-                    .all()
-                )
-
-                for (address,) in addresses:
-                    if not any(s["value"] == address for s in suggestions):
-                        # Truncate long addresses
-                        display_address = (
-                            address[:50] + "..." if len(address) > 50 else address
-                        )
-                        suggestions.append(
-                            {
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Addresses contains
+                try:
+                    addresses_ct = (
+                        db.session.query(Job.address)
+                        .filter(Job.deleted_at.is_(None), Job.address.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 3) or 1)
+                        .all()
+                    )
+                    for (address,) in addresses_ct:
+                        if address and not any(s["value"] == address for s in suggestions):
+                            display_address = address[:50] + "..." if len(address) > 50 else address
+                            suggestions.append({
                                 "value": address,
                                 "type": "address",
                                 "label": f"Address: {display_address}",
-                                "priority": 1
-                                if address.lower().startswith(search_term.lower())
-                                else 2,
-                            }
-                        )
-            except Exception as e:
-                print(f"Address autocomplete error: {e}")
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Address contains error: {e}")
 
-        # Search tags with fuzzy matching
-        for pattern in patterns:
-            try:
-                tag_names = (
-                    db.session.query(Tag.name)
-                    .filter(Tag.name.ilike(pattern))
-                    .distinct()
-                    .limit(max(1, limit // 4))
-                    .all()
-                )
-                for (tag_name,) in tag_names:
-                    if not any(s["value"] == tag_name and s["type"] == "tag" for s in suggestions):
-                        suggestions.append(
-                            {
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Tags contains
+                try:
+                    tags_ct = (
+                        db.session.query(Tag.name)
+                        .filter(Tag.name.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 4) or 1)
+                        .all()
+                    )
+                    for (tag_name,) in tags_ct:
+                        if tag_name and not any(s["value"] == tag_name and s["type"] == "tag" for s in suggestions):
+                            suggestions.append({
                                 "value": tag_name,
                                 "type": "tag",
                                 "label": f"Tag: {tag_name}",
-                                "priority": 1 if tag_name.lower().startswith(search_term.lower()) else 2,
-                            }
-                        )
-            except Exception as e:
-                print(f"Tag autocomplete error: {e}")
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Tag contains error: {e}")
 
-        # Sort by priority (exact matches first), then by type, then alphabetically
-        suggestions.sort(
-            key=lambda x: (
-                x["priority"],
-                0 if x["type"] == "job_number" else 1 if x["type"] == "client" else 2 if x["type"] == "address" else 3,
-                x["value"].lower(),
-            )
-        )
+        # Sort by type (job_number, client, address, tag), then alphabetically
+        type_order = {"job_number": 0, "client": 1, "address": 2, "tag": 3}
+        suggestions.sort(key=lambda x: (type_order.get(x["type"], 99), x["value"].lower()))
 
         return jsonify(
             {
