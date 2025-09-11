@@ -58,6 +58,13 @@ a,
   color: white !important;
 }
 
+@media (max-width: 768px), (display-mode: standalone) {
+  .app-nav a { font-size: 0; padding: 0.5rem; }
+  .app-nav a i { font-size: 18px; margin: 0; }
+  /* Hide Admin SPA tab labels; keep icons visible */
+  .tabs .tab span { display: none; }
+}
+
 /* Fix scrolling issues in admin sections */
 .container-fluid {
   height: calc(100vh - 60px);

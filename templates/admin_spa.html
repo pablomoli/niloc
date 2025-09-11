@@ -4,6 +4,8 @@
 {% block head_extra %}
     <!-- Admin-specific CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v={{ static_version }}">
+    <!-- Reuse shared app header/nav styles so Map/Logout align right -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ static_version }}">
 {% endblock %}
 
 {% block body_attrs %}x-data="adminApp()" data-theme="epicmap" class="bg-base-100 text-base-content admin-spa"{% endblock %}
@@ -1414,7 +1416,7 @@
 
           async loadJobs() {
             try {
-              const response = await fetch("/api/jobs");
+              const response = await fetch("/api/jobs?per_page=250&page=1");
               const data = await response.json();
               // Handle both array response (legacy) and object response (new API)
               this.jobs = Array.isArray(data) ? data : data.jobs || [];
@@ -1511,47 +1513,23 @@
 
           async loadStats() {
             try {
-              const response = await fetch("/api/jobs");
+              // Use lightweight admin dashboard endpoint instead of downloading all jobs
+              const response = await fetch("/admin/api/dashboard");
               const data = await response.json();
-              const jobs = Array.isArray(data) ? data : data.jobs || [];
 
-              // Count jobs by EPIC status
-              this.stats.onHoldPending = jobs.filter(
-                (j) => j.status === "On Hold/Pending",
-              ).length;
-              this.stats.needsFieldwork = jobs.filter(
-                (j) => j.status === "Needs Fieldwork",
-              ).length;
-              this.stats.fieldworkComplete = jobs.filter(
-                (j) => j.status === "Fieldwork Complete/Needs Office Work",
-              ).length;
-              this.stats.toBePrinted = jobs.filter(
-                (j) => j.status === "To Be Printed/Packaged",
-              ).length;
-              this.stats.invoiceSent = jobs.filter(
-                (j) => j.status === "Survey Complete/Invoice Sent/Unpaid",
-              ).length;
-              this.stats.setPins = jobs.filter(
-                (j) => j.status === "Set/Flag Pins",
-              ).length;
-              this.stats.completed = jobs.filter(
-                (j) => j.status === "Completed/To Be Filed",
-              ).length;
-              this.stats.ongoingSitePlan = jobs.filter(
-                (j) => j.status === "Ongoing Site Plan",
-              ).length;
-              this.stats.estimateAvailable = jobs.filter(
-                (j) => j.status === "Estimate/Quote Available",
-              ).length;
+              // Derive counts from API response
+              const sc = data.status_counts || {};
+              this.stats.completed = sc["Completed/To Be Filed"] || 0;
+              this.stats.needsFieldwork = sc["Needs Fieldwork"] || 0;
+              this.stats.setPins = sc["Set/Flag Pins"] || 0;
+              this.stats.toBePrinted = sc["To Be Printed/Packaged"] || 0;
+              this.stats.fieldworkComplete = sc["Fieldwork Complete/Needs Office Work"] || 0;
+              this.stats.invoiceSent = sc["Survey Complete/Invoice Sent/Unpaid"] || 0;
+              this.stats.ongoingSitePlan = sc["Ongoing Site Plan"] || 0;
+              this.stats.onHoldPending = sc["On Hold/Pending"] || 0;
+              this.stats.estimateAvailable = sc["Estimate/Quote Available"] || 0;
 
-              // Count unique clients (excluding quote-only jobs)
-              const activeJobs = jobs.filter(
-                (j) => j.status !== "Estimate/Quote Available",
-              );
-              const uniqueClients = new Set(
-                activeJobs.map((j) => j.client.toLowerCase().trim()),
-              );
-              this.stats.uniqueClients = uniqueClients.size;
+              this.stats.uniqueClients = data.unique_clients || 0;
 
               // Load deleted jobs count
               const deletedResponse = await fetch("/api/jobs/deleted");
