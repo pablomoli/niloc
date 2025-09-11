@@ -1532,8 +1532,9 @@ def search_autocomplete():
         if len(search_term) < 2:  # Don't search for very short terms
             return jsonify({"suggestions": []})
 
-        # Prefer fast prefix search for autocomplete
+        # Prefer fast prefix search for autocomplete; then fallback to contains
         prefix = f"{search_term}%"
+        contains = f"%{search_term}%"
 
         suggestions = []
 
@@ -1627,6 +1628,104 @@ def search_autocomplete():
                     )
         except Exception as e:
             print(f"Tag autocomplete error: {e}")
+
+        # Fallback: contains search using trigram index when term is longer and results are few
+        if len(search_term) >= 3 and len(suggestions) < limit:
+            remaining = max(0, limit - len(suggestions))
+            # Job numbers contains
+            try:
+                job_numbers_ct = (
+                    db.session.query(Job.job_number)
+                    .filter(Job.deleted_at.is_(None), Job.job_number.ilike(contains))
+                    .distinct()
+                    .limit(max(1, remaining // 3) or 1)
+                    .all()
+                )
+                for (job_number,) in job_numbers_ct:
+                    if not any(s["value"] == job_number for s in suggestions):
+                        suggestions.append({
+                            "value": job_number,
+                            "type": "job_number",
+                            "label": f"Job: {job_number}",
+                            "priority": 2,
+                        })
+                        if len(suggestions) >= limit:
+                            break
+            except Exception as e:
+                print(f"Job number contains error: {e}")
+
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Clients contains
+                try:
+                    clients_ct = (
+                        db.session.query(Job.client)
+                        .filter(Job.deleted_at.is_(None), Job.client.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 3) or 1)
+                        .all()
+                    )
+                    for (client,) in clients_ct:
+                        if client and not any(s["value"] == client for s in suggestions):
+                            suggestions.append({
+                                "value": client,
+                                "type": "client",
+                                "label": f"Client: {client}",
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Client contains error: {e}")
+
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Addresses contains
+                try:
+                    addresses_ct = (
+                        db.session.query(Job.address)
+                        .filter(Job.deleted_at.is_(None), Job.address.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 3) or 1)
+                        .all()
+                    )
+                    for (address,) in addresses_ct:
+                        if address and not any(s["value"] == address for s in suggestions):
+                            display_address = address[:50] + "..." if len(address) > 50 else address
+                            suggestions.append({
+                                "value": address,
+                                "type": "address",
+                                "label": f"Address: {display_address}",
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Address contains error: {e}")
+
+            if len(suggestions) < limit:
+                remaining = max(0, limit - len(suggestions))
+                # Tags contains
+                try:
+                    tags_ct = (
+                        db.session.query(Tag.name)
+                        .filter(Tag.name.ilike(contains))
+                        .distinct()
+                        .limit(max(1, remaining // 4) or 1)
+                        .all()
+                    )
+                    for (tag_name,) in tags_ct:
+                        if tag_name and not any(s["value"] == tag_name and s["type"] == "tag" for s in suggestions):
+                            suggestions.append({
+                                "value": tag_name,
+                                "type": "tag",
+                                "label": f"Tag: {tag_name}",
+                                "priority": 2,
+                            })
+                            if len(suggestions) >= limit:
+                                break
+                except Exception as e:
+                    print(f"Tag contains error: {e}")
 
         # Sort by type (job_number, client, address, tag), then alphabetically
         type_order = {"job_number": 0, "client": 1, "address": 2, "tag": 3}
