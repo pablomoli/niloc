@@ -30,7 +30,7 @@ window.CreateJobModal = {
                 <div class="absolute inset-0" onclick="CreateJobModal.hide()"></div>
                 
                 <!-- Modal Content -->
-                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
                     <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="CreateJobModal.hide()">✕</button>
                     
                     <h3 class="font-bold text-lg mb-4 text-primary">Create New Job</h3>
