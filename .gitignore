@@ -8,6 +8,7 @@ instance/
 frontend_backup_20250606_233919/
 .claude/
 .codacy/
+.DS_Store
 static/data/BCPAO_Reference.gdb/
 node_modules/
 static/dist/
