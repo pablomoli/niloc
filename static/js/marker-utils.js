@@ -5,28 +5,29 @@
 
 // Epic Color System - Status-based colors
 const EPIC_COLORS = {
-  "On Hold/Pending": "#C0C0C0",
+  "On Hold": "#C0C0C0",
+  "Set Pins": "#FF0000",
+  "Ongoing Site": "#FF69B4",
+
+  "Completed": "#9ACD32",
+  "Quote Available": "#607080",
+  "Invoice Sent": "#FFFF00",
+  "Needs Office Work": "#8A2BE2",
+  "To Be Printed": "#1E90FF",
   "Needs Fieldwork": "#FFA500",
-  "Fieldwork Complete/Needs Office Work": "#8A2BE2",
-  "To Be Printed/Packaged": "#1E90FF",
-  "Survey Complete/Invoice Sent/Unpaid": "#FFFF00",
-  "Set/Flag Pins": "#FF0000",
-  "Completed/To Be Filed": "#9ACD32",
-  "Ongoing Site Plan": "#FF69B4",
-  "Estimate/Quote Available": "#607080",
 };
 
 // Status Display Names (shorter versions for UI)
 const STATUS_NAMES = {
-  "On Hold/Pending": "On Hold",
+  "On Hold": "On Hold",
   "Needs Fieldwork": "Needs Field",
-  "Fieldwork Complete/Needs Office Work": "Office Work",
-  "To Be Printed/Packaged": "To Print",
-  "Survey Complete/Invoice Sent/Unpaid": "Invoice Sent",
-  "Set/Flag Pins": "Set Pins",
-  "Completed/To Be Filed": "Completed",
-  "Ongoing Site Plan": "Site Plan",
-  "Estimate/Quote Available": "Quote Ready",
+  "Needs Office Work": "Office Work",
+  "To Be Printed": "To Print",
+  "Invoice Sent": "Invoice Sent",
+  "Set Pins": "Set Pins",
+  "Completed": "Completed",
+  "Ongoing Site": "Site Plan",
+  "Quote Available": "Quote Ready",
 };
 
 /**
@@ -41,7 +42,7 @@ function createEpicMarkerSVG(
   isSelected = false,
   isHighlighted = false,
 ) {
-  const color = EPIC_COLORS[status] || EPIC_COLORS["To Be Printed/Packaged"];
+  const color = EPIC_COLORS[status] || EPIC_COLORS["To Be Printed"];
   const strokeColor = isSelected
     ? "#ff0000"
     : isHighlighted
@@ -81,7 +82,7 @@ function getStatusIcon(status, isSelected = false, isHighlighted = false) {
       </div>
     </div>
   `;
-  
+
   return L.divIcon({
     html: html,
     className: `epic-svg-marker ${isSelected ? "selected" : ""} ${isHighlighted ? "highlighted" : ""}`,
