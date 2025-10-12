@@ -25,6 +25,7 @@ app = Flask(__name__)
 db_path = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_DATABASE_URI"] = db_path
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(days=365)
 
 # Configure connection pooling for better reliability with Supabase
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -93,6 +94,15 @@ if not STATIC_VERSION:
 def _inject_static_version():
     return {"static_version": STATIC_VERSION}
 
+
+@app.after_request
+def add_static_cache_headers(response):
+    """Apply aggressive caching headers to versioned static assets."""
+    if request.path.startswith("/static/"):
+        response.headers.setdefault(
+            "Cache-Control", "public, max-age=31536000, immutable"
+        )
+    return response
 
 @app.route("/favicon.ico")
 def favicon():

@@ -30,6 +30,7 @@
 <body {% block body_attrs %}data-theme="epicmap"{% endblock %}>
   {% block content %}{% endblock %}
 
+  <script src="{{ url_for('static', filename='js/cached-fetch.js') }}?v={{ static_version }}"></script>
   <!-- Alpine.js (global) -->
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

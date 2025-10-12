@@ -6,7 +6,8 @@ window.TagCache = {
     async loadOnce() {
         if (this.loaded && Array.isArray(this.items) && this.items.length) return this.items;
         try {
-            const resp = await fetch('/api/tags');
+            const fetcher = window.cachedFetch || window.fetch;
+            const resp = await fetcher('/api/tags', {}, { ttl: 120_000 });
             this.items = await resp.json();
         } catch (_) {
             this.items = [];
@@ -14,7 +15,12 @@ window.TagCache = {
         this.loaded = true;
         return this.items;
     },
-    invalidate() { this.loaded = false; },
+    invalidate() {
+        this.loaded = false;
+        if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+            window.ApiCache.invalidateMatching('/api/tags');
+        }
+    },
     add(tag) { if (tag && tag.id && !this.items.find(t => t.id === tag.id)) this.items.push(tag); }
 };
 window.SimpleModal = {
@@ -198,6 +204,11 @@ window.SimpleModal = {
                 }
                 
                 // Exit edit mode
+                if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                    window.ApiCache.invalidateMatching('/api/jobs');
+                    window.ApiCache.invalidateMatching('/admin/api/dashboard');
+                }
+
                 this.toggleEdit(field);
                 
                 // Show success feedback
@@ -354,6 +365,10 @@ window.SimpleModal = {
             input.value = '';
             // refresh tags cache if a new tag got created
             if (!existing) { window.TagCache.invalidate(); this.fetchAllTags(); }
+            if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                window.ApiCache.invalidateMatching('/api/jobs');
+                window.ApiCache.invalidateMatching('/api/tags');
+            }
             this.showNotification('Tag added', 'success');
         } catch (e) {
             this.showNotification(e.message || 'Failed to add tag', 'error');
@@ -379,6 +394,10 @@ window.SimpleModal = {
             const input = document.getElementById('modal-tag-input');
             if (input) input.value = '';
             this.updateTagSuggestions();
+            if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                window.ApiCache.invalidateMatching('/api/jobs');
+                window.ApiCache.invalidateMatching('/api/tags');
+            }
             this.showNotification('Tag added', 'success');
         } catch (e) {
             this.showNotification(e.message || 'Failed to add tag', 'error');
@@ -422,6 +441,11 @@ window.SimpleModal = {
                 if (idx !== -1) window.AppState.allJobs[idx].tags = this.currentJob.tags;
                 const idx2 = window.AppState.filteredJobs.findIndex(j => j.job_number === this.currentJob.job_number);
                 if (idx2 !== -1) window.AppState.filteredJobs[idx2].tags = this.currentJob.tags;
+            }
+            window.TagCache.invalidate();
+            if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                window.ApiCache.invalidateMatching('/api/jobs');
+                window.ApiCache.invalidateMatching('/api/tags');
             }
             this.showNotification('Tag removed', 'success');
         } catch (e) {
@@ -784,6 +808,10 @@ window.SimpleModal = {
                     window.AppState.allJobs[idx].is_parcel_job = false;
                     window.AppState.allJobs[idx].address = address;
                 }
+            }
+            if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                window.ApiCache.invalidateMatching('/api/jobs');
+                window.ApiCache.invalidateMatching('/admin/api/dashboard');
             }
         } catch (error) {
             console.error('Promotion error:', error);

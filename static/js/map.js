@@ -471,9 +471,10 @@ AppState.markerCluster = L.markerClusterGroup({
 AppState.map.addLayer(AppState.markerCluster);
 
 // Load and display jobs
-async function loadJobs() {
+async function loadJobs(force = false) {
     try {
-        const response = await fetch('/api/jobs');
+        const fetcher = window.cachedFetch || window.fetch;
+        const response = await fetcher('/api/jobs', {}, { ttl: 30_000, force });
         const data = await response.json();
         AppState.allJobs = Array.isArray(data) ? data : data.jobs || [];
         AppState.filteredJobs = [...AppState.allJobs];

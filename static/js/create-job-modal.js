@@ -151,7 +151,8 @@ window.CreateJobModal = {
     
     async loadTagsOnce() {
         try {
-            const resp = await fetch('/api/tags');
+            const fetcher = window.cachedFetch || window.fetch;
+            const resp = await fetcher('/api/tags', {}, { ttl: 120_000 });
             const tags = await resp.json();
             if (Array.isArray(tags)) this._allTags = tags; else this._allTags = [];
         } catch (_) {
@@ -490,6 +491,13 @@ window.CreateJobModal = {
                     }
                 }
 
+                if (window.ApiCache && typeof window.ApiCache.invalidateMatching === 'function') {
+                    window.ApiCache.invalidateMatching('/api/jobs');
+                    window.ApiCache.invalidateMatching('/admin/api/dashboard');
+                    window.ApiCache.invalidateMatching('/api/jobs/deleted');
+                    window.ApiCache.invalidateMatching('/api/tags');
+                }
+
                 // Close modal
                 CreateJobModal.hide();
                 
@@ -500,9 +508,7 @@ window.CreateJobModal = {
                 }
                 
                 // Reload jobs to show the new one (map)
-                if (window.loadJobs) {
-                    window.loadJobs();
-                }
+                window.loadJobs?.(true);
                 // Broadcast creation for listeners (admin)
                 try { document.dispatchEvent(new CustomEvent('jobCreated', { detail: createdJob || jobData })); } catch(_) {}
                 
