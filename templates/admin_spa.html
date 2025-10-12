@@ -32,31 +32,31 @@
       <div role="tablist" class="tabs tabs-bordered mb-4">
         <button role="tab"
                 class="tab"
-                @click="activeTab = 'dashboard'"
+                @click="activateTab('dashboard')"
                 :class="{'tab-active': activeTab === 'dashboard'}">
           <i class="bi bi-bar-chart"></i> <span class="ml-2">Dashboard</span>
         </button>
         <button role="tab"
                 class="tab"
-                @click="activeTab = 'jobs'"
+                @click="activateTab('jobs')"
                 :class="{'tab-active': activeTab === 'jobs'}">
           <i class="bi bi-briefcase"></i> <span class="ml-2">Jobs</span>
         </button>
         <button role="tab"
                 class="tab"
-                @click="activeTab = 'deleted'"
+                @click="activateTab('deleted')"
                 :class="{'tab-active': activeTab === 'deleted'}">
           <i class="bi bi-trash"></i> <span class="ml-2">Deleted Jobs</span>
         </button>
         <button role="tab"
                 class="tab"
-                @click="activeTab = 'users'"
+                @click="activateTab('users')"
                 :class="{'tab-active': activeTab === 'users'}">
           <i class="bi bi-people"></i> <span class="ml-2">Users</span>
         </button>
         <button role="tab"
                 class="tab"
-                @click="activeTab = 'tags'"
+                @click="activateTab('tags')"
                 :class="{'tab-active': activeTab === 'tags'}">
           <i class="bi bi-tags"></i> <span class="ml-2">Tags</span>
         </button>
@@ -68,80 +68,76 @@
         <div class="mb-4">
           <h3 class="mb-3">Job Status Overview</h3>
 
-          <!-- Row 1: Priority Statuses -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            <div>
-              <div class="card text-center shadow-lg bg-[#28a745] text-white">
-                <div class="card-body py-3">
+          <!-- Combined Row: All Status Cards -->
+          <div class="grid !grid-cols-2 sm:!grid-cols-8 gap-3 mb-3 items-stretch">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#28a745] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Completed</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#e09132] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#e09132] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-rulers text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Needs Fieldwork</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.needsFieldwork">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#dc3545] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set Pins</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#0066cc] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#0066cc] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-printer text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">To Be Printed</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.toBePrinted">-</h2>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Row 2: Workflow Statuses -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            <div>
-              <div class="card text-center shadow-lg bg-[#6f42c1] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Office Work</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748]">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748] h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-80">Invoice Sent</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.invoiceSent">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#e685b5] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#e685b5] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Site Plan</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.ongoingSitePlan">-</h2>
                 </div>
               </div>
             </div>
-            <div>
-              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white">
-                <div class="card-body py-3">
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full">
+                <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
                 </div>
               </div>
@@ -361,7 +357,7 @@
           <!-- Results per page selector -->
           <div class="flex items-center gap-2">
             <span class="text-sm">Show:</span>
-            <select class="select select-bordered select-sm" x-model="jobsPerPage" @change="updatePagination()">
+            <select class="select select-bordered select-sm" x-model.number="jobsPerPage" @change="handleJobsPerPageChange($event)">
               <option value="10">10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -377,25 +373,25 @@
             <div class="join">
               <template x-if="currentPage > 1">
                 <button class="btn btn-sm join-item btn-ghost"
-                        @click="currentPage = 1" title="First page">«</button>
+                        @click="goToPage(1)" title="First page">«</button>
               </template>
               <template x-if="currentPage > 1">
                 <button class="btn btn-sm join-item btn-ghost"
-                        @click="currentPage--" title="Previous page">‹</button>
+                        @click="goToPage(currentPage - 1)" title="Previous page">‹</button>
               </template>
               <template x-for="page in getVisiblePages()" :key="page">
                 <button class="btn btn-sm join-item"
                         :class="page === currentPage ? 'btn-primary' : 'btn-outline'"
-                        @click="currentPage = page"
+                        @click="goToPage(page)"
                         x-text="page"></button>
               </template>
               <template x-if="currentPage < totalPages">
                 <button class="btn btn-sm join-item btn-ghost"
-                        @click="currentPage++" title="Next page">›</button>
+                        @click="goToPage(currentPage + 1)" title="Next page">›</button>
               </template>
               <template x-if="currentPage < totalPages">
                 <button class="btn btn-sm join-item btn-ghost"
-                        @click="currentPage = totalPages" title="Last page">»</button>
+                        @click="goToPage(totalPages)" title="Last page">»</button>
               </template>
             </div>
           </div>
@@ -844,24 +840,24 @@
                   x-model="editingJob.status"
                 >
                   <option value="">Select Status</option>
-                  <option value="On Hold/Pending">On Hold/Pending</option>
+                  <option value="On Hold">On Hold</option>
                   <option value="Needs Fieldwork">Needs Fieldwork</option>
-                  <option value="Fieldwork Complete/Needs Office Work">
-                    Fieldwork Complete/Needs Office Work
+                  <option value="Needs Office Work">
+                    Needs Office Work
                   </option>
-                  <option value="To Be Printed/Packaged">
-                    To Be Printed/Packaged
+                  <option value="To Be Printed">
+                    To Be Printed
                   </option>
-                  <option value="Survey Complete/Invoice Sent/Unpaid">
-                    Survey Complete/Invoice Sent/Unpaid
+                  <option value="Invoice Sent">
+                    Invoice Sent
                   </option>
-                  <option value="Set/Flag Pins">Set/Flag Pins</option>
-                  <option value="Completed/To Be Filed">
-                    Completed/To Be Filed
+                  <option value="Set Pins">Set Pins</option>
+                  <option value="Completed">
+                    Completed
                   </option>
-                  <option value="Ongoing Site Plan">Ongoing Site Plan</option>
-                  <option value="Estimate/Quote Available">
-                    Estimate/Quote Available
+                  <option value="Ongoing Site">Ongoing Site</option>
+                  <option value="Quote Available">
+                    Quote Available
                   </option>
                 </select>
               </div>
@@ -1132,6 +1128,27 @@
           deletedJobs: [],
           filteredDeletedJobs: [],
           tags: [],
+          dashboardLoaded: false,
+          jobsLoaded: false,
+          usersLoaded: false,
+          deletedJobsLoaded: false,
+          _loadingDashboard: false,
+          _loadingJobs: false,
+          _loadingUsers: false,
+          _loadingDeletedJobs: false,
+          _dashboardPromise: null,
+          _jobsPromise: null,
+          _usersPromise: null,
+          _deletedJobsPromise: null,
+          defaultJobsPerPage: 100,
+          jobsMeta: {
+            total: 0,
+            perPage: 0,
+            currentPage: 0,
+            pages: 0,
+            hasNext: false,
+          },
+          jobsLoadedAll: false,
 
           // Tag modal state
           jobTagsModal: { job: null, input: '' },
@@ -1142,15 +1159,15 @@
           deletedJobSearch: "",
           // Multi-status filter
           statuses: [
-            "On Hold/Pending",
+            "On Hold",
             "Needs Fieldwork",
-            "Fieldwork Complete/Needs Office Work",
-            "To Be Printed/Packaged",
-            "Survey Complete/Invoice Sent/Unpaid",
-            "Set/Flag Pins",
-            "Completed/To Be Filed",
-            "Ongoing Site Plan",
-            "Estimate/Quote Available",
+            "Needs Office Work",
+            "To Be Printed",
+            "Invoice Sent",
+            "Set Pins",
+            "Completed",
+            "Ongoing Site",
+            "Quote Available",
           ],
           selectedStatuses: [],
           statusDropdownOpen: false,
@@ -1254,10 +1271,13 @@
           calculatedTotalTime: '0.00',
 
           init() {
-            this.loadData();
+            this.ensureTabData('dashboard');
             this.loadTags(true);
             document.addEventListener('jobCreated', async () => {
-              await Promise.all([this.loadJobs(), this.loadStats()]);
+              await Promise.all([
+                this.loadJobs(true),
+                this.loadDashboardMetrics(true),
+              ]);
               Alpine.store('notifications').add('Job created', 'success');
             });
             // Initialize status filter (all selected by default or from localStorage)
@@ -1273,13 +1293,48 @@
             }
           },
 
+          activateTab(tab) {
+            this.activeTab = tab;
+            this.ensureTabData(tab);
+          },
+
+          ensureTabData(tab) {
+            if (tab === 'dashboard') {
+              this.loadDashboardMetrics();
+              return;
+            }
+            if (tab === 'jobs') {
+              this.loadJobs();
+              return;
+            }
+            if (tab === 'users') {
+              this.loadUsers();
+              return;
+            }
+            if (tab === 'deleted') {
+              this.loadDeletedJobs();
+              return;
+            }
+            if (tab === 'tags' && this.tags.length === 0) {
+              this.loadTags(true);
+            }
+          },
+
           // Autocomplete handlers
-          onJobSearchInput() {
+          async onJobSearchInput() {
+            // If searching and not all jobs loaded, load full dataset on demand
+            const q = this.jobSearch.trim();
+            if (q.length >= 2 && !this.jobsLoadedAll && !this._loadingJobs) {
+              try {
+                await this.loadJobs(true, 999999);
+              } catch (_) {
+                // Fallback to existing data if full load fails
+              }
+            }
             // Always apply client-side filter for instant feedback
             this.filterJobs();
             // Debounce server-side suggestions
             clearTimeout(this._jobSearchTimer);
-            const q = this.jobSearch.trim();
             if (q.length < 2) {
               this.jobSuggestions = [];
               this.showJobSuggestions = false;
@@ -1377,16 +1432,28 @@
           
           // Pagination methods
           updatePagination() {
-            this.totalPages = Math.ceil(this.filteredJobs.length / this.jobsPerPage);
+            const filtersActive =
+              this.jobSearch.trim().length > 0 ||
+              (this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length);
+            const totalRecords = this.jobsLoadedAll || filtersActive
+              ? this.filteredJobs.length
+              : (this.jobsMeta.total || this.filteredJobs.length);
+            this.totalPages = Math.max(1, Math.ceil(totalRecords / this.jobsPerPage));
             if (this.currentPage > this.totalPages) {
               this.currentPage = Math.max(1, this.totalPages);
             }
           },
           
           getPageInfo() {
-            const start = Math.min((this.currentPage - 1) * this.jobsPerPage + 1, this.filteredJobs.length);
-            const end = Math.min(this.currentPage * this.jobsPerPage, this.filteredJobs.length);
-            return `${start}-${end} of ${this.filteredJobs.length}`;
+            const filtersActive =
+              this.jobSearch.trim().length > 0 ||
+              (this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length);
+            const totalRecords = this.jobsLoadedAll || filtersActive
+              ? this.filteredJobs.length
+              : (this.jobsMeta.total || this.filteredJobs.length);
+            const start = Math.min((this.currentPage - 1) * this.jobsPerPage + 1, totalRecords);
+            const end = Math.min(this.currentPage * this.jobsPerPage, totalRecords);
+            return `${start}-${end} of ${totalRecords}`;
           },
           
           getVisiblePages() {
@@ -1405,36 +1472,108 @@
             return pages;
           },
 
-          async loadData() {
-            await Promise.all([
-              this.loadJobs(),
-              this.loadUsers(),
-              this.loadDeletedJobs(),
-              this.loadStats(),
-            ]);
+          async goToPage(page) {
+            const target = Math.max(1, page);
+            if (!this.jobsLoadedAll) {
+              const neededCount = target * this.jobsPerPage;
+              if (neededCount > this.jobs.length) {
+                try {
+                  await this.loadJobs(true, 999999, { keepPage: true });
+                } catch (_) {
+                  // Ignore failures; fallback to currently loaded set
+                }
+              }
+            }
+            this.currentPage = target;
+            this.updatePagination();
           },
 
-          async loadJobs() {
-            try {
-              const response = await fetch("/api/jobs?per_page=250&page=1");
-              const data = await response.json();
-              // Handle both array response (legacy) and object response (new API)
-              this.jobs = Array.isArray(data) ? data : data.jobs || [];
-              // Ensure tags arrays
-              this.jobs.forEach(j => { if (!Array.isArray(j.tags)) j.tags = []; });
-              // Default view: job_number descending
-              this.filteredJobs = [...this.jobs];
-              this.sortField = 'job_number';
-              this.sortDirection = 'desc';
-              this.applySorting();
-              // Apply status filters on initial load
-              this.filterJobs();
-              this.currentPage = 1;
-              this.updatePagination();
-            } catch (error) {
-              console.error("Failed to load jobs:", error);
-              Alpine.store("notifications").add("Failed to load jobs", "error");
+          async handleJobsPerPageChange(event) {
+            const value = parseInt(event?.target?.value, 10);
+            if (!Number.isFinite(value) || value <= 0) {
+              this.jobsPerPage = 10;
             }
+            if (this.jobsPerPage >= 999999 && !this.jobsLoadedAll) {
+              try {
+                await this.loadJobs(true, 999999);
+              } catch (_) {
+                // leave existing dataset if load fails
+              }
+            } else if (
+              !this.jobsLoadedAll &&
+              this.jobsMeta.hasNext &&
+              this.jobsPerPage > this.jobs.length
+            ) {
+              // When requesting more rows than we have cached, fetch all jobs once.
+              try {
+                await this.loadJobs(true, Math.max(this.jobsPerPage, this.defaultJobsPerPage));
+              } catch (_) {
+                // ignore fetch failure; fall back to existing data
+              }
+            }
+            this.currentPage = 1;
+            this.filterJobs();
+          },
+
+          async loadJobs(force = false, perPageOverride = null, options = {}) {
+            const { keepPage = false } = options;
+            if (this._jobsPromise) {
+              return this._jobsPromise;
+            }
+            if (this.jobsLoaded && !force) return;
+            this._loadingJobs = true;
+            this._jobsPromise = (async () => {
+              try {
+                const perPage = perPageOverride || this.defaultJobsPerPage;
+                const response = await fetch(`/api/jobs?per_page=${perPage}&page=1`);
+                const data = await response.json();
+                const jobsArray = Array.isArray(data) ? data : data.jobs || [];
+                // Handle both array response (legacy) and object response (new API)
+                this.jobs = jobsArray;
+                if (Array.isArray(data)) {
+                  this.jobsMeta = {
+                    total: jobsArray.length,
+                    perPage,
+                    currentPage: 1,
+                    pages: 1,
+                    hasNext: false,
+                  };
+                  this.jobsLoadedAll = true;
+                } else {
+                  this.jobsMeta = {
+                    total: data.total || jobsArray.length,
+                    perPage: data.per_page || perPage,
+                    currentPage: data.current_page || 1,
+                    pages: data.pages || 1,
+                    hasNext: Boolean(data.has_next),
+                  };
+                  this.jobsLoadedAll = !this.jobsMeta.hasNext;
+                }
+                // Ensure tags arrays
+                this.jobs.forEach(j => { if (!Array.isArray(j.tags)) j.tags = []; });
+                // Default view: job_number descending
+                this.filteredJobs = [...this.jobs];
+                this.sortField = 'job_number';
+                this.sortDirection = 'desc';
+                this.applySorting();
+                // Apply status filters on initial load
+                this.filterJobs();
+                if (!keepPage) {
+                  this.currentPage = 1;
+                }
+                this.updatePagination();
+                this.jobsLoaded = true;
+              } catch (error) {
+                console.error("Failed to load jobs:", error);
+                Alpine.store("notifications").add("Failed to load jobs", "error");
+                this.jobsLoaded = false;
+                throw error;
+              } finally {
+                this._loadingJobs = false;
+                this._jobsPromise = null;
+              }
+            })();
+            return this._jobsPromise;
           },
 
           async loadTags(includeUsage = false) {
@@ -1483,61 +1622,102 @@
             }, 'Delete');
           },
 
-          async loadUsers() {
-            try {
-              const response = await fetch("/api/users");
-              this.users = await response.json();
-            } catch (error) {
-              console.error("Failed to load users:", error);
-              Alpine.store("notifications").add(
-                "Failed to load users",
-                "error",
-              );
+          async loadUsers(force = false) {
+            if (this._usersPromise) {
+              return this._usersPromise;
             }
+            if (this.usersLoaded && !force) return;
+            this._loadingUsers = true;
+            this._usersPromise = (async () => {
+              try {
+                const response = await fetch("/api/users");
+                this.users = await response.json();
+                this.usersLoaded = true;
+              } catch (error) {
+                console.error("Failed to load users:", error);
+                Alpine.store("notifications").add(
+                  "Failed to load users",
+                  "error",
+                );
+                this.usersLoaded = false;
+                throw error;
+              } finally {
+                this._loadingUsers = false;
+                this._usersPromise = null;
+              }
+            })();
+            return this._usersPromise;
           },
 
-          async loadDeletedJobs() {
-            try {
-              const response = await fetch("/api/jobs/deleted");
-              const data = await response.json();
-              this.deletedJobs = data.jobs || [];
-              this.filteredDeletedJobs = this.deletedJobs;
-            } catch (error) {
-              console.error("Failed to load deleted jobs:", error);
-              Alpine.store("notifications").add(
-                "Failed to load deleted jobs",
-                "error",
-              );
+          async loadDeletedJobs(force = false) {
+            if (this._deletedJobsPromise) {
+              return this._deletedJobsPromise;
             }
+            if (this.deletedJobsLoaded && !force) return;
+            this._loadingDeletedJobs = true;
+            this._deletedJobsPromise = (async () => {
+              try {
+                const response = await fetch("/api/jobs/deleted");
+                const data = await response.json();
+                this.deletedJobs = data.jobs || [];
+                this.filteredDeletedJobs = this.deletedJobs;
+                this.stats.deletedJobs = data.total || 0;
+                this.deletedJobsLoaded = true;
+              } catch (error) {
+                console.error("Failed to load deleted jobs:", error);
+                Alpine.store("notifications").add(
+                  "Failed to load deleted jobs",
+                  "error",
+                );
+                this.deletedJobsLoaded = false;
+                throw error;
+              } finally {
+                this._loadingDeletedJobs = false;
+                this._deletedJobsPromise = null;
+              }
+            })();
+            return this._deletedJobsPromise;
           },
 
-          async loadStats() {
-            try {
-              // Use lightweight admin dashboard endpoint instead of downloading all jobs
-              const response = await fetch("/admin/api/dashboard");
-              const data = await response.json();
-
-              // Derive counts from API response
-              const sc = data.status_counts || {};
-              this.stats.completed = sc["Completed/To Be Filed"] || 0;
-              this.stats.needsFieldwork = sc["Needs Fieldwork"] || 0;
-              this.stats.setPins = sc["Set/Flag Pins"] || 0;
-              this.stats.toBePrinted = sc["To Be Printed/Packaged"] || 0;
-              this.stats.fieldworkComplete = sc["Fieldwork Complete/Needs Office Work"] || 0;
-              this.stats.invoiceSent = sc["Survey Complete/Invoice Sent/Unpaid"] || 0;
-              this.stats.ongoingSitePlan = sc["Ongoing Site Plan"] || 0;
-              this.stats.onHoldPending = sc["On Hold/Pending"] || 0;
-              this.stats.estimateAvailable = sc["Estimate/Quote Available"] || 0;
-
-              this.stats.uniqueClients = data.unique_clients || 0;
-
-              // Load deleted jobs count
-              const deletedResponse = await fetch("/api/jobs/deleted");
-              const deletedData = await deletedResponse.json();
-              this.stats.deletedJobs = deletedData.total || 0;
-            } catch (error) {
-              console.error("Failed to load stats:", error);
+          async loadDashboardMetrics(force = false) {
+            if (this._dashboardPromise) {
+              return this._dashboardPromise;
             }
+            if (this.dashboardLoaded && !force) return;
+            this._loadingDashboard = true;
+            this._dashboardPromise = (async () => {
+              try {
+                // Use lightweight admin dashboard endpoint instead of downloading all jobs
+                const response = await fetch("/admin/api/dashboard");
+                const data = await response.json();
+
+                // Derive counts from API response
+                const sc = data.status_counts || {};
+                this.stats.completed = sc["Completed"] || 0;
+                this.stats.needsFieldwork = sc["Needs Fieldwork"] || 0;
+                this.stats.setPins = sc["Set Pins"] || 0;
+                this.stats.toBePrinted = sc["To Be Printed"] || 0;
+                this.stats.fieldworkComplete = sc["Needs Office Work"] || 0;
+                this.stats.invoiceSent = sc["Invoice Sent"] || 0;
+                this.stats.ongoingSitePlan = sc["Ongoing Site"] || 0;
+                this.stats.onHoldPending = sc["On Hold"] || 0;
+                this.stats.estimateAvailable = sc["Quote Available"] || 0;
+
+                this.stats.uniqueClients = data.unique_clients || 0;
+
+                this.stats.deletedJobs = data.deleted_jobs || this.stats.deletedJobs || 0;
+
+                this.dashboardLoaded = true;
+              } catch (error) {
+                console.error("Failed to load stats:", error);
+                this.dashboardLoaded = false;
+                throw error;
+              } finally {
+                this._loadingDashboard = false;
+                this._dashboardPromise = null;
+              }
+            })();
+            return this._dashboardPromise;
           },
 
           filterJobs() {
@@ -1698,15 +1878,15 @@
             // DaisyUI badge + theme-specific color classes per status
             const base = "badge badge-lg whitespace-nowrap border-2";
             const map = {
-              "Completed/To Be Filed": "badge-completed",
+              "Completed": "badge-completed",
               "Needs Fieldwork": "badge-needs-fieldwork",
-              "Set/Flag Pins": "badge-set-flag",
-              "To Be Printed/Packaged": "badge-to-be-printed",
-              "Fieldwork Complete/Needs Office Work": "badge-office-work",
-              "Survey Complete/Invoice Sent/Unpaid": "badge-invoice-sent",
-              "Ongoing Site Plan": "badge-ongoing-plan",
-              "On Hold/Pending": "badge-on-hold",
-              "Estimate/Quote Available": "badge-estimate",
+              "Set Pins": "badge-set-flag",
+              "To Be Printed": "badge-to-be-printed",
+              "Needs Office Work": "badge-office-work",
+              "Invoice Sent": "badge-invoice-sent",
+              "Ongoing Site": "badge-ongoing-plan",
+              "On Hold": "badge-on-hold",
+              "Quote Available": "badge-estimate",
             };
             return `${base} ${map[status] || 'badge-default'}`;
           },
@@ -1752,9 +1932,9 @@
 
                   if (response.ok) {
                     await Promise.all([
-                      this.loadJobs(),
-                      this.loadDeletedJobs(),
-                      this.loadStats(),
+                      this.loadJobs(true),
+                      this.loadDeletedJobs(true),
+                      this.loadDashboardMetrics(true),
                     ]);
                     Alpine.store("notifications").add(
                       "Job deleted successfully",
@@ -1813,7 +1993,7 @@
                   });
 
                   if (response.ok) {
-                    await this.loadUsers();
+                    await this.loadUsers(true);
                     Alpine.store("notifications").add(
                       "User deleted successfully",
                       "success",
@@ -1879,9 +2059,9 @@
 
                   if (response.ok) {
                     await Promise.all([
-                      this.loadJobs(),
-                      this.loadDeletedJobs(),
-                      this.loadStats(),
+                      this.loadJobs(true),
+                      this.loadDeletedJobs(true),
+                      this.loadDashboardMetrics(true),
                     ]);
                     Alpine.store("notifications").add(
                       `Job ${jobNumber} restored successfully`,
@@ -1919,17 +2099,14 @@
                     `This will permanently delete job ${jobNumber} and all associated data. Are you absolutely sure?`,
                     async () => {
                       try {
-                        const response = await fetch(
-                          `/api/jobs/${job.job_number}/permanent-delete`,
-                          {
-                            method: "DELETE",
-                          },
-                        );
+                        const response = await fetch(`/api/jobs/${job.job_number}/permanent-delete`, {
+                          method: "DELETE",
+                        });
 
                         if (response.ok) {
                           await Promise.all([
-                            this.loadDeletedJobs(),
-                            this.loadStats(),
+                            this.loadDeletedJobs(true),
+                            this.loadDashboardMetrics(true),
                           ]);
                           Alpine.store("notifications").add(
                             `Job ${jobNumber} permanently deleted`,
@@ -1965,7 +2142,7 @@
               });
 
               if (response.ok) {
-                await this.loadUsers();
+                await this.loadUsers(true);
                 Alpine.store("notifications").add(
                   "User created successfully",
                   "success",
@@ -2019,7 +2196,7 @@
               );
 
               if (response.ok) {
-                await this.loadUsers();
+                await this.loadUsers(true);
                 Alpine.store("notifications").add(
                   "User updated successfully",
                   "success",
@@ -2051,7 +2228,10 @@
               });
 
               if (response.ok) {
-                await Promise.all([this.loadJobs(), this.loadStats()]);
+                await Promise.all([
+                  this.loadJobs(true),
+                  this.loadDashboardMetrics(true),
+                ]);
                 Alpine.store("notifications").add(
                   "Job created successfully",
                   "success",
@@ -2103,7 +2283,10 @@
               );
 
               if (response.ok) {
-                await Promise.all([this.loadJobs(), this.loadStats()]);
+                await Promise.all([
+                  this.loadJobs(true),
+                  this.loadDashboardMetrics(true),
+                ]);
                 Alpine.store("notifications").add(
                   "Job updated successfully",
                   "success",

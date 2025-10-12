@@ -89,14 +89,24 @@ const AppState = {
 };
 
 // Initialize map
-AppState.map = L.map('map').setView([28.5383, -81.3792], 10); // Orlando, FL
+AppState.map = L.map('map', { preferCanvas: true }).setView([28.5383, -81.3792], 10); // Orlando, FL
+
+const BASE_TILE_OPTIONS = {
+    tileSize: 256,
+    maxNativeZoom: 19,
+    updateWhenIdle: true,
+    crossOrigin: true,
+    subdomains: ['server', 'services'],
+};
 
 // Create base layers
 AppState.baseLayers = {
-    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    satellite: L.tileLayer('https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        ...BASE_TILE_OPTIONS,
         attribution: 'Tiles © Esri'
     }),
-    streets: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    streets: L.tileLayer('https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        ...BASE_TILE_OPTIONS,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
     })
 };
@@ -335,13 +345,24 @@ function centerOnUserLocation() {
     }
 }
 
-// Load Florida Counties GeoJSON layer
+let countiesLayerPromise = null;
+
 async function loadFloridaCounties() {
-    try {
+    if (AppState.overlayLayers.counties) {
+        return AppState.overlayLayers.counties;
+    }
+    if (countiesLayerPromise) {
+        return countiesLayerPromise;
+    }
+
+    countiesLayerPromise = (async () => {
         const response = await fetch('/static/data/florida_counties.geojson');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch counties: ${response.status}`);
+        }
         const countiesData = await response.json();
-        
-        AppState.overlayLayers.counties = L.geoJSON(countiesData, {
+
+        const countiesLayer = L.geoJSON(countiesData, {
             style: {
                 color: '#ff0000',
                 weight: 2,
@@ -353,7 +374,7 @@ async function loadFloridaCounties() {
                     // Create county label
                     const bounds = layer.getBounds();
                     const center = bounds.getCenter();
-                    
+
                     const label = L.marker(center, {
                         icon: L.divIcon({
                             className: 'county-label',
@@ -363,17 +384,21 @@ async function loadFloridaCounties() {
                         }),
                         interactive: false
                     });
-                    
-                    // Store label reference on the layer
+
                     layer.countyLabel = label;
                 }
             }
         });
-        
-        console.log('Florida counties loaded');
+
+        AppState.overlayLayers.counties = countiesLayer;
+        return countiesLayer;
+    })();
+
+    try {
+        return await countiesLayerPromise;
     } catch (error) {
-        console.error('Failed to load Florida counties:', error);
-        showNotification('Failed to load county boundaries', 'error');
+        countiesLayerPromise = null;
+        throw error;
     }
 }
 
@@ -399,37 +424,34 @@ function switchBaseLayer(layerName) {
 }
 
 // Toggle Florida counties overlay
-function toggleCounties() {
-    if (!AppState.overlayLayers.counties) {
-        showNotification('Counties not loaded yet', 'error');
-        return;
-    }
-    
-    if (AppState.countiesVisible) {
-        // Hide counties and labels
-        AppState.map.removeLayer(AppState.overlayLayers.counties);
-        AppState.overlayLayers.counties.eachLayer(function(layer) {
-            if (layer.countyLabel) {
-                AppState.map.removeLayer(layer.countyLabel);
-            }
-        });
-        AppState.countiesVisible = false;
-        showNotification('County boundaries hidden', 'info');
-    } else {
-        // Show counties and labels
-        AppState.overlayLayers.counties.addTo(AppState.map);
-        AppState.overlayLayers.counties.eachLayer(function(layer) {
-            if (layer.countyLabel) {
-                layer.countyLabel.addTo(AppState.map);
-            }
-        });
-        AppState.countiesVisible = true;
-        showNotification('County boundaries shown', 'info');
+async function toggleCounties() {
+    try {
+        const countiesLayer = await loadFloridaCounties();
+
+        if (AppState.countiesVisible) {
+            AppState.map.removeLayer(countiesLayer);
+            countiesLayer.eachLayer(function(layer) {
+                if (layer.countyLabel) {
+                    AppState.map.removeLayer(layer.countyLabel);
+                }
+            });
+            AppState.countiesVisible = false;
+            showNotification('County boundaries hidden', 'info');
+        } else {
+            countiesLayer.addTo(AppState.map);
+            countiesLayer.eachLayer(function(layer) {
+                if (layer.countyLabel) {
+                    layer.countyLabel.addTo(AppState.map);
+                }
+            });
+            AppState.countiesVisible = true;
+            showNotification('County boundaries shown', 'info');
+        }
+    } catch (error) {
+        console.error('Failed to toggle Florida counties:', error);
+        showNotification('Failed to load county boundaries', 'error');
     }
 }
-
-// Initialize layers
-loadFloridaCounties();
 
 // Initialize user location after map loads
 setTimeout(initUserLocation, 1000);

@@ -376,7 +376,3 @@ body {
 .mt-3 {
   margin-top: 1rem !important;
 }
-
-.leaflet-control-zoom-in {
-  margin-top: 50px;
-}

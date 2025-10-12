@@ -347,9 +347,15 @@ function fabMenu() {
         
         toggleCountiesLayer() {
             if (window.toggleCounties) {
-                window.toggleCounties();
-                // Update local state - toggle the value
-                this.countiesVisible = !this.countiesVisible;
+                const result = window.toggleCounties();
+                const syncState = () => {
+                    this.countiesVisible = !!(window.AppState && window.AppState.countiesVisible);
+                };
+                if (result && typeof result.then === 'function') {
+                    result.then(syncState).catch(syncState);
+                } else {
+                    syncState();
+                }
             }
         },
         

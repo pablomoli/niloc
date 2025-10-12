@@ -2,6 +2,7 @@
 from flask import render_template, request, session, redirect, jsonify
 from admin import admin_bp
 from auth_utils import login_required
+from sqlalchemy import func
 
 # =============================================================================
 # VIEW ROUTES ONLY - All business logic moved to /api/ endpoints
@@ -85,26 +86,70 @@ def api_dashboard():
         return jsonify({"error": "Unauthorized"}), 403
 
     try:
-        from models import Job, User
+        from models import Job, User, db
 
-        # Get all active jobs directly from database
-        jobs = Job.active().order_by(Job.created_at.desc()).all()
-        total_jobs = len(jobs)
+        active_filter = Job.deleted_at.is_(None)
 
-        # Get total users
-        total_users = User.query.count()
+        total_jobs = (
+            db.session.query(func.count(Job.id)).filter(active_filter).scalar() or 0
+        )
+        total_users = db.session.query(func.count(User.id)).scalar() or 0
 
-        # Get recent jobs (first 5)
-        recent_jobs = [job.to_dict() for job in jobs[:5]]
+        status_rows = (
+            db.session.query(Job.status, func.count(Job.id))
+            .filter(active_filter)
+            .group_by(Job.status)
+            .all()
+        )
+        status_counts = {
+            (status or "Unknown"): count for status, count in status_rows
+        }
 
-        # Count jobs by status
-        status_counts = {}
-        for job in jobs:
-            status = job.status or "Unknown"
-            status_counts[status] = status_counts.get(status, 0) + 1
+        unique_clients = (
+            db.session.query(
+                func.count(
+                    func.distinct(
+                        func.lower(func.trim(Job.client))
+                    )
+                )
+            )
+            .filter(
+                active_filter,
+                Job.client.isnot(None),
+                func.trim(Job.client) != "",
+            )
+            .scalar()
+            or 0
+        )
 
-        # Compute unique clients (simple case-insensitive set)
-        unique_clients = len({(j.client or "").strip().lower() for j in jobs if j.client})
+        deleted_jobs_total = (
+            db.session.query(func.count(Job.id))
+            .filter(Job.deleted_at.isnot(None))
+            .scalar()
+            or 0
+        )
+
+        recent_jobs_query = (
+            db.session.query(
+                Job.job_number,
+                Job.client,
+                Job.status,
+                Job.created_at,
+            )
+            .filter(active_filter)
+            .order_by(Job.created_at.desc())
+            .limit(5)
+            .all()
+        )
+        recent_jobs = [
+            {
+                "job_number": row.job_number,
+                "client": row.client,
+                "status": row.status,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+            for row in recent_jobs_query
+        ]
 
         return jsonify(
             {
@@ -113,6 +158,7 @@ def api_dashboard():
                 "status_counts": status_counts,
                 "recent_jobs": recent_jobs,
                 "unique_clients": unique_clients,
+                "deleted_jobs": deleted_jobs_total,
             }
         )
 
