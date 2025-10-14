@@ -1740,13 +1740,15 @@
             let filtered = this.jobs;
 
             if (this.jobSearch.trim()) {
-              const term = this.jobSearch.toLowerCase();
+              const rawTerm = this.jobSearch.toLowerCase();
+              const normalizedTerm = this.normalizeWhitespace(rawTerm);
+              const strippedTerm = normalizedTerm.replace(/\s+/g, '');
               filtered = filtered.filter(
                 (job) =>
-                  job.job_number.toLowerCase().includes(term) ||
-                  job.client.toLowerCase().includes(term) ||
-                  job.address.toLowerCase().includes(term) ||
-                  (Array.isArray(job.tags) && job.tags.some(t => (t.name||'').toLowerCase().includes(term))),
+                  this.matchesSearchField(job.job_number, rawTerm, strippedTerm) ||
+                  this.matchesSearchField(job.client, rawTerm, strippedTerm, normalizedTerm) ||
+                  this.matchesSearchField(job.address, rawTerm, strippedTerm, normalizedTerm) ||
+                  (Array.isArray(job.tags) && job.tags.some(t => this.matchesSearchField(t.name, rawTerm, strippedTerm, normalizedTerm))),
               );
             }
 
@@ -1759,6 +1761,22 @@
             this.filteredJobs = filtered;
             this.applySorting();
             this.updatePagination();
+          },
+
+          matchesSearchField(value, rawTerm, strippedTerm, normalizedTerm = null) {
+            const lower = (value || '').toLowerCase();
+            const collapsed = this.normalizeWhitespace(lower);
+            const noSpace = collapsed.replace(/\s+/g, '');
+            const effectiveNormalized = normalizedTerm ?? this.normalizeWhitespace(rawTerm);
+            return (
+              (rawTerm && lower.includes(rawTerm)) ||
+              (effectiveNormalized && collapsed.includes(effectiveNormalized)) ||
+              (strippedTerm && noSpace.includes(strippedTerm))
+            );
+          },
+
+          normalizeWhitespace(value) {
+            return (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
           },
 
           // Multi-status helpers

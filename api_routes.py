@@ -1398,9 +1398,27 @@ def create_fuzzy_search_conditions(search_term, fields):
 
     # Create conditions for each field and pattern combination
     for field in fields:
+        # Normalize whitespace variations for the field
+        try:
+            normalized_whitespace_field = func.regexp_replace(
+                field, r"\s+", " ", "g"
+            )
+        except Exception:
+            normalized_whitespace_field = None
+
+        try:
+            stripped_whitespace_field = func.regexp_replace(
+                field, r"\s+", "", "g"
+            )
+        except Exception:
+            stripped_whitespace_field = None
+
         for pattern in unique_patterns:
             # Basic ILIKE search
             conditions.append(field.ilike(pattern))
+
+            if normalized_whitespace_field is not None:
+                conditions.append(normalized_whitespace_field.ilike(pattern))
 
             # Remove punctuation from field for matching (simplified version)
             try:
@@ -1409,9 +1427,24 @@ def create_fuzzy_search_conditions(search_term, fields):
                         field, r"[-_.,/#!$%^&*;:{}=`~()]", " ", "g"
                     ).ilike(pattern)
                 )
+                if normalized_whitespace_field is not None:
+                    conditions.append(
+                        func.regexp_replace(
+                            normalized_whitespace_field,
+                            r"[-_.,/#!$%^&*;:{}=`~()]",
+                            " ",
+                            "g",
+                        ).ilike(pattern)
+                    )
             except:
                 # If regexp_replace fails, just use basic ilike
                 pass
+
+        if stripped_whitespace_field is not None and no_spaces:
+            # Allow matching when both the field and search term ignore whitespace
+            conditions.append(
+                stripped_whitespace_field.ilike(f"%{no_spaces}%")
+            )
 
     if conditions:
         return or_(*conditions)
@@ -1533,8 +1566,16 @@ def search_autocomplete():
             return jsonify({"suggestions": []})
 
         # Prefer fast prefix search for autocomplete; then fallback to contains
+        normalized_term = normalize_search_term(search_term)
+        collapsed_term = normalized_term.replace(" ", "")
+
         prefix = f"{search_term}%"
+        normalized_prefix = f"{normalized_term}%"
+        collapsed_prefix = f"{collapsed_term}%" if collapsed_term else None
+
         contains = f"%{search_term}%"
+        normalized_contains = f"%{normalized_term}%"
+        collapsed_contains = f"%{collapsed_term}%" if collapsed_term else None
 
         suggestions = []
 
@@ -1562,9 +1603,26 @@ def search_autocomplete():
 
         # Jobs: client prefix
         try:
+            client_prefix_conditions = [
+                Job.client.ilike(prefix),
+                Job.client.ilike(normalized_prefix),
+                func.regexp_replace(Job.client, r"\s+", " ", "g").ilike(
+                    normalized_prefix
+                ),
+            ]
+            if collapsed_prefix:
+                client_prefix_conditions.append(
+                    func.regexp_replace(Job.client, r"\s+", "", "g").ilike(
+                        collapsed_prefix
+                    )
+                )
+
             clients = (
                 db.session.query(Job.client)
-                .filter(Job.deleted_at.is_(None), Job.client.ilike(prefix))
+                .filter(
+                    Job.deleted_at.is_(None),
+                    or_(*client_prefix_conditions),
+                )
                 .distinct()
                 .limit(max(1, limit // 3))
                 .all()
@@ -1586,7 +1644,16 @@ def search_autocomplete():
         try:
             addresses = (
                 db.session.query(Job.address)
-                .filter(Job.deleted_at.is_(None), Job.address.ilike(prefix))
+                .filter(
+                    Job.deleted_at.is_(None),
+                    or_(
+                        Job.address.ilike(prefix),
+                        Job.address.ilike(normalized_prefix),
+                        func.regexp_replace(Job.address, r"\s+", " ", "g").ilike(
+                            normalized_prefix
+                        ),
+                    ),
+                )
                 .distinct()
                 .limit(max(1, limit // 3))
                 .all()
@@ -1658,9 +1725,26 @@ def search_autocomplete():
                 remaining = max(0, limit - len(suggestions))
                 # Clients contains
                 try:
+                    client_contains_conditions = [
+                        Job.client.ilike(contains),
+                        Job.client.ilike(normalized_contains),
+                        func.regexp_replace(Job.client, r"\s+", " ", "g").ilike(
+                            normalized_contains
+                        ),
+                    ]
+                    if collapsed_contains:
+                        client_contains_conditions.append(
+                            func.regexp_replace(Job.client, r"\s+", "", "g").ilike(
+                                collapsed_contains
+                            )
+                        )
+
                     clients_ct = (
                         db.session.query(Job.client)
-                        .filter(Job.deleted_at.is_(None), Job.client.ilike(contains))
+                        .filter(
+                            Job.deleted_at.is_(None),
+                            or_(*client_contains_conditions),
+                        )
                         .distinct()
                         .limit(max(1, remaining // 3) or 1)
                         .all()
@@ -1678,30 +1762,41 @@ def search_autocomplete():
                 except Exception as e:
                     print(f"Client contains error: {e}")
 
-            if len(suggestions) < limit:
-                remaining = max(0, limit - len(suggestions))
-                # Addresses contains
-                try:
-                    addresses_ct = (
-                        db.session.query(Job.address)
-                        .filter(Job.deleted_at.is_(None), Job.address.ilike(contains))
-                        .distinct()
-                        .limit(max(1, remaining // 3) or 1)
-                        .all()
-                    )
-                    for (address,) in addresses_ct:
-                        if address and not any(s["value"] == address for s in suggestions):
-                            display_address = address[:50] + "..." if len(address) > 50 else address
-                            suggestions.append({
-                                "value": address,
-                                "type": "address",
-                                "label": f"Address: {display_address}",
-                                "priority": 2,
-                            })
-                            if len(suggestions) >= limit:
-                                break
-                except Exception as e:
-                    print(f"Address contains error: {e}")
+                if len(suggestions) < limit:
+                    remaining = max(0, limit - len(suggestions))
+                    # Addresses contains
+                    addresses_ct = []
+                    try:
+                        addresses_ct = (
+                            db.session.query(Job.address)
+                            .filter(
+                                Job.deleted_at.is_(None),
+                                or_(
+                                    Job.address.ilike(contains),
+                                    Job.address.ilike(normalized_contains),
+                                    func.regexp_replace(
+                                        Job.address, r"\s+", " ", "g"
+                                    ).ilike(normalized_contains),
+                                ),
+                            )
+                            .distinct()
+                            .limit(max(1, remaining // 3) or 1)
+                            .all()
+                        )
+                    except Exception as e:
+                        print(f"Address contains error: {e}")
+                    else:
+                        for (address,) in addresses_ct:
+                            if address and not any(s["value"] == address for s in suggestions):
+                                display_address = address[:50] + "..." if len(address) > 50 else address
+                                suggestions.append({
+                                    "value": address,
+                                    "type": "address",
+                                    "label": f"Address: {display_address}",
+                                    "priority": 2,
+                                })
+                                if len(suggestions) >= limit:
+                                    break
 
             if len(suggestions) < limit:
                 remaining = max(0, limit - len(suggestions))
