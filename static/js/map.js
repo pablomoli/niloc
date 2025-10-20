@@ -73,7 +73,8 @@ function showNotification(message, type = 'info') {
 // Application State
 const AppState = {
     map: null,
-    markerCluster: null,
+    markerLayer: null,
+    useClustering: true,
     allJobs: [],
     filteredJobs: [],
     selectedJobs: new Set(),
@@ -159,6 +160,37 @@ const LocationPermission = {
         }
     }
 };
+
+// Marker clustering preference stored in localStorage
+const ClusterPreference = {
+    STORAGE_KEY: 'epicmap_use_clustering',
+    
+    get() {
+        try {
+            const stored = window.localStorage?.getItem(this.STORAGE_KEY);
+            if (stored === null || typeof stored === 'undefined') {
+                return null;
+            }
+            return stored === 'true';
+        } catch (error) {
+            console.warn('Unable to read clustering preference:', error);
+            return null;
+        }
+    },
+    
+    set(value) {
+        try {
+            window.localStorage?.setItem(this.STORAGE_KEY, value ? 'true' : 'false');
+        } catch (error) {
+            console.warn('Unable to persist clustering preference:', error);
+        }
+    }
+};
+
+const storedClusteringPreference = ClusterPreference.get();
+if (typeof storedClusteringPreference === 'boolean') {
+    AppState.useClustering = storedClusteringPreference;
+}
 
 // Initialize user location tracking with localStorage support
 function initUserLocation() {
@@ -461,14 +493,72 @@ setTimeout(initUserLocation, 1000);
 //     MarkerUtils.createStatusLegend().addTo(AppState.map);
 // }
 
-// Initialize marker cluster group
-AppState.markerCluster = L.markerClusterGroup({
-    maxClusterRadius: 50,
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    zoomToBoundsOnClick: true
-});
-AppState.map.addLayer(AppState.markerCluster);
+function createClusterLayer() {
+    return L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true
+    });
+}
+
+function initializeMarkerLayer() {
+    if (AppState.markerLayer) {
+        try {
+            AppState.markerLayer.clearLayers();
+        } catch (error) {
+            console.warn('Failed to clear existing marker layer:', error);
+        }
+        AppState.map.removeLayer(AppState.markerLayer);
+    }
+    
+    const clusteringAvailable = typeof L.markerClusterGroup === 'function';
+    const shouldUseClustering = Boolean(AppState.useClustering && clusteringAvailable);
+    
+    if (shouldUseClustering) {
+        AppState.markerLayer = createClusterLayer();
+    } else {
+        if (AppState.useClustering && !clusteringAvailable) {
+            console.warn('Leaflet.markercluster not loaded. Falling back to regular markers.');
+            ClusterPreference.set(false);
+        }
+        AppState.useClustering = false;
+        AppState.markerLayer = L.layerGroup();
+    }
+    
+    AppState.map.addLayer(AppState.markerLayer);
+}
+
+function setMarkerClusteringEnabled(enable) {
+    const clusteringAvailable = typeof L.markerClusterGroup === 'function';
+    if (enable && !clusteringAvailable) {
+        if (typeof showNotification === 'function') {
+            showNotification('Marker grouping is unavailable in this environment', 'warning');
+        } else {
+            console.warn('Marker clustering requested but plugin is not available.');
+        }
+        AppState.useClustering = false;
+        return false;
+    }
+    
+    const nextState = Boolean(enable && clusteringAvailable);
+    if (AppState.useClustering === nextState && AppState.markerLayer) {
+        return AppState.useClustering;
+    }
+    
+    AppState.useClustering = nextState;
+    ClusterPreference.set(AppState.useClustering);
+    initializeMarkerLayer();
+    updateMapMarkers();
+    
+    if (typeof showNotification === 'function') {
+        showNotification(AppState.useClustering ? 'Grouped markers enabled' : 'Showing individual markers', 'info');
+    }
+    
+    return AppState.useClustering;
+}
+
+initializeMarkerLayer();
 
 // Load and display jobs
 async function loadJobs(force = false) {
@@ -501,8 +591,12 @@ async function loadJobs(force = false) {
 
 // Update markers on the map
 function updateMapMarkers() {
+    if (!AppState.markerLayer) {
+        console.warn('Marker layer not initialized yet');
+        return;
+    }
     // Clear existing markers
-    AppState.markerCluster.clearLayers();
+    AppState.markerLayer.clearLayers();
     AppState.markers.clear();
     
     AppState.filteredJobs.forEach(job => {
@@ -534,8 +628,8 @@ function updateMapMarkers() {
             // Store marker reference
             AppState.markers.set(job.job_number, marker);
             
-            // Add to cluster
-            AppState.markerCluster.addLayer(marker);
+            // Add to marker layer (cluster or simple layer group)
+            AppState.markerLayer.addLayer(marker);
         }
     });
 }
@@ -593,9 +687,9 @@ function updateJobMarker(jobNumber, updatedJob) {
             handleMarkerClick(e, j);
         });
         AppState.markers.set(jobNumber, marker);
-        if (AppState.markerCluster && AppState.markerCluster.addLayer) {
-            AppState.markerCluster.addLayer(marker);
-        } else if (AppState.map) {
+        if (AppState.markerLayer && typeof AppState.markerLayer.addLayer === 'function') {
+            AppState.markerLayer.addLayer(marker);
+        } else if (AppState.map && typeof marker.addTo === 'function') {
             marker.addTo(AppState.map);
         }
     }
@@ -610,8 +704,8 @@ function updateJobMarker(jobNumber, updatedJob) {
         if (lat && lng && marker.setLatLng) {
             marker.setLatLng([lat, lng]);
             // Refresh clusters if available
-            if (AppState.markerCluster && typeof AppState.markerCluster.refreshClusters === 'function') {
-                try { AppState.markerCluster.refreshClusters(marker); } catch (_) {}
+            if (AppState.useClustering && AppState.markerLayer && typeof AppState.markerLayer.refreshClusters === 'function') {
+                try { AppState.markerLayer.refreshClusters(marker); } catch (_) {}
             }
         }
 
@@ -681,26 +775,15 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Check if Leaflet.markercluster is available, if not, use regular markers
-if (typeof L.markerClusterGroup === 'undefined') {
-    console.warn('Leaflet.markercluster not loaded. Using regular markers instead.');
-    
-    // Override cluster methods to use regular layer group
-    AppState.markerCluster = {
-        clearLayers: function() {
-            AppState.markers.forEach(marker => AppState.map.removeLayer(marker));
-        },
-        addLayer: function(marker) {
-            marker.addTo(AppState.map);
-        }
-    };
-}
-
 // Load jobs when page loads
 loadJobs();
 
 // Export AppState for debugging
 window.AppState = AppState;
+window.setMarkerClusteringEnabled = setMarkerClusteringEnabled;
+window.isMarkerClusteringSupported = function() {
+    return typeof L.markerClusterGroup === 'function';
+};
 
 // Filter and Search Functions
 window.activeStatusFilters = new Set(['all']);

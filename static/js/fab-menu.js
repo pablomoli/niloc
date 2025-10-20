@@ -26,6 +26,8 @@ function fabMenu() {
         selectedStatuses: new Set(['all']), // Local reactive state for UI
         currentBaseLayer: 'satellite',
         countiesVisible: false,
+        useClustering: true,
+        clusteringSupported: true,
         
         init() {
             // Store reference to this component for event handlers
@@ -38,6 +40,12 @@ function fabMenu() {
             
             // Sync local reactive state with global state
             this.selectedStatuses = new Set(window.activeStatusFilters);
+            
+            // Sync map layer state
+            this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
+                ? window.isMarkerClusteringSupported()
+                : (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function');
+            this.useClustering = window.AppState?.useClustering ?? this.useClustering;
             
             // Get available statuses from jobs
             this.updateAvailableStatuses();
@@ -329,7 +337,11 @@ function fabMenu() {
             if (window.AppState) {
                 this.currentBaseLayer = window.AppState.currentBaseLayer;
                 this.countiesVisible = window.AppState.countiesVisible;
+                this.useClustering = window.AppState.useClustering;
             }
+            this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
+                ? window.isMarkerClusteringSupported()
+                : (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function');
             this.layerOpen = true;
             this.menuOpen = false;
         },
@@ -356,6 +368,23 @@ function fabMenu() {
                 } else {
                     syncState();
                 }
+            }
+        },
+        
+        toggleClusteringMode() {
+            if (!this.clusteringSupported) {
+                if (window.showNotification) {
+                    window.showNotification('Marker grouping is unavailable in this environment', 'warning');
+                }
+                return;
+            }
+            
+            const desiredState = !this.useClustering;
+            if (typeof window.setMarkerClusteringEnabled === 'function') {
+                const actualState = window.setMarkerClusteringEnabled(desiredState);
+                this.useClustering = actualState;
+            } else {
+                this.useClustering = desiredState;
             }
         },
         
