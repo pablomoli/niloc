@@ -494,11 +494,37 @@ setTimeout(initUserLocation, 1000);
 // }
 
 function createClusterLayer() {
+    function getClusterVisuals(count) {
+        const safeCount = Math.max(1, count || 0);
+        let colorClass = 'cluster-green';
+        if (safeCount >= 150) {
+            colorClass = 'cluster-red';
+        } else if (safeCount >= 75) {
+            colorClass = 'cluster-orange';
+        } else if (safeCount >= 25) {
+            colorClass = 'cluster-gold';
+        } else if (safeCount >= 10) {
+            colorClass = 'cluster-lime';
+        }
+        
+        const size = Math.round(Math.max(42, Math.min(92, 28 + Math.sqrt(safeCount) * 8)));
+        const fontSize = Math.round(Math.max(14, Math.min(26, size / 2.4)));
+        return { colorClass, size, fontSize, count: safeCount };
+    }
+    
     return L.markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
-        zoomToBoundsOnClick: true
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: function(cluster) {
+            const visuals = getClusterVisuals(cluster.getChildCount());
+            return L.divIcon({
+                html: `<div class="cluster-inner" style="width:${visuals.size}px;height:${visuals.size}px;line-height:${visuals.size}px;font-size:${visuals.fontSize}px;">${visuals.count}</div>`,
+                className: `marker-cluster ${visuals.colorClass}`,
+                iconSize: [visuals.size, visuals.size]
+            });
+        }
     });
 }
 
