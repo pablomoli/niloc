@@ -198,36 +198,6 @@
 }
 
 /* Adjust top controls for mobile */
-
-/* Marker cluster styling */
-.marker-cluster {
-  background: transparent !important;
-  border-radius: 50%;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.marker-cluster .cluster-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 6px 16px rgba(39, 44, 52, 0.25);
-  transition: transform 0.2s ease;
-}
-
-.marker-cluster.cluster-green .cluster-inner { background: #5cb85c; }
-.marker-cluster.cluster-lime .cluster-inner { background: #8cd867; }
-.marker-cluster.cluster-gold .cluster-inner { background: #f4c542; color: #2f2f2f; border-color: rgba(255, 255, 255, 0.75); }
-.marker-cluster.cluster-orange .cluster-inner { background: #f28b30; }
-.marker-cluster.cluster-red .cluster-inner { background: #e74c3c; }
-
-.marker-cluster:hover {
-  transform: scale(1.05);
-  z-index: 1000;
-}
 @media (max-width: 767px) {
   .top-controls { padding: 3px 6px; top: 5px; right: 5px; }
   .top-controls .btn-sm { padding: 3px 6px !important; font-size: 11px !important; line-height: 1.1 !important; }
