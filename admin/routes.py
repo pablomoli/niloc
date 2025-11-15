@@ -3,6 +3,9 @@ from flask import render_template, request, session, redirect, jsonify
 from admin import admin_bp
 from auth_utils import login_required
 from sqlalchemy import func
+import logging
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # VIEW ROUTES ONLY - All business logic moved to /api/ endpoints
@@ -163,7 +166,7 @@ def api_dashboard():
         )
 
     except Exception as e:
-        print(f"Dashboard API error: {e}")
+        logger.error(f"Dashboard API error: {e}", exc_info=True)
         return jsonify(
             {
                 "total_jobs": 0,

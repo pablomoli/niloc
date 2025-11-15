@@ -1,6 +1,7 @@
 # api_routes.py - New consolidated API endpoints
 import os
 import re
+import logging
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -16,6 +17,9 @@ from db_utils import with_db_retry, handle_db_error
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 def require_admin():
@@ -83,7 +87,7 @@ def geocode_address(address):
                     "county": county,
                 }
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        logger.error(f"Geocoding error: {e}", exc_info=True)
 
     return None
 
@@ -265,7 +269,7 @@ def get_jobs():
                 )
 
     except Exception as e:
-        print(f"Jobs endpoint error: {e}")
+        logger.error(f"Jobs endpoint error: {e}", exc_info=True)
         return handle_db_error(e)
 
 
@@ -316,7 +320,7 @@ def create_job():
     if is_parcel:
         # For parcel jobs, use the coordinates provided from frontend
         parcel_info = data.get("parcel_data", {})
-        print(f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}")
+        logger.info(f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}")
         
         # Don't re-geocode parcel jobs - use provided coordinates
         geocode_result = None
@@ -366,8 +370,8 @@ def create_job():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Create job error: {e}")
-        print(f"Job data: {job_data}")
+        logger.error(f"Create job error: {e}", exc_info=True)
+        logger.debug(f"Job data: {job_data}")
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
@@ -646,7 +650,7 @@ def delete_job(job_number):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Delete job error: {e}")
+        logger.error(f"Delete job error: {e}", exc_info=True)
         return jsonify({"error": "Database error occurred"}), 500
 
 
@@ -688,7 +692,7 @@ def restore_job(job_number):
         return jsonify({"error": str(e)}), 409
     except Exception as e:
         db.session.rollback()
-        print(f"Restore job error: {e}")
+        logger.error(f"Restore job error: {e}", exc_info=True)
         return jsonify({"error": "Database error occurred"}), 500
 
 
@@ -736,7 +740,7 @@ def promote_parcel_to_address(job_number: str):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Promote job error: {e}")
+        logger.error(f"Promote job error: {e}", exc_info=True)
         return jsonify({"error": "Database error occurred"}), 500
 
 
@@ -776,7 +780,7 @@ def get_deleted_jobs():
         )
 
     except Exception as e:
-        print(f"Get deleted jobs error: {e}")
+        logger.error(f"Get deleted jobs error: {e}", exc_info=True)
         return jsonify(
             {"error": "Failed to fetch deleted jobs", "jobs": [], "total": 0}
         ), 500
@@ -1466,7 +1470,7 @@ def monitor_search_performance(f):
         duration = (end_time - start_time) * 1000
         if duration > 500:
             search_term = request.args.get("q", "")
-            print(f"SLOW SEARCH: {duration:.2f}ms for term: '{search_term}'")
+            logger.warning(f"SLOW SEARCH: {duration:.2f}ms for term: '{search_term}'")
 
         return result
 
@@ -1545,7 +1549,7 @@ def search_jobs():
         )
 
     except Exception as e:
-        print(f"Search error: {e}")
+        logger.error(f"Search error: {e}", exc_info=True)
         return jsonify({"error": "Search failed", "jobs": [], "total": 0}), 500
 
 
@@ -1599,7 +1603,7 @@ def search_autocomplete():
                         }
                     )
         except Exception as e:
-            print(f"Job number autocomplete error: {e}")
+            logger.error(f"Job number autocomplete error: {e}", exc_info=True)
 
         # Jobs: client prefix
         try:
@@ -1638,7 +1642,7 @@ def search_autocomplete():
                         }
                     )
         except Exception as e:
-            print(f"Client autocomplete error: {e}")
+            logger.error(f"Client autocomplete error: {e}", exc_info=True)
 
         # Jobs: address prefix
         try:
@@ -1670,7 +1674,7 @@ def search_autocomplete():
                         }
                     )
         except Exception as e:
-            print(f"Address autocomplete error: {e}")
+            logger.error(f"Address autocomplete error: {e}", exc_info=True)
 
         # Tags: prefix
         try:
@@ -1694,7 +1698,7 @@ def search_autocomplete():
                         }
                     )
         except Exception as e:
-            print(f"Tag autocomplete error: {e}")
+            logger.error(f"Tag autocomplete error: {e}", exc_info=True)
 
         # Fallback: contains search using trigram index when term is longer and results are few
         if len(search_term) >= 3 and len(suggestions) < limit:
@@ -1719,7 +1723,7 @@ def search_autocomplete():
                         if len(suggestions) >= limit:
                             break
             except Exception as e:
-                print(f"Job number contains error: {e}")
+                logger.error(f"Job number contains error: {e}", exc_info=True)
 
             if len(suggestions) < limit:
                 remaining = max(0, limit - len(suggestions))
@@ -1760,7 +1764,7 @@ def search_autocomplete():
                             if len(suggestions) >= limit:
                                 break
                 except Exception as e:
-                    print(f"Client contains error: {e}")
+                    logger.error(f"Client contains error: {e}", exc_info=True)
 
                 if len(suggestions) < limit:
                     remaining = max(0, limit - len(suggestions))
@@ -1784,7 +1788,7 @@ def search_autocomplete():
                             .all()
                         )
                     except Exception as e:
-                        print(f"Address contains error: {e}")
+                        logger.error(f"Address contains error: {e}", exc_info=True)
                     else:
                         for (address,) in addresses_ct:
                             if address and not any(s["value"] == address for s in suggestions):
@@ -1820,7 +1824,7 @@ def search_autocomplete():
                             if len(suggestions) >= limit:
                                 break
                 except Exception as e:
-                    print(f"Tag contains error: {e}")
+                    logger.error(f"Tag contains error: {e}", exc_info=True)
 
         # Sort by type (job_number, client, address, tag), then alphabetically
         type_order = {"job_number": 0, "client": 1, "address": 2, "tag": 3}
@@ -1835,7 +1839,7 @@ def search_autocomplete():
         )
 
     except Exception as e:
-        print(f"Autocomplete error: {e}")
+        logger.error(f"Autocomplete error: {e}", exc_info=True)
         return jsonify({"suggestions": []})
 
 

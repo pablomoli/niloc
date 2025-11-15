@@ -1,8 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from sqlalchemy import or_
+import logging
 
 db = SQLAlchemy()
+logger = logging.getLogger(__name__)
 
 
 # Association table for many-to-many relation between jobs and tags
@@ -98,7 +100,7 @@ class Job(db.Model):
         # Set deletion timestamp
         self.deleted_at = datetime.now(timezone.utc)
 
-        print(f"Soft deleted job: {self.original_job_number} → {self.job_number}")
+        logger.info(f"Soft deleted job: {self.original_job_number} → {self.job_number}")
 
     def restore(self):
         """
@@ -129,7 +131,7 @@ class Job(db.Model):
         self.deleted_by_id = None
         self.original_job_number = None
 
-        print(f"Restored job: {restored_number}")
+        logger.info(f"Restored job: {restored_number}")
         return restored_number
 
     def is_deleted(self):

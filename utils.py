@@ -1,10 +1,13 @@
 import os
 import pandas as pd
 import requests
+import logging
 from sqlalchemy import text
 from flask import current_app as app
 from models import db
 from pyproj import Transformer
+
+logger = logging.getLogger(__name__)
 
 # Load CSV data once when module loads
 _brevard_parcels_df = None
@@ -19,7 +22,7 @@ def _load_brevard_parcels():
             # Convert TaxAcct to integer for exact matching
             _brevard_parcels_df['TaxAcct'] = pd.to_numeric(_brevard_parcels_df['TaxAcct'], errors='coerce')
         except Exception as e:
-            print(f"Error loading Brevard parcels CSV: {e}")
+            logger.error(f"Error loading Brevard parcels CSV: {e}", exc_info=True)
             _brevard_parcels_df = pd.DataFrame()  # Empty dataframe as fallback
     return _brevard_parcels_df
 
@@ -98,7 +101,7 @@ def geocode_brevard_parcel(tax_account: str):
         }
         
     except Exception as e:
-        print(f"Brevard parcel CSV lookup error: {e}")
+        logger.error(f"Brevard parcel CSV lookup error: {e}", exc_info=True)
         return None
 
 def geocode_orange_parcel(parcel_id):
@@ -120,7 +123,7 @@ def geocode_orange_parcel(parcel_id):
         # To: 322313760000070
         parts = parcel_id.split('-')
         if len(parts) != 6:
-            print(f"Invalid Orange County parcel ID format: {parcel_id}")
+            logger.warning(f"Invalid Orange County parcel ID format: {parcel_id}")
             return None
         
         # Rearrange: parts[2] + parts[1] + parts[0] + parts[3] + parts[4] + parts[5]
@@ -140,7 +143,7 @@ def geocode_orange_parcel(parcel_id):
         data = response.json()
         
         if not data.get('features') or len(data['features']) == 0:
-            print(f"No results found for Orange County parcel: {parcel_id}")
+            logger.info(f"No results found for Orange County parcel: {parcel_id}")
             return None
         
         # Extract coordinates from first feature
@@ -152,7 +155,7 @@ def geocode_orange_parcel(parcel_id):
         situs = attributes.get('SITUS', 'No Address Available')
         
         if latitude is None or longitude is None:
-            print(f"Missing coordinates for Orange County parcel: {parcel_id}")
+            logger.warning(f"Missing coordinates for Orange County parcel: {parcel_id}")
             return None
         
         # Return in the same format as Brevard parcels
@@ -166,8 +169,8 @@ def geocode_orange_parcel(parcel_id):
         }
         
     except requests.exceptions.RequestException as e:
-        print(f"Orange County API request error: {e}")
+        logger.error(f"Orange County API request error: {e}", exc_info=True)
         return None
     except Exception as e:
-        print(f"Orange County parcel lookup error: {e}")
+        logger.error(f"Orange County parcel lookup error: {e}", exc_info=True)
         return None

@@ -1,11 +1,19 @@
 # app.py - Updated to use consolidated API while keeping all existing functionality
-from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_compress import Compress
-from flask_migrate import Migrate
-from datetime import datetime, timezone, timedelta
-from dotenv import load_dotenv
 import os
+import logging
+from datetime import datetime, timezone, timedelta
+
+from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory
+from flask_migrate import Migrate
+from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 try:
     from flask_compress import Compress  # type: ignore
     _compress_available = True
@@ -13,8 +21,8 @@ except Exception:
     Compress = None  # type: ignore
     _compress_available = False
 
-from auth_utils import hash_password, check_password, login_required
-from models import db, Job, FieldWork, Tag, User
+from auth_utils import check_password, login_required
+from models import db, User
 from admin import admin_bp
 from api_routes import api_bp  # Import our new consolidated API
 
@@ -52,9 +60,11 @@ if _compress_available:
             "application/javascript",
             "application/json",
             "image/svg+xml",
+            "text/plain",
         ],
         COMPRESS_LEVEL=6,
         COMPRESS_BR=True,
+        COMPRESS_MIN_SIZE=1024,
     )
     Compress(app)
 
@@ -65,19 +75,6 @@ app.register_blueprint(api_bp)  # This adds all our new /api/* endpoints
 # Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
-
-
-# Enable gzip compression for JSON, CSS, JS, HTML
-app.config.setdefault("COMPRESS_MIMETYPES", [
-    "text/html",
-    "text/css",
-    "text/plain",
-    "application/json",
-    "application/javascript",
-])
-app.config.setdefault("COMPRESS_LEVEL", 6)
-app.config.setdefault("COMPRESS_MIN_SIZE", 1024)
-Compress(app)
 
 # Expose a stable static version for cache-busting (env or file mtime)
 STATIC_VERSION = os.getenv("STATIC_VERSION")
@@ -94,15 +91,6 @@ if not STATIC_VERSION:
 def _inject_static_version():
     return {"static_version": STATIC_VERSION}
 
-
-@app.after_request
-def add_static_cache_headers(response):
-    """Apply aggressive caching headers to versioned static assets."""
-    if request.path.startswith("/static/"):
-        response.headers.setdefault(
-            "Cache-Control", "public, max-age=31536000, immutable"
-        )
-    return response
 
 @app.route("/favicon.ico")
 def favicon():
@@ -231,14 +219,19 @@ def logout():
 
 @app.after_request
 def add_cache_headers(response):
-    """Add cache headers to static files"""
-    if request.endpoint == "static":
+    """Add cache headers to static files - consolidated handler"""
+    # Handle static files (both /static/ path and static endpoint)
+    if request.path.startswith("/static/") or request.endpoint == "static":
         # If versioned, allow long-lived immutable caching
-        if request.args.get("v"):
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        if request.args.get("v") or request.path.startswith("/static/"):
+            response.headers.setdefault(
+                "Cache-Control", "public, max-age=31536000, immutable"
+            )
         else:
             # Shorter default to allow timely updates
-            response.headers["Cache-Control"] = "public, max-age=300"
+            response.headers.setdefault(
+                "Cache-Control", "public, max-age=300"
+            )
     return response
 
 
@@ -275,32 +268,13 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-        # Create default admin user if it doesn't exist
-        admin_user = User.query.filter_by(username="admin").first()
-        if not admin_user:
-            admin_user = User(
-                username="admin",
-                name="Administrator",
-                password=hash_password("admin123"),  # Change this in production!
-                role="admin",
-                created_at=datetime.now(timezone.utc),
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Created default admin user (username: admin, password: admin123)")
-        
-        # Create hidden "pablo" admin user if it doesn't exist
-        pablo_user = User.query.filter_by(username="pablo").first()
-        if not pablo_user:
-            pablo_user = User(
-                username="pablo",
-                name="System Administrator",
-                password=hash_password("123"),
-                role="admin",
-                created_at=datetime.now(timezone.utc),
-            )
-            db.session.add(pablo_user)
-            db.session.commit()
-            print("Created default admin user (username: pablo, password: 123)")
-
-    app.run(debug=True, host='0.0.0.0')
+    # Use environment variable to control debug mode
+    # Default to False for security (production-safe)
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    host = os.getenv("FLASK_HOST", "127.0.0.1")
+    port = int(os.getenv("FLASK_PORT", "5000"))
+    
+    if debug_mode:
+        logger.warning("Running in DEBUG mode - not recommended for production!")
+    
+    app.run(debug=debug_mode, host=host, port=port)
