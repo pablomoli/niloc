@@ -104,6 +104,78 @@ a,
   min-width: 160px;
 }
 
+/* Fix icon-only buttons in actions column to not appear as squares */
+.admin-spa .actions-col .btn-sm {
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  padding: 0.25rem 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix outline buttons to show transparent backgrounds, not solid colors */
+.admin-spa .btn-outline {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.admin-spa .btn-primary.btn-outline {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: var(--epic-pink, #FF1393) !important;
+  border-color: var(--epic-pink, #FF1393) !important;
+}
+
+.admin-spa .btn-primary.btn-outline:hover {
+  background-color: var(--epic-pink, #FF1393) !important;
+  color: white !important;
+  border-color: var(--epic-pink, #FF1393) !important;
+}
+
+.admin-spa .btn-info.btn-outline {
+  background-color: transparent !important;
+  color: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+}
+
+.admin-spa .btn-info.btn-outline:hover {
+  background-color: #0ea5e9 !important;
+  color: white !important;
+}
+
+.admin-spa .btn-success.btn-outline {
+  background-color: transparent !important;
+  color: #22c55e !important;
+  border-color: #22c55e !important;
+}
+
+.admin-spa .btn-success.btn-outline:hover {
+  background-color: #22c55e !important;
+  color: white !important;
+}
+
+.admin-spa .btn-error.btn-outline {
+  background-color: transparent !important;
+  color: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.admin-spa .btn-error.btn-outline:hover {
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+/* Override mobile min-height for action buttons */
+@media (max-width: 768px) {
+  .admin-spa .actions-col .btn-sm {
+    min-height: auto !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+}
+
 /* Status badge color classes (replaces inline styles) */
 .admin-spa .badge-default { background-color: #6c757d; color: #ffffff; border-color: #545b62; }
 .admin-spa .badge-completed { background-color: #28a745; color: #ffffff; border-color: #1e7e34; }

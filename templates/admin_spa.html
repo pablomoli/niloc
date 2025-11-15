@@ -27,7 +27,7 @@
     </header>
 
     <!-- Main Container -->
-    <div class="max-w-7xl mx-auto px-4 py-4">
+    <div class="mx-auto px-4 py-4">
       <!-- Navigation Tabs -->
       <div role="tablist" class="tabs tabs-bordered mb-4">
         <button role="tab"
@@ -190,28 +190,51 @@
       </div>
 
       <!-- Jobs Tab -->
-      <div x-show="activeTab === 'jobs'">
-        <div class="flex justify-between items-center mb-3">
-          <h3>Job Management</h3>
-          <button @click="openAddJobModal()" class="btn btn-primary" title="Add Job">
+      <div x-show="activeTab === 'jobs'" class="space-y-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-semibold">Job Management</h3>
+            <p class="text-sm text-gray-500 mt-1" x-show="jobs && jobs.length > 0">
+              <span x-text="jobsMeta.total || jobs.length"></span> job<span x-text="(jobsMeta.total || jobs.length) !== 1 ? 's' : ''"></span>
+              <template x-if="jobSearch || (selectedStatuses && selectedStatuses.length < statuses.length)">
+                <span> (<span x-text="filteredJobs.length"></span> shown)</span>
+              </template>
+            </p>
+          </div>
+          <button @click="openAddJobModal()" class="btn btn-primary !text-white" title="Add Job">
             <i class="bi bi-plus-circle"></i> Add Job
           </button>
         </div>
 
-        <!-- Job Search and Filters -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <div class="relative" @keydown.escape="showJobSuggestions=false">
-            <input
-              type="text"
-              class="input input-bordered w-full"
-              x-model="jobSearch"
-              @input="onJobSearchInput"
-              @focus="onJobSearchInput"
-              @keydown.arrow-down.prevent="moveSuggestion(1)"
-              @keydown.arrow-up.prevent="moveSuggestion(-1)"
-              @keydown.enter.prevent="applyHighlightedSuggestion()"
-              placeholder="Search jobs..."
-            />
+        <!-- Search and Filters Card -->
+        <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-0">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-0">
+            <div class="relative pl-0 pr-4" @keydown.escape="showJobSuggestions=false">
+              <label class="label py-1 justify-center">
+                <span class="label-text text-sm font-medium">Search Jobs</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  class="input input-bordered w-full pr-10"
+                  x-model="jobSearch"
+                  @input="onJobSearchInput"
+                  @focus="onJobSearchInput"
+                  @keydown.arrow-down.prevent="moveSuggestion(1)"
+                  @keydown.arrow-up.prevent="moveSuggestion(-1)"
+                  @keydown.enter.prevent="applyHighlightedSuggestion()"
+                  placeholder="Search by job number, client, or address..."
+                />
+                <button 
+                  class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs" 
+                  @click="jobSearch = ''; filterJobs()"
+                  x-show="jobSearch"
+                  title="Clear search"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
             <!-- Autocomplete dropdown -->
             <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-60 overflow-auto"
                  x-show="showJobSuggestions && jobSuggestions.length > 0"
@@ -227,13 +250,18 @@
               </template>
             </div>
           </div>
-          <div class="relative">
-            <button type="button" class="btn btn-outline w-full hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800"
-                    @click="statusDropdownOpen = !statusDropdownOpen"
-                    :aria-expanded="statusDropdownOpen" title="Filter by Status">
-              <i class="bi bi-funnel"></i>
-              <span class="ml-2" x-text="statusSummary()"></span>
-            </button>
+            <div class="relative pl-4 pr-0">
+              <label class="label py-1 justify-center">
+                <span class="label-text text-sm font-medium">Filter by Status</span>
+              </label>
+              <button type="button" class="btn btn-outline w-full border-2 border-gray-400 !p-0"
+                      @click="statusDropdownOpen = !statusDropdownOpen"
+                      :aria-expanded="statusDropdownOpen" title="Filter by Status">
+                <span class="px-4 py-2 flex items-center gap-2 w-full justify-center">
+                  <i class="bi bi-funnel"></i>
+                  <span x-text="statusSummary()"></span>
+                </span>
+              </button>
             <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-xl"
                  x-show="statusDropdownOpen" @click.outside="statusDropdownOpen=false">
               <div class="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
@@ -254,110 +282,148 @@
         </div>
 
         <!-- Jobs Table -->
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th class="cursor-pointer" @click="sortJobs('job_number')">
-                  Job Number
-                  <i class="bi" :class="getSortIcon('job_number')"></i>
-                </th>
-                <th class="cursor-pointer " @click="sortJobs('client')">
-                  Client
-                  <i class="bi" :class="getSortIcon('client')"></i>
-                </th>
-                <th class="cursor-pointer " @click="sortJobs('address')">
-                  Address
-                  <i class="bi" :class="getSortIcon('address')"></i>
-                </th>
-                <th class="cursor-pointer " @click="sortJobs('status')">
-                  Status
-                  <i class="bi" :class="getSortIcon('status')"></i>
-                </th>
-                <th>Tags</th>
-                <th class="cursor-pointer " @click="sortJobs('created_at')">
-                  Created
-                  <i class="bi" :class="getSortIcon('created_at')"></i>
-                </th>
-                <th class="actions-col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="job in paginatedJobs" :key="job.id">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+          <div x-show="!_loadingJobs">
+            <table class="table w-full">
+              <thead class="bg-base-200">
                 <tr>
-                  <td>
-                    <span x-text="job.job_number"></span>
-                    <template x-if="job.is_parcel_job">
-                      <span
-                        class="badge badge-info badge-sm ml-2"
-                        title="Created from parcel lookup"
-                      >
-                        <i class="bi bi-geo-alt"></i> Parcel
-                      </span>
-                    </template>
-                  </td>
-                  <td x-text="job.client"></td>
-                  <td x-text="job.address"></td>
-                  <td>
-                    <span
-                      :class="getStatusBadgeClass(job.status)"
-                      x-text="job.status"
-                    ></span>
-                  </td>
-                  <td>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('job_number')">
                     <div class="flex items-center gap-2">
-                      <div class="flex flex-wrap gap-1 max-w-[260px] overflow-hidden">
-                        <template x-for="(t, idx) in (job.tags || []).slice(0,2)" :key="t.id">
-                          <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`" x-text="t.name"></span>
-                        </template>
-                        <template x-if="(job.tags || []).length > 2">
-                          <span class="badge badge-ghost" x-text="'+' + ((job.tags||[]).length - 2)"></span>
-                        </template>
-                      </div>
-                      <button class="btn btn-outline btn-xs" title="Manage tags" @click.stop="openJobTags(job)">
-                        Manage
-                      </button>
+                      Job Number
+                      <i class="bi" :class="getSortIcon('job_number')"></i>
                     </div>
-                  </td>
-                  <td x-text="formatDate(job.created_at)"></td>
-                  <td class="actions-col">
-                    <div class="flex items-center gap-2 whitespace-nowrap">
-                    <button
-                      @click="openFieldworkModal(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-info text-info bg-white hover:bg-info hover:text-white transition-colors duration-200 mr-1"
-                      title="Manage Time Tracking"
-                    >
-                      <i class="bi bi-clock-history"></i>
-                    </button>
-                    <button
-                      @click="editJob(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1"
-                      title="Edit Job"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <template x-if="job.is_parcel_job">
-                      <button
-                        @click="openPromoteModal(job)"
-                        class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
-                        title="Upgrade"
-                      >
-                        <i class="bi bi-arrow-up-right-square"></i>
-                      </button>
-                    </template>
-                    <button
-                      @click="deleteJob(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200"
-                      title="Delete Job"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
+                  </th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('client')">
+                    <div class="flex items-center gap-2">
+                      Client
+                      <i class="bi" :class="getSortIcon('client')"></i>
                     </div>
-                  </td>
+                  </th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('address')">
+                    <div class="flex items-center gap-2">
+                      Address
+                      <i class="bi" :class="getSortIcon('address')"></i>
+                    </div>
+                  </th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('status')">
+                    <div class="flex items-center gap-2">
+                      Status
+                      <i class="bi" :class="getSortIcon('status')"></i>
+                    </div>
+                  </th>
+                  <th>Tags</th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('created_at')">
+                    <div class="flex items-center gap-2">
+                      Created
+                      <i class="bi" :class="getSortIcon('created_at')"></i>
+                    </div>
+                  </th>
+                  <th class="actions-col text-right">Actions</th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <template x-for="job in paginatedJobs" :key="job.id">
+                  <tr class="hover:bg-base-200/50 transition-colors">
+                    <td>
+                      <div class="font-medium" x-text="job.job_number"></div>
+                      <template x-if="job.is_parcel_job">
+                        <span
+                          class="badge badge-info badge-sm mt-1"
+                          title="Created from parcel lookup"
+                        >
+                          <i class="bi bi-geo-alt"></i> Parcel
+                        </span>
+                      </template>
+                    </td>
+                    <td x-text="job.client"></td>
+                    <td>
+                      <div x-text="job.address"></div>
+                    </td>
+                    <td>
+                      <span
+                        :class="getStatusBadgeClass(job.status)"
+                        x-text="job.status"
+                      ></span>
+                    </td>
+                    <td>
+                      <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap gap-1">
+                          <template x-for="(t, idx) in (job.tags || []).slice(0,2)" :key="t.id">
+                            <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`" x-text="t.name"></span>
+                          </template>
+                          <template x-if="(job.tags || []).length > 2">
+                            <span class="badge badge-ghost" x-text="'+' + ((job.tags||[]).length - 2)"></span>
+                          </template>
+                        </div>
+                        <button class="btn btn-ghost btn-xs" title="Manage tags" @click.stop="openJobTags(job)">
+                          <i class="bi bi-tags"></i>
+                        </button>
+                      </div>
+                    </td>
+                    <td x-text="formatDate(job.created_at)"></td>
+                    <td class="actions-col">
+                      <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                        <button
+                          @click="openFieldworkModal(job)"
+                          class="btn btn-sm btn-info btn-outline"
+                          title="Manage Time Tracking"
+                        >
+                          <i class="bi bi-clock-history"></i>
+                        </button>
+                        <button
+                          @click="editJob(job)"
+                          class="btn btn-sm btn-primary btn-outline"
+                          title="Edit Job"
+                        >
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <template x-if="job.is_parcel_job">
+                          <button
+                            @click="openPromoteModal(job)"
+                            class="btn btn-sm btn-success btn-outline"
+                            title="Upgrade"
+                          >
+                            <i class="bi bi-arrow-up-right-square"></i>
+                          </button>
+                        </template>
+                        <button
+                          @click="deleteJob(job)"
+                          class="btn btn-sm btn-error btn-outline"
+                          title="Delete Job"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="!paginatedJobs || paginatedJobs.length === 0">
+                  <tr>
+                    <td colspan="7" class="text-center py-8 text-gray-500">
+                      <template x-if="jobSearch || (selectedStatuses && selectedStatuses.length < statuses.length)">
+                        <div>
+                          <i class="bi bi-search text-2xl mb-2"></i>
+                          <p>No jobs found matching your filters.</p>
+                          <button class="btn btn-sm btn-ghost mt-2" @click="jobSearch = ''; selectAllStatuses(); filterJobs()">
+                            Clear Filters
+                          </button>
+                        </div>
+                      </template>
+                      <template x-if="!jobSearch && (!selectedStatuses || selectedStatuses.length === statuses.length)">
+                        <div>
+                          <i class="bi bi-briefcase text-2xl mb-2"></i>
+                          <p>No jobs yet. Create your first job above.</p>
+                        </div>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex justify-center items-center py-8" x-show="_loadingJobs">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
         </div>
 
         <!-- Pagination Controls -->
@@ -687,74 +753,139 @@
       </div>
 
       <!-- Deleted Jobs Tab -->
-      <div x-show="activeTab === 'deleted'">
-        <div class="flex justify-between items-center mb-3">
-          <h3>Deleted Jobs</h3>
+      <div x-show="activeTab === 'deleted'" class="space-y-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-semibold">Deleted Jobs</h3>
+            <p class="text-sm text-gray-500 mt-1" x-show="filteredDeletedJobs && filteredDeletedJobs.length > 0">
+              <span x-text="filteredDeletedJobs.length"></span> deleted job<span x-text="filteredDeletedJobs.length !== 1 ? 's' : ''"></span>
+            </p>
+          </div>
         </div>
 
-        <!-- Deleted Job Search -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <div>
-            <input
-              type="text"
-              class="input input-bordered w-full"
-              x-model="deletedJobSearch"
-              @input="filterDeletedJobs()"
-              placeholder="Search deleted jobs..."
-            />
+        <!-- Search Bar -->
+        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Search Deleted Jobs</span>
+              </label>
+              <input 
+                type="text" 
+                class="input input-bordered w-full" 
+                placeholder="Search by job number, client, or address..."
+                x-model="deletedJobSearch"
+                @input="filterDeletedJobs()"
+                @keydown.escape="deletedJobSearch = ''; filterDeletedJobs()"
+              >
+            </div>
+            <div class="pt-6">
+              <button 
+                class="btn btn-ghost btn-sm" 
+                @click="deletedJobSearch = ''; filterDeletedJobs()"
+                x-show="deletedJobSearch"
+                title="Clear search"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Deleted Jobs Table -->
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Original Job Number</th>
-                <th>Client</th>
-                <th>Address</th>
-                <th>Deleted By</th>
-                <th>Deleted At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="job in filteredDeletedJobs" :key="job.id">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+          <div class="overflow-x-auto" x-show="!_loadingDeletedJobs">
+            <table class="table w-full">
+              <thead class="bg-base-200">
                 <tr>
-                  <td
-                    x-text="job.display_job_number || job.original_job_number"
-                  ></td>
-                  <td x-text="job.client"></td>
-                  <td x-text="job.address"></td>
-                  <td x-text="getDeletedByName(job.deleted_by_id)"></td>
-                  <td x-text="formatDate(job.deleted_at)"></td>
-                  <td>
-                    <button
-                      @click="restoreJob(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-success text-success bg-white hover:bg-success hover:text-white transition-colors duration-200 mr-1"
-                      title="Restore"
-                    >
-                      <i class="bi bi-arrow-counterclockwise"></i> Restore
-                    </button>
-                    <button
-                      @click="permanentlyDeleteJob(job)"
-                      class="px-2 py-1 rounded text-xs font-medium cursor-pointer inline-flex items-center justify-center border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200"
-                      title="Permanently Delete"
-                    >
-                      <i class="bi bi-x-circle"></i> Delete
-                    </button>
-                  </td>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortDeletedJobs('job_number')">
+                    <div class="flex items-center gap-2">
+                      Original Job Number
+                      <i class="bi" :class="deletedSortField === 'job_number' ? (deletedSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
+                    </div>
+                  </th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortDeletedJobs('client')">
+                    <div class="flex items-center gap-2">
+                      Client
+                      <i class="bi" :class="deletedSortField === 'client' ? (deletedSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
+                    </div>
+                  </th>
+                  <th>Address</th>
+                  <th>Deleted By</th>
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortDeletedJobs('deleted_at')">
+                    <div class="flex items-center gap-2">
+                      Deleted At
+                      <i class="bi" :class="deletedSortField === 'deleted_at' ? (deletedSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
+                    </div>
+                  </th>
+                  <th class="text-right">Actions</th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-
-        <template x-if="filteredDeletedJobs.length === 0">
-          <div class="text-center py-4">
-            <p class="text-muted">No deleted jobs found</p>
+              </thead>
+              <tbody>
+                <template x-for="job in filteredDeletedJobs" :key="job.id">
+                  <tr class="hover:bg-base-200/50 transition-colors">
+                    <td>
+                      <div class="font-medium" x-text="job.display_job_number || job.original_job_number"></div>
+                    </td>
+                    <td x-text="job.client"></td>
+                    <td>
+                      <div class="max-w-xs truncate" x-text="job.address" :title="job.address"></div>
+                    </td>
+                    <td>
+                      <span class="text-sm" x-text="getDeletedByName(job.deleted_by_id)"></span>
+                    </td>
+                    <td>
+                      <div class="text-sm" x-text="formatDeletedDate(job.deleted_at)"></div>
+                      <div class="text-xs text-gray-500" x-show="job.deleted_at" x-text="formatDeletedTime(job.deleted_at)"></div>
+                    </td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          @click="restoreJob(job)"
+                          class="btn btn-sm btn-success btn-outline"
+                          title="Restore Job"
+                        >
+                          <i class="bi bi-arrow-counterclockwise"></i>
+                          Restore
+                        </button>
+                        <button
+                          @click="permanentlyDeleteJob(job)"
+                          class="btn btn-sm btn-error btn-outline"
+                          title="Permanently Delete"
+                        >
+                          <i class="bi bi-x-circle"></i>
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="!filteredDeletedJobs || filteredDeletedJobs.length === 0">
+                  <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-500">
+                      <template x-if="deletedJobSearch">
+                        <div>
+                          <i class="bi bi-search text-2xl mb-2"></i>
+                          <p>No deleted jobs found matching "<span x-text="deletedJobSearch"></span>"</p>
+                        </div>
+                      </template>
+                      <template x-if="!deletedJobSearch">
+                        <div>
+                          <i class="bi bi-trash text-2xl mb-2"></i>
+                          <p>No deleted jobs found.</p>
+                        </div>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
-        </template>
+          <div class="flex justify-center items-center py-8" x-show="_loadingDeletedJobs">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1361,6 +1492,8 @@
           userSearch: '',
           userSortField: 'username',
           userSortAsc: true,
+          deletedSortField: 'deleted_at',
+          deletedSortAsc: false,
           tags: [],
           dashboardLoaded: false,
           jobsLoaded: false,
@@ -2024,9 +2157,9 @@
                 const response = await fetcher("/api/jobs/deleted", {}, { ttl: 60_000, force });
                 const data = await response.json();
                 this.deletedJobs = data.jobs || [];
-                this.filteredDeletedJobs = this.deletedJobs;
                 this.stats.deletedJobs = data.total || 0;
                 this.deletedJobsLoaded = true;
+                this.filterDeletedJobs(); // Apply sorting and filtering
               } catch (error) {
                 console.error("Failed to load deleted jobs:", error);
                 Alpine.store("notifications").add(
@@ -2276,7 +2409,7 @@
 
           getStatusBadgeClass(status) {
             // DaisyUI badge + theme-specific color classes per status
-            const base = "badge badge-lg whitespace-nowrap border-2";
+            const base = "badge whitespace-nowrap border-2";
             const map = {
               "Completed": "badge-completed",
               "Needs Fieldwork": "badge-needs-fieldwork",
@@ -2430,10 +2563,11 @@
           },
 
           filterDeletedJobs() {
-            let filtered = this.deletedJobs;
+            let filtered = [...this.deletedJobs];
 
-            if (this.deletedJobSearch.trim()) {
-              const term = this.deletedJobSearch.toLowerCase();
+            // Apply search filter
+            if (this.deletedJobSearch && this.deletedJobSearch.trim()) {
+              const term = this.deletedJobSearch.toLowerCase().trim();
               filtered = filtered.filter(
                 (job) =>
                   (job.display_job_number || job.original_job_number || "")
@@ -2444,7 +2578,77 @@
               );
             }
 
+            // Apply sorting
+            filtered.sort((a, b) => {
+              let aVal, bVal;
+              
+              if (this.deletedSortField === 'job_number') {
+                aVal = (a.display_job_number || a.original_job_number || '').toLowerCase();
+                bVal = (b.display_job_number || b.original_job_number || '').toLowerCase();
+              } else if (this.deletedSortField === 'client') {
+                aVal = (a.client || '').toLowerCase();
+                bVal = (b.client || '').toLowerCase();
+              } else if (this.deletedSortField === 'deleted_at') {
+                if (!a.deleted_at) return 1;
+                if (!b.deleted_at) return -1;
+                aVal = new Date(a.deleted_at);
+                bVal = new Date(b.deleted_at);
+              } else {
+                aVal = a[this.deletedSortField] || '';
+                bVal = b[this.deletedSortField] || '';
+              }
+
+              if (aVal < bVal) return this.deletedSortAsc ? -1 : 1;
+              if (aVal > bVal) return this.deletedSortAsc ? 1 : -1;
+              return 0;
+            });
+
             this.filteredDeletedJobs = filtered;
+          },
+
+          sortDeletedJobs(field) {
+            if (this.deletedSortField === field) {
+              this.deletedSortAsc = !this.deletedSortAsc;
+            } else {
+              this.deletedSortField = field;
+              this.deletedSortAsc = field === 'deleted_at' ? false : true; // Most recent first for dates
+            }
+            this.filterDeletedJobs();
+          },
+
+          formatDeletedDate(dateString) {
+            if (!dateString) return "Unknown";
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+              if (diffHours === 0) {
+                const diffMins = Math.floor(diffMs / (1000 * 60));
+                return diffMins <= 1 ? "Just now" : `${diffMins} minutes ago`;
+              }
+              return diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago`;
+            } else if (diffDays === 1) {
+              return "Yesterday";
+            } else if (diffDays < 7) {
+              return `${diffDays} days ago`;
+            } else if (diffDays < 30) {
+              const weeks = Math.floor(diffDays / 7);
+              return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+            } else if (diffDays < 365) {
+              const months = Math.floor(diffDays / 30);
+              return months === 1 ? "1 month ago" : `${months} months ago`;
+            } else {
+              return date.toLocaleDateString();
+            }
+          },
+
+          formatDeletedTime(dateString) {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           },
 
           getDeletedByName(userId) {
