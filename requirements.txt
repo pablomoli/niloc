@@ -12,7 +12,6 @@ Flask==3.1.1
 Flask-Compress==1.15
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
-Flask-Compress==1.15
 geographiclib==2.0
 geopandas==0.14.3
 geopy==2.3.0
@@ -35,7 +34,7 @@ requests==2.31.0
 shapely==2.0.3
 six==1.17.0
 SQLAlchemy==2.0.41
-typing_extensions==4.13.2
+typing_extensions>=4.14.1
 tzdata==2025.2
 urllib3==2.4.0
 Werkzeug==3.1.3
