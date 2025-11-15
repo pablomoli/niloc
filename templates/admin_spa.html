@@ -250,6 +250,7 @@
               </template>
             </div>
           </div>
+          </div>
             <div class="relative pl-4 pr-0">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Filter by Status</span>
@@ -471,7 +472,7 @@
           </div>
         </div>
 
-        <template x-if="filteredJobs.length === 0">
+        <template x-if="filteredJobs.length === 0 && !_loadingJobs">
           <div class="text-center py-4">
             <p class="text-muted">No jobs found</p>
           </div>
@@ -1682,8 +1683,10 @@
               this.loadDeletedJobs();
               return;
             }
-            if (tab === 'tags' && this.tags.length === 0) {
-              this.loadTags(true);
+            if (tab === 'tags') {
+              if (this.tags.length === 0) {
+                this.loadTags(true);
+              }
             }
           },
 
@@ -1950,11 +1953,16 @@
               const fetcher = window.cachedFetch || window.fetch;
               const url = '/api/tags' + (includeUsage ? '?include_usage=true' : '');
               const resp = await fetcher(url, {}, { ttl: 120_000, force });
+              if (!resp.ok) {
+                throw new Error(`Failed to load tags: ${resp.status} ${resp.statusText}`);
+              }
               const arr = await resp.json();
-              this.tags = arr;
-              this.tagsWithUsage = arr;
+              this.tags = Array.isArray(arr) ? arr : [];
+              this.tagsWithUsage = Array.isArray(arr) ? arr : [];
             } catch (e) {
               console.error('Failed to load tags', e);
+              this.tags = [];
+              this.tagsWithUsage = [];
             }
           },
 
@@ -2006,14 +2014,20 @@
             if (this._usersPromise) {
               return this._usersPromise;
             }
-            if (this.usersLoaded && !force) return;
+            if (this.usersLoaded && !force && this.users.length > 0) return;
             this._loadingUsers = true;
             this._usersPromise = (async () => {
               try {
                 const fetcher = window.cachedFetch || window.fetch;
                 const response = await fetcher("/api/users", {}, { ttl: 60_000, force });
-                this.users = await response.json();
+                if (!response.ok) {
+                  throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                this.users = Array.isArray(data) ? data : [];
                 this.usersLoaded = true;
+                // Use $nextTick to ensure Alpine reactivity
+                await this.$nextTick();
                 this.filterUsers();
               } catch (error) {
                 console.error("Failed to load users:", error);
@@ -2022,6 +2036,8 @@
                   "error",
                 );
                 this.usersLoaded = false;
+                this.users = [];
+                this.filteredUsers = [];
                 throw error;
               } finally {
                 this._loadingUsers = false;
@@ -2149,16 +2165,21 @@
             if (this._deletedJobsPromise) {
               return this._deletedJobsPromise;
             }
-            if (this.deletedJobsLoaded && !force) return;
+            if (this.deletedJobsLoaded && !force && this.deletedJobs.length > 0) return;
             this._loadingDeletedJobs = true;
             this._deletedJobsPromise = (async () => {
               try {
                 const fetcher = window.cachedFetch || window.fetch;
                 const response = await fetcher("/api/jobs/deleted", {}, { ttl: 60_000, force });
+                if (!response.ok) {
+                  throw new Error(`Failed to load deleted jobs: ${response.status} ${response.statusText}`);
+                }
                 const data = await response.json();
-                this.deletedJobs = data.jobs || [];
+                this.deletedJobs = Array.isArray(data.jobs) ? data.jobs : [];
                 this.stats.deletedJobs = data.total || 0;
                 this.deletedJobsLoaded = true;
+                // Use $nextTick to ensure Alpine reactivity
+                await this.$nextTick();
                 this.filterDeletedJobs(); // Apply sorting and filtering
               } catch (error) {
                 console.error("Failed to load deleted jobs:", error);
@@ -2167,6 +2188,8 @@
                   "error",
                 );
                 this.deletedJobsLoaded = false;
+                this.deletedJobs = [];
+                this.filteredDeletedJobs = [];
                 throw error;
               } finally {
                 this._loadingDeletedJobs = false;
