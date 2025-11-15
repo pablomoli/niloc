@@ -24,7 +24,7 @@ except Exception:
 from auth_utils import check_password, login_required
 from models import db, User
 from admin import admin_bp
-from api_routes import api_bp  # Import our new consolidated API
+from api import api_bp  # Import API blueprint from modular structure
 
 # Load environment variables
 load_dotenv()
@@ -113,7 +113,7 @@ def map_with_jobs():
     """Main map interface - now uses consolidated API for POST requests"""
     if request.method == "POST":
         # Instead of duplicating job creation logic, use our consolidated API
-        from api_routes import create_job
+        from api.jobs import create_job
 
         return create_job()
 
@@ -130,7 +130,7 @@ def map_with_jobs():
 @login_required
 def jobs():
     """Legacy /jobs endpoint - now uses consolidated API logic"""
-    from api_routes import get_jobs
+    from api.jobs import get_jobs
 
     return get_jobs()
 
@@ -139,7 +139,7 @@ def jobs():
 @login_required  # Added login_required for consistency
 def geocode():
     """Legacy /geocode endpoint - now uses consolidated API logic"""
-    from api_routes import geocode_endpoint
+    from api.geocoding import geocode_endpoint
 
     return geocode_endpoint()
 
@@ -148,7 +148,7 @@ def geocode():
 @login_required
 def update_job(job_number):
     """Legacy job update endpoint - now uses consolidated API logic"""
-    from api_routes import update_job as api_update_job
+    from api.jobs import update_job as api_update_job
 
     return api_update_job(job_number)
 
@@ -157,7 +157,7 @@ def update_job(job_number):
 @login_required
 def add_fieldwork(job_number):
     """Legacy add fieldwork endpoint - now uses consolidated API logic"""
-    from api_routes import add_fieldwork as api_add_fieldwork
+    from api.fieldwork import add_fieldwork as api_add_fieldwork
 
     return api_add_fieldwork(job_number)
 
@@ -166,7 +166,7 @@ def add_fieldwork(job_number):
 @login_required
 def get_fieldwork_for_job(job_number):
     """Legacy get fieldwork endpoint - now uses consolidated API logic"""
-    from api_routes import get_job_fieldwork
+    from api.fieldwork import get_job_fieldwork
 
     return get_job_fieldwork(job_number)
 
@@ -175,7 +175,7 @@ def get_fieldwork_for_job(job_number):
 @login_required
 def update_fieldwork(entry_id):
     """Legacy update fieldwork endpoint - now uses consolidated API logic"""
-    from api_routes import update_fieldwork as api_update_fieldwork
+    from api.fieldwork import update_fieldwork as api_update_fieldwork
 
     return api_update_fieldwork(entry_id)
 

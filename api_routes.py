@@ -1440,8 +1440,9 @@ def create_fuzzy_search_conditions(search_term, fields):
                             "g",
                         ).ilike(pattern)
                     )
-            except:
-                # If regexp_replace fails, just use basic ilike
+            except Exception as e:
+                # If regexp_replace fails (e.g., database doesn't support it), just use basic ilike
+                logger.debug(f"regexp_replace not available, using basic ilike: {e}")
                 pass
 
         if stripped_whitespace_field is not None and no_spaces:

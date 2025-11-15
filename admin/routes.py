@@ -186,7 +186,7 @@ def api_jobs():
         return jsonify({"error": "Unauthorized"}), 403
 
     # Proxy to our main API with current request parameters
-    from api_routes import get_jobs
+    from api.jobs import get_jobs
 
     return get_jobs()
 
@@ -199,6 +199,6 @@ def api_users():
         return jsonify({"error": "Unauthorized"}), 403
 
     # Proxy to our main API
-    from api_routes import get_users
+    from api.users import get_users
 
     return get_users()

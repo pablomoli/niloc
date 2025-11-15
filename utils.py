@@ -42,13 +42,13 @@ def get_county_from_coords(lat, lon):
 def get_brevard_property_link(address):
     try:
         url = "https://www.bcpao.us/api/records"
-        res = requests.get(url, params={"address": address})
+        res = requests.get(url, params={"address": address}, timeout=10)
         res.raise_for_status()
         data = res.json()
         if data:
             return f"https://www.bcpao.us/propertysearch/#/account/{data[0]['account']}"
-    except:
-        pass
+    except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
+        logger.debug(f"Could not get Brevard property link for address {address}: {e}")
     return None
 
 def geocode_brevard_parcel(tax_account: str):
