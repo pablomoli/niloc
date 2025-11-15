@@ -45,22 +45,38 @@ a,
   background-color: transparent !important;
 }
 
-/* Logout button specific styling */
-.app-nav a[href="/logout"]:hover {
-  background: #dc3545 !important;
-  color: white !important;
-  transition: all 0.2s ease;
+/* Header improvements */
+.app-header {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-/* Keep Map button pink hover */
-.app-nav a[href="/"]:hover {
-  background: #FF1393 !important;
-  color: white !important;
+.app-nav-link span {
+  transition: opacity 0.2s;
 }
 
 @media (max-width: 768px), (display-mode: standalone) {
-  .app-nav a { font-size: 0; padding: 0.5rem; }
-  .app-nav a i { font-size: 18px; margin: 0; }
+  .app-header {
+    padding: 0 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1rem;
+  }
+  
+  .app-nav-link span {
+    display: none;
+  }
+  
+  .app-nav-link {
+    padding: 0.5rem;
+    min-width: 2.5rem;
+    justify-content: center;
+  }
+  
+  .app-nav-link i {
+    font-size: 1.125rem;
+  }
+  
   /* Hide Admin SPA tab labels; keep icons visible */
   .tabs .tab span { display: none; }
 }
