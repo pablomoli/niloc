@@ -21,7 +21,7 @@ except Exception:
     Compress = None  # type: ignore
     _compress_available = False
 
-from auth_utils import check_password, login_required
+from auth_utils import check_password, login_required, get_client_ip
 from models import db, User
 from admin import admin_bp
 from api import api_bp  # Import API blueprint from modular structure
@@ -198,7 +198,7 @@ def login():
             session["user_id"] = user.id
             session["role"] = user.role
             user.last_login = datetime.now(timezone.utc)
-            user.last_ip = request.remote_addr
+            user.last_ip = get_client_ip()
             db.session.commit()
             return redirect("/")
         return render_template("login.html", error="Invalid credentials")
