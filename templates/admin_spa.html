@@ -259,15 +259,15 @@
               </template>
             </div>
           </div>
-          </div>
             <div class="relative pl-4 pr-0">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Filter by Status</span>
               </label>
-              <button type="button" class="btn btn-outline w-full border-2 border-gray-400 !p-0"
+              <button type="button" class="btn btn-outline w-full border-2 border-gray-400 p-0"
+                      style="padding: 0 !important; margin: 0 !important; min-height: 0 !important;"
                       @click="statusDropdownOpen = !statusDropdownOpen"
                       :aria-expanded="statusDropdownOpen" title="Filter by Status">
-                <span class="px-4 py-2 flex items-center gap-2 w-full justify-center">
+                <span class="px-4 flex items-center gap-2 w-full justify-center" style="padding-top: 0.5rem; padding-bottom: 0.5rem; min-height: 2.75rem;">
                   <i class="bi bi-funnel"></i>
                   <span x-text="statusSummary()"></span>
                 </span>
@@ -289,6 +289,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         <!-- Jobs Table -->
@@ -356,8 +357,8 @@
                       ></span>
                     </td>
                     <td>
-                      <div class="flex items-center gap-2">
-                        <div class="flex flex-wrap gap-1">
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-1 flex-1 min-w-0">
                           <template x-for="(t, idx) in (job.tags || []).slice(0,2)" :key="t.id">
                             <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`" x-text="t.name"></span>
                           </template>
@@ -365,43 +366,43 @@
                             <span class="badge badge-ghost" x-text="'+' + ((job.tags||[]).length - 2)"></span>
                           </template>
                         </div>
-                        <button class="btn btn-ghost btn-xs" title="Manage tags" @click.stop="openJobTags(job)">
+                        <button class="btn btn-ghost btn-xs flex-shrink-0" title="Manage tags" @click.stop="openJobTags(job)">
                           <i class="bi bi-tags"></i>
                         </button>
                       </div>
                     </td>
                     <td x-text="formatDate(job.created_at)"></td>
                     <td class="actions-col">
-                      <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                      <div class="flex items-center justify-end gap-1 whitespace-nowrap">
                         <button
                           @click="openFieldworkModal(job)"
-                          class="btn btn-sm btn-info btn-outline"
+                          class="btn btn-xs btn-info btn-outline"
                           title="Manage Time Tracking"
                         >
-                          <i class="bi bi-clock-history"></i>
+                          <i class="bi bi-clock-history text-xs"></i>
                         </button>
                         <button
                           @click="editJob(job)"
-                          class="btn btn-sm btn-primary btn-outline"
+                          class="btn btn-xs btn-primary btn-outline"
                           title="Edit Job"
                         >
-                          <i class="bi bi-pencil"></i>
+                          <i class="bi bi-pencil text-xs"></i>
                         </button>
                         <template x-if="job.is_parcel_job">
                           <button
                             @click="openPromoteModal(job)"
-                            class="btn btn-sm btn-success btn-outline"
+                            class="btn btn-xs btn-success btn-outline"
                             title="Upgrade"
                           >
-                            <i class="bi bi-arrow-up-right-square"></i>
+                            <i class="bi bi-arrow-up-right-square text-xs"></i>
                           </button>
                         </template>
                         <button
                           @click="deleteJob(job)"
-                          class="btn btn-sm btn-error btn-outline"
+                          class="btn btn-xs btn-error btn-outline"
                           title="Delete Job"
                         >
-                          <i class="bi bi-trash"></i>
+                          <i class="bi bi-trash text-xs"></i>
                         </button>
                       </div>
                     </td>

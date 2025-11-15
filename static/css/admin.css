@@ -54,6 +54,107 @@ a,
   transition: opacity 0.2s;
 }
 
+/* Firefox-specific fixes for search input and filter button */
+/* Fix input field box-sizing and appearance */
+.admin-spa .input {
+  box-sizing: border-box !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Fix button padding and box-sizing */
+.admin-spa .btn {
+  box-sizing: border-box !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Fix filter button - override global min-height and ensure zero padding */
+.admin-spa button.btn-outline.border-2.p-0,
+.admin-spa button.btn-outline.border-2[style*="padding: 0"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  min-height: 0 !important;
+  height: auto !important;
+  line-height: normal !important;
+}
+
+/* Ensure inner span in filter button displays correctly and matches input height */
+.admin-spa button.btn-outline.border-2.p-0 > span,
+.admin-spa button.btn-outline.border-2[style*="padding: 0"] > span {
+  display: flex !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  align-items: center !important;
+}
+
+/* Match filter button height to input field - DaisyUI inputs are typically 2.75rem (44px) */
+.admin-spa .relative.pl-0.pr-4 .input.input-bordered,
+.admin-spa .relative.pl-4.pr-0 button.btn-outline.border-2.p-0 {
+  height: 2.75rem !important;
+  min-height: 2.75rem !important;
+  line-height: 1.5rem !important;
+}
+
+/* Ensure filter button inner span matches input padding */
+.admin-spa .relative.pl-4.pr-0 button.btn-outline.border-2.p-0 > span {
+  min-height: 2.75rem !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Fix grid layout to prevent Firefox layout issues */
+.admin-spa .grid {
+  display: grid !important;
+  box-sizing: border-box !important;
+}
+
+/* Fix grid items to prevent overflow */
+.admin-spa .grid > * {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Fix relative positioning containers */
+.admin-spa .relative {
+  position: relative !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure search input container doesn't overflow */
+.admin-spa .relative > .input {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+/* Fix search input wrapper to prevent overflow */
+.admin-spa .relative.pl-0.pr-4,
+.admin-spa .relative.pl-4.pr-0 {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Fix input with pr-10 padding for clear button */
+.admin-spa .input.pr-10 {
+  box-sizing: border-box !important;
+  padding-right: 2.5rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Override global min-height for filter button specifically */
+.admin-spa button.btn-outline.border-2.p-0[title="Filter by Status"],
+.admin-spa button.btn-outline.border-2[style*="padding: 0"][title="Filter by Status"] {
+  min-height: 0 !important;
+  min-width: auto !important;
+}
+
 @media (max-width: 768px), (display-mode: standalone) {
   .app-header {
     padding: 0 1rem;
@@ -121,7 +222,8 @@ a,
 }
 
 /* Fix icon-only buttons in actions column to not appear as squares */
-.admin-spa .actions-col .btn-sm {
+.admin-spa .actions-col .btn-sm,
+.admin-spa .actions-col .btn-xs {
   min-width: auto !important;
   width: auto !important;
   height: auto !important;
@@ -130,6 +232,19 @@ a,
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+/* Make action buttons more compact to reduce row height */
+.admin-spa .actions-col .btn-xs {
+  padding: 0.125rem 0.375rem !important;
+  min-height: 1.5rem !important;
+  height: 1.5rem !important;
+  line-height: 1 !important;
+}
+
+.admin-spa .actions-col .btn-xs i {
+  font-size: 0.875rem !important;
+  line-height: 1 !important;
 }
 
 /* Fix outline buttons to show transparent backgrounds, not solid colors */
@@ -208,6 +323,13 @@ a,
 .admin-spa table thead th {
   color: #1D232A !important;
   font-weight: 600;
+}
+
+/* Reduce table row vertical padding for more compact rows */
+.admin-spa .table td,
+.admin-spa .table th {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
 }
 
 /* Tabs: make labels darker and active state clearly accented */
