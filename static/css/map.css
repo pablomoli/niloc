@@ -50,8 +50,9 @@
 }
 
 @media (max-width: 768px), (display-mode: standalone) {
-  .top-controls a { font-size: 0; padding: 6px 8px; }
-  .top-controls a i { font-size: 16px; margin: 0; }
+  .top-controls .app-nav-link span { display: none; }
+  .top-controls .app-nav-link { padding: 0.5rem; min-width: 2.5rem; justify-content: center; }
+  .top-controls .app-nav-link i { font-size: 1.125rem; }
 }
 
 /* Notification container (replaces inline styles) */
