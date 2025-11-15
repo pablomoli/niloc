@@ -462,43 +462,134 @@
       </div>
 
       <!-- Tags Tab -->
-      <div x-show="activeTab === 'tags'">
-        <div class="flex justify-between items-center mb-3">
-          <h3>Manage Tags</h3>
-          <div class="flex gap-2">
-            <input class="input input-bordered input-sm" placeholder="New tag name" x-model="newTag.name">
-            <input type="color" class="input input-bordered input-sm w-12 p-0" x-model="newTag.color">
-            <button class="btn btn-sm btn-primary" @click="createTag()" title="Create Tag"><i class="bi bi-plus-lg"></i> Create</button>
+      <div x-show="activeTab === 'tags'" class="space-y-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-semibold">Manage Tags</h3>
+        </div>
+
+        <!-- Create New Tag Card -->
+        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+          <div class="flex items-end gap-3">
+            <div class="flex-1">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Tag Name</span>
+              </label>
+              <input 
+                class="input input-bordered w-full" 
+                placeholder="Enter tag name" 
+                x-model="newTag.name"
+                @keydown.enter.prevent="createTag()"
+              >
+            </div>
+            <div class="w-48">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Color</span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="color" 
+                  class="absolute opacity-0 w-0 h-0 pointer-events-none"
+                  x-model="newTag.color"
+                  x-ref="newTagColorInput"
+                >
+                <div 
+                  class="h-10 w-full rounded border border-base-300 flex items-center justify-center text-xs font-mono text-white shadow-sm px-2 cursor-pointer hover:opacity-90 transition-opacity" 
+                  :style="`background-color: ${newTag.color || '#007bff'}`"
+                  @click="$refs.newTagColorInput.click()"
+                >
+                  <span x-text="(newTag.color || '#007bff').toUpperCase()"></span>
+                </div>
+              </div>
+            </div>
+            <div class="pb-0">
+              <button 
+                class="btn btn-primary !text-white" 
+                @click="createTag()" 
+                :disabled="!newTag.name || !newTag.name.trim()"
+                title="Create Tag"
+              >
+                <i class="bi bi-plus-lg"></i>
+                Create Tag
+              </button>
+            </div>
           </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Color</th>
-                <th>Jobs</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="t in tagsWithUsage" :key="t.id">
+
+        <!-- Tags Table -->
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="table w-full">
+              <thead class="bg-base-200">
                 <tr>
-                  <td>
-                    <input class="input input-bordered input-sm w-full max-w-xs" x-model="t.name">
-                  </td>
-                  <td>
-                    <input type="color" class="input input-bordered input-sm w-12 p-0" x-model="t.color">
-                  </td>
-                  <td x-text="t.job_count || 0"></td>
-                  <td class="flex gap-2">
-                    <button class="btn btn-sm" @click="saveTag(t)" title="Save Changes"><i class="bi bi-save"></i></button>
-                    <button class="btn btn-sm btn-error" :disabled="(t.job_count||0) > 0" @click="deleteTag(t)" title="Delete Tag"><i class="bi bi-trash"></i></button>
-                  </td>
+                  <th class="w-1/3">Name</th>
+                  <th class="w-32">Color</th>
+                  <th class="w-24 text-center">Jobs</th>
+                  <th class="w-32 text-right">Actions</th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <template x-for="t in tagsWithUsage" :key="t.id">
+                  <tr class="hover:bg-base-200/50 transition-colors">
+                    <td>
+                      <input 
+                        class="input input-bordered input-sm w-full" 
+                        x-model="t.name"
+                        @keydown.enter.prevent="saveTag(t)"
+                      >
+                    </td>
+                    <td>
+                      <div class="relative">
+                        <input 
+                          type="color" 
+                          class="absolute opacity-0 w-0 h-0 pointer-events-none"
+                          x-model="t.color"
+                          @change="saveTag(t)"
+                          :id="`tagColorInput_${t.id}`"
+                        >
+                        <div 
+                          class="h-8 w-24 rounded border border-base-300 flex items-center justify-center text-xs font-mono text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity" 
+                          :style="`background-color: ${t.color}`"
+                          @click="document.getElementById(`tagColorInput_${t.id}`).click()"
+                        >
+                          <span x-text="t.color.toUpperCase()"></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge badge-outline" x-text="t.job_count || 0"></span>
+                    </td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        <button 
+                          class="btn btn-sm btn-ghost" 
+                          @click="saveTag(t)" 
+                          title="Save Changes"
+                        >
+                          <i class="bi bi-save"></i>
+                        </button>
+                        <button 
+                          class="btn btn-sm btn-error btn-outline" 
+                          :disabled="(t.job_count||0) > 0" 
+                          @click="deleteTag(t)" 
+                          :title="(t.job_count||0) > 0 ? 'Cannot delete tag with associated jobs' : 'Delete Tag'"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="!tagsWithUsage || tagsWithUsage.length === 0">
+                  <tr>
+                    <td colspan="4" class="text-center py-8 text-gray-500">
+                      No tags yet. Create your first tag above.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
