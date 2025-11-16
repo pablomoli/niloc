@@ -3,7 +3,7 @@ import os
 import logging
 from datetime import datetime, timezone, timedelta
 
-from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory, g
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
@@ -13,6 +13,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Configure Werkzeug logger to use our format (removes duplicate timestamp)
+werkzeug_logger = logging.getLogger('werkzeug')
+# Remove Werkzeug's default handler that includes timestamps in the message
+werkzeug_logger.handlers.clear()
+# Let it propagate to root logger which uses our format
+werkzeug_logger.propagate = True
 
 try:
     from flask_compress import Compress  # type: ignore
@@ -219,7 +226,7 @@ def logout():
 
 @app.after_request
 def add_cache_headers(response):
-    """Add cache headers to static files - consolidated handler"""
+    """Add cache headers to static files and API responses"""
     # Handle static files (both /static/ path and static endpoint)
     if request.path.startswith("/static/") or request.endpoint == "static":
         # If versioned, allow long-lived immutable caching
@@ -231,6 +238,39 @@ def add_cache_headers(response):
             # Shorter default to allow timely updates
             response.headers.setdefault(
                 "Cache-Control", "public, max-age=300"
+            )
+    # Add cache headers for API GET requests
+    elif request.path.startswith("/api/") and request.method == "GET":
+        # Add ETag support for conditional requests
+        if hasattr(response, 'get_data'):
+            import hashlib
+            etag = hashlib.md5(response.get_data()).hexdigest()
+            response.set_etag(etag)
+        
+        # Cache-Control for API responses (shorter TTL)
+        response.cache_control.max_age = 60  # Cache for 1 minute
+        response.cache_control.public = True
+    
+    return response
+
+
+@app.before_request
+def log_slow_queries():
+    """Log slow database queries for performance monitoring"""
+    if request.path.startswith("/api/"):
+        import time
+        g.start_time = time.time()
+
+
+@app.after_request
+def log_query_performance(response):
+    """Log slow API requests"""
+    if hasattr(g, 'start_time') and request.path.startswith("/api/"):
+        import time
+        duration = (time.time() - g.start_time) * 1000
+        if duration > 100:  # Log requests slower than 100ms
+            logger.warning(
+                f"SLOW REQUEST: {request.method} {request.path} took {duration:.2f}ms"
             )
     return response
 

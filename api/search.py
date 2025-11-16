@@ -177,7 +177,7 @@ def search_jobs():
     """
     GET /api/jobs/search - Real-time fuzzy search across ALL jobs
     Query params: q (search term), status, include_deleted
-    Returns all matching jobs without pagination
+    Returns matching jobs with result limit (max 500)
     """
     try:
         # Get search parameters
@@ -185,11 +185,12 @@ def search_jobs():
         status_filter = request.args.get("status", "").strip()
         include_deleted = request.args.get("include_deleted", "false").lower() == "true"
 
-        # Start with base query
+        # Start with base query with eager loading
+        from sqlalchemy.orm import joinedload
         if include_deleted:
-            query = Job.query  # Include deleted jobs
+            query = Job.query.options(joinedload(Job.tags))  # Include deleted jobs
         else:
-            query = Job.active()  # Only active jobs (existing method)
+            query = Job.active().options(joinedload(Job.tags))  # Only active jobs
 
         # Apply comprehensive fuzzy search
         if search_term:
@@ -225,8 +226,9 @@ def search_jobs():
         else:
             query = query.order_by(Job.created_at.desc())
 
-        # Execute query and get all results (no pagination)
-        jobs = query.all()
+        # Execute query with result limit to prevent huge responses
+        MAX_SEARCH_RESULTS = 500
+        jobs = query.limit(MAX_SEARCH_RESULTS).all()
 
         # Return results with metadata
         return jsonify(
@@ -237,6 +239,7 @@ def search_jobs():
                 "status_filter": status_filter,
                 "include_deleted": include_deleted,
                 "fuzzy_matching": True,
+                "limit_applied": len(jobs) >= MAX_SEARCH_RESULTS,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
