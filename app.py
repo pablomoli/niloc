@@ -14,6 +14,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Configure Werkzeug logger to use our format (removes duplicate timestamp)
+werkzeug_logger = logging.getLogger('werkzeug')
+# Remove Werkzeug's default handler that includes timestamps in the message
+werkzeug_logger.handlers.clear()
+# Let it propagate to root logger which uses our format
+werkzeug_logger.propagate = True
+
 try:
     from flask_compress import Compress  # type: ignore
     _compress_available = True
