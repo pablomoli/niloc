@@ -349,6 +349,176 @@ def update_job(job_number):
 
 
 
+@api_bp.route("/jobs/<job_number>", methods=["DELETE"])
+@login_required
+def delete_job(job_number):
+    """DELETE /api/jobs/JOB123 - Enhanced soft delete with timestamped job number"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    # Find active job by job number
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    try:
+        # Store original number for response
+        original_number = job.job_number
+
+        # Perform enhanced soft delete
+        job.soft_delete()
+        job.deleted_by_id = session.get("user_id")
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "message": f"Job {original_number} deleted successfully",
+                "original_job_number": original_number,
+                "deleted_job_number": job.job_number,
+                "deleted_at": job.deleted_at.isoformat(),
+            }
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Delete job error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/restore", methods=["POST"])
+@login_required
+def restore_job(job_number):
+    """POST /api/jobs/JOB123/restore - Restore deleted job"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    # Find deleted job by either current job_number or original_job_number
+    job = (
+        Job.query.filter(
+            or_(Job.job_number == job_number, Job.original_job_number == job_number)
+        )
+        .filter(Job.deleted_at.isnot(None))
+        .first()
+    )
+
+    if not job:
+        return jsonify({"error": "Deleted job not found"}), 404
+
+    try:
+        # Restore the job (includes validation)
+        restored_number = job.restore()
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "message": f"Job {restored_number} restored successfully",
+                "job_number": restored_number,
+                "job": job.to_dict(),
+            }
+        )
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Restore job error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/promote-to-address", methods=["POST"])
+@login_required
+def promote_parcel_to_address(job_number: str):
+    """POST /api/jobs/JOB123/promote-to-address - Promote parcel job to address job
+
+    Requires JSON body: { "address": "..." }
+    - Validates presence of address.
+    - Attempts to geocode provided address (if API key configured) to set lat/lng/county.
+    - Sets is_parcel_job = False.
+    """
+    # Find active job by job number
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    if not job.is_parcel_job:
+        return jsonify({"error": "Job is already an address job"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    address = (payload.get("address") or "").strip()
+    if not address:
+        return jsonify({"error": "Address is required to promote this job"}), 400
+
+    try:
+        # Try to geocode to enrich coordinates/county
+        geo = geocode_address(address)
+
+        job.address = geo.get("formatted_address") if geo and geo.get("formatted_address") else address
+        if geo:
+            job.lat = str(geo.get("lat")) if geo.get("lat") is not None else job.lat
+            job.long = str(geo.get("lng")) if geo.get("lng") is not None else job.long
+            if geo.get("county"):
+                job.county = geo.get("county")
+        job.is_parcel_job = False
+
+        db.session.commit()
+
+        return jsonify({
+            "message": f"Job {job_number} promoted to address job successfully",
+            "job": job.to_dict()
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Promote job error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/deleted", methods=["GET"])
+@login_required
+def get_deleted_jobs():
+    """GET /api/jobs/deleted - List all deleted jobs"""
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    try:
+        # Get search parameter for filtering deleted jobs
+        search_term = request.args.get("q", "").strip()
+
+        # Start with deleted jobs query
+        query = Job.deleted().order_by(Job.deleted_at.desc())
+
+        # Apply search filter if provided
+        if search_term:
+            search_condition = create_fuzzy_search_conditions(
+                search_term,
+                [Job.job_number, Job.original_job_number, Job.client, Job.address],
+            )
+            if search_condition is not None:
+                query = query.filter(search_condition)
+
+        deleted_jobs = query.all()
+
+        return jsonify(
+            {
+                "jobs": [job.to_dict() for job in deleted_jobs],
+                "total": len(deleted_jobs),
+                "search_term": search_term if search_term else None,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Get deleted jobs error: {e}", exc_info=True)
+        return jsonify(
+            {"error": "Failed to fetch deleted jobs", "jobs": [], "total": 0}
+        ), 500
+
+
 @api_bp.route("/jobs/<job_number>/permanent-delete", methods=["DELETE"])
 @login_required
 def permanent_delete_job(job_number):
