@@ -106,9 +106,10 @@ AppState.baseLayers = {
         ...BASE_TILE_OPTIONS,
         attribution: 'Tiles © Esri'
     }),
-    streets: L.tileLayer('https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    streets: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         ...BASE_TILE_OPTIONS,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+        subdomains: ['a', 'b', 'c'],
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     })
 };
 
