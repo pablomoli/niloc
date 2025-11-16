@@ -41,27 +41,47 @@ def add_fieldwork(job_number):
     if not data:
         return jsonify({"error": "JSON data required"}), 400
 
-    # Validate required fields
-    required_fields = ["work_date", "start_time", "end_time"]
-    missing_fields = [field for field in required_fields if not data.get(field)]
-    if missing_fields:
-        return jsonify(
-            {"error": f"Missing required fields: {', '.join(missing_fields)}"}
-        ), 400
+    # Validate required fields - now accepts total_time instead of start_time/end_time
+    if not data.get("work_date"):
+        return jsonify({"error": "Missing required field: work_date"}), 400
+    
+    if not data.get("total_time"):
+        return jsonify({"error": "Missing required field: total_time"}), 400
 
     try:
-        # Parse and validate dates/times
+        # Parse work date
         work_date = datetime.strptime(data["work_date"], "%Y-%m-%d").date()
-        start_time = datetime.strptime(data["start_time"], "%H:%M").time()
-        end_time = datetime.strptime(data["end_time"], "%H:%M").time()
+        
+        # Parse total_time - can be a float (hours) or string in "HH:MM" format
+        total_time = data["total_time"]
+        if isinstance(total_time, str):
+            # Try parsing as "HH:MM" format
+            if ":" in total_time:
+                parts = total_time.split(":")
+                if len(parts) == 2:
+                    hours = int(parts[0])
+                    minutes = int(parts[1])
+                    if minutes < 0 or minutes >= 60:
+                        return jsonify({"error": "Minutes must be between 0 and 59"}), 400
+                    total_time = hours + (minutes / 60.0)
+                else:
+                    return jsonify({"error": "Invalid time format. Use HH:MM (e.g., 2:30)"}), 400
+            else:
+                # Try parsing as float string
+                total_time = float(total_time)
+        else:
+            total_time = float(total_time)
+        
+        if total_time <= 0:
+            return jsonify({"error": "Total time must be greater than 0"}), 400
 
-        if start_time >= end_time:
-            return jsonify({"error": "End time must be after start time"}), 400
-
-        # Calculate total time
-        start_dt = datetime.combine(work_date, start_time)
-        end_dt = datetime.combine(work_date, end_time)
-        total_time = (end_dt - start_dt).total_seconds() / 3600
+        # Set default start_time and end_time for database compatibility
+        # Start at 00:00, end time calculated from total_time
+        start_time = datetime.strptime("00:00", "%H:%M").time()
+        end_hours = int(total_time)
+        end_minutes = int((total_time - end_hours) * 60)
+        end_time_str = f"{end_hours:02d}:{end_minutes:02d}"
+        end_time = datetime.strptime(end_time_str, "%H:%M").time()
 
         # Create fieldwork entry
         fieldwork = FieldWork(
@@ -118,25 +138,59 @@ def update_fieldwork(fieldwork_id):
             fieldwork.work_date = datetime.strptime(
                 data["work_date"], "%Y-%m-%d"
             ).date()
-        if "start_time" in data:
+        
+        # Handle total_time update (new format)
+        if "total_time" in data:
+            total_time = data["total_time"]
+            if isinstance(total_time, str):
+                # Try parsing as "HH:MM" format
+                if ":" in total_time:
+                    parts = total_time.split(":")
+                    if len(parts) == 2:
+                        hours = int(parts[0])
+                        minutes = int(parts[1])
+                        if minutes < 0 or minutes >= 60:
+                            return jsonify({"error": "Minutes must be between 0 and 59"}), 400
+                        total_time = hours + (minutes / 60.0)
+                    else:
+                        return jsonify({"error": "Invalid time format. Use HH:MM (e.g., 2:30)"}), 400
+                else:
+                    # Try parsing as float string
+                    total_time = float(total_time)
+            else:
+                total_time = float(total_time)
+            
+            if total_time <= 0:
+                return jsonify({"error": "Total time must be greater than 0"}), 400
+            
+            fieldwork.total_time = round(total_time, 2)
+            
+            # Update start_time and end_time for database compatibility
+            start_time = datetime.strptime("00:00", "%H:%M").time()
+            end_hours = int(total_time)
+            end_minutes = int((total_time - end_hours) * 60)
+            end_time_str = f"{end_hours:02d}:{end_minutes:02d}"
+            fieldwork.start_time = start_time
+            fieldwork.end_time = datetime.strptime(end_time_str, "%H:%M").time()
+        
+        # Legacy support: if start_time/end_time are provided, calculate total_time
+        elif "start_time" in data and "end_time" in data:
             fieldwork.start_time = datetime.strptime(data["start_time"], "%H:%M").time()
-        if "end_time" in data:
             fieldwork.end_time = datetime.strptime(data["end_time"], "%H:%M").time()
-        if "crew" in data:
-            fieldwork.crew = data["crew"].strip() or None
-        if "drone_card" in data:
-            fieldwork.drone_card = data["drone_card"].strip() or None
-        if "notes" in data:
-            fieldwork.notes = data["notes"].strip() or None
-
-        # Recalculate total time if times changed
-        if fieldwork.start_time and fieldwork.end_time:
+            
             if fieldwork.start_time >= fieldwork.end_time:
                 return jsonify({"error": "End time must be after start time"}), 400
 
             start_dt = datetime.combine(fieldwork.work_date, fieldwork.start_time)
             end_dt = datetime.combine(fieldwork.work_date, fieldwork.end_time)
             fieldwork.total_time = round((end_dt - start_dt).total_seconds() / 3600, 2)
+        
+        if "crew" in data:
+            fieldwork.crew = data["crew"].strip() or None
+        if "drone_card" in data:
+            fieldwork.drone_card = data["drone_card"].strip() or None
+        if "notes" in data:
+            fieldwork.notes = data["notes"].strip() or None
 
         # Update job aggregate time
         job = fieldwork.job

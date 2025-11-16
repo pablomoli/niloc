@@ -1327,16 +1327,9 @@
                 <input type="date" x-model="newFieldworkEntry.work_date" class="input input-bordered input-sm w-full" required>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
-                <input type="text" x-model="calculatedTotalTime" class="input input-bordered input-sm w-full bg-gray-100" readonly>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <input type="time" x-model="newFieldworkEntry.start_time" @change="updateCalculatedTime()" class="input input-bordered input-sm w-full" required>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                <input type="time" x-model="newFieldworkEntry.end_time" @change="updateCalculatedTime()" class="input input-bordered input-sm w-full" required>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Total Time (Hours:Minutes)</label>
+                <input type="text" x-model="newFieldworkEntry.total_time" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" class="input input-bordered input-sm w-full" required>
+                <p class="text-xs text-gray-500 mt-1">Format: H:MM (e.g., 2:30 for 2 hours 30 minutes)</p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
@@ -3032,36 +3025,34 @@
             const today = new Date().toISOString().split('T')[0];
             this.newFieldworkEntry = {
               work_date: today,
-              start_time: '',
-              end_time: '',
+              total_time: '',
               crew: '',
               drone_card: '',
               notes: ''
             };
-            this.calculatedTotalTime = '0.00';
             this.showAddFieldworkForm = false;
           },
 
-          updateCalculatedTime() {
-            const startTime = this.newFieldworkEntry.start_time;
-            const endTime = this.newFieldworkEntry.end_time;
+          // Convert hours:minutes format to decimal hours
+          parseTimeInput(timeStr) {
+            if (!timeStr) return null;
             
-            if (startTime && endTime) {
-              const start = new Date(`1970-01-01T${startTime}:00`);
-              const end = new Date(`1970-01-01T${endTime}:00`);
-              
-              // Handle overnight shifts
-              if (end < start) {
-                end.setDate(end.getDate() + 1);
+            // Check if it's in HH:MM format
+            if (timeStr.includes(':')) {
+              const parts = timeStr.split(':');
+              if (parts.length === 2) {
+                const hours = parseInt(parts[0], 10);
+                const minutes = parseInt(parts[1], 10);
+                if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
+                  return null;
+                }
+                return hours + (minutes / 60.0);
               }
-              
-              const diffMs = end - start;
-              const diffHours = diffMs / (1000 * 60 * 60);
-              
-              this.calculatedTotalTime = Math.round(diffHours * 100) / 100;
-            } else {
-              this.calculatedTotalTime = '0.00';
             }
+            
+            // Try parsing as decimal hours
+            const decimal = parseFloat(timeStr);
+            return isNaN(decimal) ? null : decimal;
           },
 
           getTotalFieldworkTime() {
@@ -3075,13 +3066,15 @@
           },
 
           async saveFieldworkEntry() {
-            if (!this.newFieldworkEntry.work_date || !this.newFieldworkEntry.start_time || !this.newFieldworkEntry.end_time) {
+            if (!this.newFieldworkEntry.work_date || !this.newFieldworkEntry.total_time) {
               Alpine.store("notifications").add("Please fill in all required fields", "error");
               return;
             }
 
-            if (!this.calculatedTotalTime || this.calculatedTotalTime <= 0) {
-              Alpine.store("notifications").add("Invalid time range", "error");
+            // Validate time format
+            const parsedTime = this.parseTimeInput(this.newFieldworkEntry.total_time);
+            if (parsedTime === null || parsedTime <= 0) {
+              Alpine.store("notifications").add("Invalid time format. Use H:MM (e.g., 2:30)", "error");
               return;
             }
 
@@ -3093,8 +3086,7 @@
                 },
                 body: JSON.stringify({
                   work_date: this.newFieldworkEntry.work_date,
-                  start_time: this.newFieldworkEntry.start_time,
-                  end_time: this.newFieldworkEntry.end_time,
+                  total_time: this.newFieldworkEntry.total_time,
                   crew: this.newFieldworkEntry.crew || null,
                   drone_card: this.newFieldworkEntry.drone_card || null,
                   notes: this.newFieldworkEntry.notes || null
