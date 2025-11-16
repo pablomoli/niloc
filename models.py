@@ -239,8 +239,6 @@ class FieldWork(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=False)
     work_date = db.Column(db.Date, nullable=False)
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=False)
     total_time = db.Column(db.Float, nullable=False)
     crew = db.Column(db.String(100))
     drone_card = db.Column(db.String(100))
@@ -252,10 +250,6 @@ class FieldWork(db.Model):
             "id": self.id,
             "job_id": self.job_id,
             "work_date": self.work_date.isoformat() if self.work_date else None,
-            "start_time": self.start_time.strftime("%H:%M")
-            if self.start_time
-            else None,
-            "end_time": self.end_time.strftime("%H:%M") if self.end_time else None,
             "total_time": self.total_time,
             "crew": self.crew,
             "drone_card": self.drone_card,
