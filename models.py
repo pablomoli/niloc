@@ -179,21 +179,33 @@ class Job(db.Model):
     # =============================================================================
 
     def to_dict(self):
-        """Convert job to dictionary with enhanced deleted job info"""
+        """Convert job to dictionary with enhanced deleted job info (optimized)"""
+        # Cache is_deleted check to avoid multiple calls
+        is_deleted = self.is_deleted()
+        display_job_number = self.original_job_number if is_deleted else self.job_number
+        
+        # Optimize tag serialization - only serialize if tags are loaded
+        tags = getattr(self, "tags", [])
+        tags_dict = [tag.to_dict() for tag in tags] if tags else []
+        
+        # Cache datetime formatting
+        created_at_iso = self.created_at.isoformat() if self.created_at else None
+        deleted_at_iso = self.deleted_at.isoformat() if self.deleted_at else None
+        
         return {
             "id": self.id,
             "job_number": self.job_number,
             "original_job_number": self.original_job_number,
-            "display_job_number": self.get_display_job_number(),
+            "display_job_number": display_job_number,
             "client": self.client,
             "address": self.address,
             "status": self.status,
             "county": self.county,
             "notes": self.notes,
             "lat": self.lat,
-            "latitude": self.lat,
+            "latitude": self.lat,  # Keep for backward compatibility
             "long": self.long,
-            "longitude": self.long,
+            "longitude": self.long,  # Keep for backward compatibility
             "prop_appr_link": self.prop_appr_link,
             "plat_link": self.plat_link,
             "fema_link": self.fema_link,
@@ -202,12 +214,12 @@ class Job(db.Model):
             "total_time_spent": self.total_time_spent,
             "is_parcel_job": self.is_parcel_job,
             "parcel_data": self.parcel_data,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
+            "created_at": created_at_iso,
+            "deleted_at": deleted_at_iso,
             "deleted_by_id": self.deleted_by_id,
             "created_by_id": self.created_by_id,
-            "is_deleted": self.is_deleted(),
-            "tags": [tag.to_dict() for tag in getattr(self, "tags", [])],
+            "is_deleted": is_deleted,
+            "tags": tags_dict,
         }
 
     def __repr__(self):
@@ -285,9 +297,12 @@ class Tag(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
+        """Convert tag to dictionary (optimized)"""
+        # Cache datetime formatting
+        created_at_iso = self.created_at.isoformat() if self.created_at else None
         return {
             "id": self.id,
             "name": self.name,
             "color": self.color,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": created_at_iso,
         }

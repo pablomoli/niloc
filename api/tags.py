@@ -16,23 +16,41 @@ logger = logging.getLogger(__name__)
 @api_bp.route("/tags", methods=["GET"])
 @login_required
 def list_tags():
+    """GET /api/tags - List all tags with optional usage counts (optimized single query)"""
+    import time
+    query_start_time = time.time()
+    
     include_usage = request.args.get("include_usage", "false").lower() == "true"
-    tags = Tag.query.order_by(Tag.name.asc()).all()
-    if not include_usage:
+    
+    if include_usage:
+        # Optimized: Single query with JOIN and GROUP BY instead of N+1 queries
+        from sqlalchemy import func
+        tags_with_counts = (
+            db.session.query(
+                Tag,
+                func.count(job_tags.c.job_id).label('job_count')
+            )
+            .outerjoin(job_tags, Tag.id == job_tags.c.tag_id)
+            .group_by(Tag.id)
+            .order_by(Tag.name.asc())
+            .all()
+        )
+        
+        enriched = []
+        for tag, job_count in tags_with_counts:
+            d = tag.to_dict()
+            d["job_count"] = int(job_count) if job_count else 0
+            enriched.append(d)
+        
+        # Log slow queries
+        query_duration = (time.time() - query_start_time) * 1000
+        if query_duration > 100:
+            logger.warning(f"SLOW QUERY (list_tags with usage): {query_duration:.2f}ms")
+        
+        return jsonify(enriched)
+    else:
+        tags = Tag.query.order_by(Tag.name.asc()).all()
         return jsonify([t.to_dict() for t in tags])
-
-    # Add job_count for each tag
-    counts = dict(
-        db.session.query(job_tags.c.tag_id, func.count(job_tags.c.job_id))
-        .group_by(job_tags.c.tag_id)
-        .all()
-    )
-    enriched = []
-    for t in tags:
-        d = t.to_dict()
-        d["job_count"] = int(counts.get(t.id, 0))
-        enriched.append(d)
-    return jsonify(enriched)
 
 
 @api_bp.route("/tags", methods=["POST"])

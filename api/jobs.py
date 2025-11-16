@@ -1,9 +1,11 @@
 # Generated from api_routes.py split
 import logging
+import time
 from datetime import datetime, timezone
 
-from flask import jsonify, request, session
+from flask import jsonify, request, session, g
 from sqlalchemy import func, or_
+from sqlalchemy.orm import selectinload, joinedload
 
 from api import api_bp, require_admin, validate_job_data, geocode_address
 from api.search import create_fuzzy_search_conditions, normalize_search_term
@@ -13,6 +15,11 @@ from db_utils import with_db_retry, handle_db_error
 from utils import get_brevard_property_link
 
 logger = logging.getLogger(__name__)
+
+# Constants for pagination and limits
+DEFAULT_PER_PAGE = 1000  # Default to 1000 - reasonable for datasets with ~1000 entries
+MAX_PER_PAGE = 2000
+MAX_SEARCH_RESULTS = 500  # Limit search results to prevent huge responses
 
 @api_bp.route("/jobs", methods=["GET"])
 @login_required
@@ -25,11 +32,12 @@ def get_jobs():
     - q: search term (triggers fuzzy search across all jobs)
     - search: legacy search param (for backward compatibility)
     - job_number, client, status: individual field filters
-    - page, per_page: pagination controls
+    - page, per_page: pagination controls (default 1000, max 2000)
     - include_deleted: include soft-deleted jobs
 
-    Returns: All matching jobs (no pagination when searching) or paginated results
+    Returns: Paginated results with eager-loaded relationships
     """
+    query_start_time = time.time()
     try:
         # all possible search and filter parameters
         search_term = (
@@ -40,17 +48,22 @@ def get_jobs():
         status_filter = request.args.get("status", "").strip()
         include_deleted = request.args.get("include_deleted", "false").lower() == "true"
 
-        # Pagination parameters
-        page = request.args.get("page", 1, type=int)
+        # Pagination parameters with defaults and limits
+        page = max(1, request.args.get("page", 1, type=int))
         per_page = request.args.get("per_page", type=int)
         if per_page is None:
-            per_page = 10000
-
-        # Start with base query
-        if include_deleted:
-            query = Job.query
+            per_page = DEFAULT_PER_PAGE
         else:
-            query = Job.active()
+            per_page = min(max(1, per_page), MAX_PER_PAGE)  # Enforce limits
+
+        # Start with base query with eager loading to prevent N+1 queries
+        # Use joinedload for better performance when loading tags (single query with JOIN)
+        # Check if tags are needed (can be skipped for map views that don't display tags)
+        include_tags = request.args.get("include_tags", "true").lower() == "true"
+        if include_deleted:
+            query = Job.query.options(joinedload(Job.tags)) if include_tags else Job.query
+        else:
+            query = Job.active().options(joinedload(Job.tags)) if include_tags else Job.active()
 
         # Check if this is a comprehensive search request
         if search_term:
@@ -106,17 +119,28 @@ def get_jobs():
                 Job.created_at.desc(),  # Then by newest
             )
 
-            # Execute search query (no pagination for search results)
-            jobs = query.all()
+            # Execute search query with result limit
+            jobs = query.limit(MAX_SEARCH_RESULTS).all()
 
+            # Log slow queries
+            query_duration = (time.time() - query_start_time) * 1000
+            if query_duration > 100:
+                logger.warning(f"SLOW QUERY (get_jobs search): {query_duration:.2f}ms for term: '{search_term}'")
+
+            # Optimize serialization - batch process jobs
+            jobs_list = []
+            for job in jobs:
+                jobs_list.append(job.to_dict())
+            
             return jsonify(
                 {
-                    "jobs": [job.to_dict() for job in jobs],
-                    "total": len(jobs),
+                    "jobs": jobs_list,
+                    "total": len(jobs_list),
                     "search_term": search_term,
                     "fuzzy_search": True,
                     "status_filter": status_filter,
                     "include_deleted": include_deleted,
+                    "limit_applied": len(jobs_list) >= MAX_SEARCH_RESULTS,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             )
@@ -150,40 +174,36 @@ def get_jobs():
             # Standard ordering
             query = query.order_by(Job.created_at.desc())
 
-            # Apply pagination if requested
-            if request.args.get("per_page") is not None and per_page < 10000:
-                pagination = query.paginate(
-                    page=page, per_page=per_page, error_out=False
-                )
+            # Always use pagination (enforced limit)
+            pagination = query.paginate(
+                page=page, per_page=per_page, error_out=False
+            )
 
-                return jsonify(
-                    {
-                        "jobs": [job.to_dict() for job in pagination.items],
-                        "total": pagination.total,
-                        "pages": pagination.pages,
-                        "current_page": page,
-                        "per_page": per_page,
-                        "has_next": pagination.has_next,
-                        "has_prev": pagination.has_prev,
-                        "filtered": bool(
-                            job_number_filter or client_filter or status_filter
-                        ),
-                        "fuzzy_matching": True,
-                    }
-                )
-            else:
-                # Return all jobs (for map view or large per_page)
-                jobs = query.all()
-                return jsonify(
-                    {
-                        "jobs": [job.to_dict() for job in jobs],
-                        "total": len(jobs),
-                        "filtered": bool(
-                            job_number_filter or client_filter or status_filter
-                        ),
-                        "fuzzy_matching": True,
-                    }
-                )
+            # Log slow queries
+            query_duration = (time.time() - query_start_time) * 1000
+            if query_duration > 100:
+                logger.warning(f"SLOW QUERY (get_jobs): {query_duration:.2f}ms")
+
+            # Optimize serialization - batch process jobs
+            jobs_list = []
+            for job in pagination.items:
+                jobs_list.append(job.to_dict())
+            
+            return jsonify(
+                {
+                    "jobs": jobs_list,
+                    "total": pagination.total,
+                    "pages": pagination.pages,
+                    "current_page": page,
+                    "per_page": per_page,
+                    "has_next": pagination.has_next,
+                    "has_prev": pagination.has_prev,
+                    "filtered": bool(
+                        job_number_filter or client_filter or status_filter
+                    ),
+                    "fuzzy_matching": True,
+                }
+            )
 
     except Exception as e:
         logger.error(f"Jobs endpoint error: {e}", exc_info=True)
@@ -194,16 +214,27 @@ def get_jobs():
 @login_required
 @with_db_retry(max_retries=3, delay=0.5)
 def get_job(job_number):
-    """GET /api/jobs/JOB123 - Get specific job"""
-
+    """GET /api/jobs/JOB123 - Get specific job with eager-loaded relationships"""
+    query_start_time = time.time()
+    
     include_deleted = request.args.get("include_deleted", "false").lower() == "true"
 
     if include_deleted:
-        job = Job.find_by_number(job_number, include_deleted=True)
+        job = Job.query.options(joinedload(Job.tags)).filter(
+            Job.job_number == job_number
+        ).first()
     else:
-        job = Job.active().filter_by(job_number=job_number).first()
+        job = Job.active().options(joinedload(Job.tags)).filter_by(
+            job_number=job_number
+        ).first()
+    
     if not job:
         return jsonify({"error": "Job not found"}), 404
+
+    # Log slow queries
+    query_duration = (time.time() - query_start_time) * 1000
+    if query_duration > 100:
+        logger.warning(f"SLOW QUERY (get_job): {query_duration:.2f}ms")
 
     return jsonify(job.to_dict())
 
@@ -485,12 +516,13 @@ def get_deleted_jobs():
     if admin_check:
         return admin_check
 
+    query_start_time = time.time()
     try:
         # Get search parameter for filtering deleted jobs
         search_term = request.args.get("q", "").strip()
 
-        # Start with deleted jobs query
-        query = Job.deleted().order_by(Job.deleted_at.desc())
+        # Start with deleted jobs query with eager loading
+        query = Job.deleted().options(joinedload(Job.tags)).order_by(Job.deleted_at.desc())
 
         # Apply search filter if provided
         if search_term:
@@ -501,13 +533,20 @@ def get_deleted_jobs():
             if search_condition is not None:
                 query = query.filter(search_condition)
 
-        deleted_jobs = query.all()
+        # Limit results to prevent huge responses
+        deleted_jobs = query.limit(MAX_SEARCH_RESULTS).all()
+
+        # Log slow queries
+        query_duration = (time.time() - query_start_time) * 1000
+        if query_duration > 100:
+            logger.warning(f"SLOW QUERY (get_deleted_jobs): {query_duration:.2f}ms")
 
         return jsonify(
             {
                 "jobs": [job.to_dict() for job in deleted_jobs],
                 "total": len(deleted_jobs),
                 "search_term": search_term if search_term else None,
+                "limit_applied": len(deleted_jobs) >= MAX_SEARCH_RESULTS,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )

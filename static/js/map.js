@@ -497,6 +497,10 @@ function createClusterLayer() {
     return L.markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 18, // Disable clustering at high zoom for better performance
+        chunkedLoading: true, // Load markers in chunks for better performance
+        chunkDelay: 50, // Delay between chunks (ms)
+        chunkInterval: 200, // Interval between chunks (ms)
         showCoverageOnHover: false,
         zoomToBoundsOnClick: true
     });
@@ -564,7 +568,9 @@ initializeMarkerLayer();
 async function loadJobs(force = false) {
     try {
         const fetcher = window.cachedFetch || window.fetch;
-        const response = await fetcher('/api/jobs', {}, { ttl: 30_000, force });
+        // Request all jobs (default is 1000, which is fine for ~1000 entry datasets)
+        // Skip tags for map view to improve performance (tags not displayed on map markers)
+        const response = await fetcher('/api/jobs?include_tags=false', {}, { ttl: 30_000, force });
         const data = await response.json();
         AppState.allJobs = Array.isArray(data) ? data : data.jobs || [];
         AppState.filteredJobs = [...AppState.allJobs];
@@ -589,17 +595,39 @@ async function loadJobs(force = false) {
     }
 }
 
-// Update markers on the map
+// Update markers on the map (optimized with throttling)
+let markerUpdateTimer = null;
 function updateMapMarkers() {
     if (!AppState.markerLayer) {
         console.warn('Marker layer not initialized yet');
         return;
     }
+    
+    // Throttle marker updates to prevent excessive redraws
+    if (markerUpdateTimer) clearTimeout(markerUpdateTimer);
+    markerUpdateTimer = setTimeout(() => {
+        performMarkerUpdate();
+    }, 100); // 100ms throttle
+}
+
+function performMarkerUpdate() {
     // Clear existing markers
     AppState.markerLayer.clearLayers();
     AppState.markers.clear();
     
-    AppState.filteredJobs.forEach(job => {
+    // Get visible bounds for viewport-based filtering (performance optimization)
+    const bounds = AppState.map.getBounds();
+    const visibleJobs = AppState.filteredJobs.filter(job => {
+        const lat = parseFloat(job.latitude || job.lat);
+        const lng = parseFloat(job.longitude || job.long);
+        if (!lat || !lng) return false;
+        return bounds.contains([lat, lng]);
+    });
+    
+    // If too many markers, only show visible ones; otherwise show all filtered
+    const jobsToRender = visibleJobs.length > 1000 ? visibleJobs : AppState.filteredJobs;
+    
+    jobsToRender.forEach(job => {
         const lat = job.latitude || job.lat;
         const lng = job.longitude || job.long;
         
@@ -632,6 +660,11 @@ function updateMapMarkers() {
             AppState.markerLayer.addLayer(marker);
         }
     });
+    
+    // Refresh clusters if using clustering
+    if (AppState.useClustering && AppState.markerLayer.refreshClusters) {
+        AppState.markerLayer.refreshClusters();
+    }
 }
 
 // Handle marker click for selection
@@ -891,19 +924,37 @@ function applyFilters() {
     updateCounts();
 }
 
-// Job search function
+// Job search function with debouncing
+let jobSearchTimer = null;
 function searchJobs() {
     const searchInput = document.querySelector('.search-box input[placeholder*="Job"]');
-    searchTerm = searchInput.value.trim();
-    applyFilters();
+    const newSearchTerm = searchInput.value.trim();
+    
+    // Debounce search to reduce filter operations
+    if (jobSearchTimer) clearTimeout(jobSearchTimer);
+    jobSearchTimer = setTimeout(() => {
+        searchTerm = newSearchTerm;
+        applyFilters();
+    }, 300); // 300ms debounce
 }
 
-// Address search function
+// Address search function with debouncing
+let addressSearchTimer = null;
 async function searchAddress(address) {
     // Accept address as parameter or get from input
     const searchQuery = address || document.querySelector('.search-box input[placeholder*="address"]')?.value?.trim();
     
     if (!searchQuery) return;
+    
+    // Debounce address search to reduce API calls
+    if (addressSearchTimer) clearTimeout(addressSearchTimer);
+    addressSearchTimer = setTimeout(async () => {
+        await performAddressSearch(searchQuery);
+    }, 500); // 500ms debounce for address search (longer due to API call)
+}
+
+// Separate function for actual address search
+async function performAddressSearch(searchQuery) {
     
     try {
         // Use the same geocoding API that job creation uses (append Florida for better accuracy)
@@ -968,11 +1019,16 @@ document.addEventListener('alpine:init', () => {
         jobSearch: '',
         addressSearch: '',
         searchJobs() {
-            searchTerm = this.jobSearch;
-            applyFilters();
+            // Use the debounced searchJobs function
+            const searchInput = document.querySelector('.search-box input[placeholder*="Job"]');
+            if (searchInput) {
+                searchInput.value = this.jobSearch;
+                window.searchJobs();
+            }
         },
         searchAddress() {
-            window.searchAddress();
+            // Use the debounced searchAddress function
+            window.searchAddress(this.addressSearch);
         }
     }));
 });
