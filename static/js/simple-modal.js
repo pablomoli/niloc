@@ -873,34 +873,22 @@ window.SimpleModal = {
     // Show add fieldwork form
     showAddFieldworkForm() {
         const today = new Date().toISOString().split('T')[0];
-        const currentTime = new Date().toTimeString().slice(0, 5);
         
         const formHTML = `
             <div id="fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                 <h5 class="font-medium text-gray-800 mb-3">Add Time Entry</h5>
                 
                 <div class="grid grid-cols-1 gap-3">
-                    <!-- Date and Total Hours in 2 columns -->
+                    <!-- Date and Total Time in 2 columns -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
                             <input type="date" id="fw-work-date" class="input input-bordered input-md w-full" value="${today}" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
-                            <input type="text" id="fw-total-time" class="input input-bordered input-md w-full bg-gray-100" readonly placeholder="0.00">
-                        </div>
-                    </div>
-                    
-                    <!-- Start and End Times -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                            <input type="time" id="fw-start-time" class="input input-bordered input-md w-full" onchange="SimpleModal.updateTotalTime()" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                            <input type="time" id="fw-end-time" class="input input-bordered input-md w-full" onchange="SimpleModal.updateTotalTime()" required>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Time (Hours:Minutes)</label>
+                            <input type="text" id="fw-total-time" class="input input-bordered input-md w-full" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
+                            <p class="text-xs text-gray-500 mt-1">Format: H:MM (e.g., 2:30)</p>
                         </div>
                     </div>
                     
@@ -955,16 +943,34 @@ window.SimpleModal = {
         }
     },
 
-    // Update total time calculation
-    updateTotalTime() {
-        const startTime = document.getElementById('fw-start-time')?.value;
-        const endTime = document.getElementById('fw-end-time')?.value;
-        const totalTimeInput = document.getElementById('fw-total-time');
+    // Parse time input (HH:MM format) and validate
+    parseTimeInput(timeStr) {
+        if (!timeStr) return null;
         
-        if (startTime && endTime && totalTimeInput) {
-            const totalHours = this.calculateTotalTime(startTime, endTime);
-            totalTimeInput.value = totalHours.toFixed(2);
+        // Check if it's in HH:MM format
+        if (timeStr.includes(':')) {
+            const parts = timeStr.split(':');
+            if (parts.length === 2) {
+                const hours = parseInt(parts[0], 10);
+                const minutes = parseInt(parts[1], 10);
+                if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
+                    return null;
+                }
+                return hours + (minutes / 60.0);
+            }
         }
+        
+        // Try parsing as decimal hours
+        const decimal = parseFloat(timeStr);
+        return isNaN(decimal) ? null : decimal;
+    },
+
+    // Convert decimal hours to HH:MM format
+    formatTimeInput(decimalHours) {
+        if (!decimalHours || decimalHours === 0) return '0:00';
+        const hours = Math.floor(decimalHours);
+        const minutes = Math.round((decimalHours - hours) * 60);
+        return `${hours}:${minutes.toString().padStart(2, '0')}`;
     },
 
     // Save new fieldwork entry
@@ -974,21 +980,21 @@ window.SimpleModal = {
         
         // Get form values
         const workDate = document.getElementById('fw-work-date').value;
-        const startTime = document.getElementById('fw-start-time').value;
-        const endTime = document.getElementById('fw-end-time').value;
         const totalTime = document.getElementById('fw-total-time').value;
         const crew = document.getElementById('fw-crew').value.trim();
         const droneCard = document.getElementById('fw-drone-card').value.trim();
         const notes = document.getElementById('fw-notes').value.trim();
         
         // Validation
-        if (!workDate || !startTime || !endTime) {
+        if (!workDate || !totalTime) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
         
-        if (!totalTime || parseFloat(totalTime) <= 0) {
-            this.showNotification('Invalid time range', 'error');
+        // Validate time format
+        const parsedTime = this.parseTimeInput(totalTime);
+        if (parsedTime === null || parsedTime <= 0) {
+            this.showNotification('Invalid time format. Use H:MM (e.g., 2:30)', 'error');
             return;
         }
         
@@ -1004,8 +1010,7 @@ window.SimpleModal = {
                 },
                 body: JSON.stringify({
                     work_date: workDate,
-                    start_time: startTime,
-                    end_time: endTime,
+                    total_time: totalTime,
                     crew: crew || null,
                     drone_card: droneCard || null,
                     notes: notes || null
@@ -1064,32 +1069,24 @@ window.SimpleModal = {
         this.hideAddFieldworkForm();
         this.hideEditFieldworkForm();
         
+        // Convert total_time (decimal hours) to HH:MM format for display
+        const timeDisplay = this.formatTimeInput(fieldwork.total_time);
+        
         const formHTML = `
             <div id="edit-fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
                 <h5 class="font-medium text-gray-800 mb-3">Edit Time Entry</h5>
                 
                 <div class="grid grid-cols-1 gap-3">
-                    <!-- Date and Total Hours in 2 columns -->
+                    <!-- Date and Total Time in 2 columns -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
                             <input type="date" id="edit-fw-work-date" class="input input-bordered input-md w-full" value="${fieldwork.work_date}" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Hours</label>
-                            <input type="text" id="edit-fw-total-time" class="input input-bordered input-md w-full bg-gray-100" readonly value="${fieldwork.total_time}">
-                        </div>
-                    </div>
-                    
-                    <!-- Start and End Times -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                            <input type="time" id="edit-fw-start-time" class="input input-bordered input-md w-full" value="${fieldwork.start_time}" onchange="SimpleModal.updateEditTotalTime()" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                            <input type="time" id="edit-fw-end-time" class="input input-bordered input-md w-full" value="${fieldwork.end_time}" onchange="SimpleModal.updateEditTotalTime()" required>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Total Time (Hours:Minutes)</label>
+                            <input type="text" id="edit-fw-total-time" class="input input-bordered input-md w-full" value="${timeDisplay}" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
+                            <p class="text-xs text-gray-500 mt-1">Format: H:MM (e.g., 2:30)</p>
                         </div>
                     </div>
                     
@@ -1138,18 +1135,6 @@ window.SimpleModal = {
         }
     },
 
-    // Update total time calculation for edit form
-    updateEditTotalTime() {
-        const startTime = document.getElementById('edit-fw-start-time')?.value;
-        const endTime = document.getElementById('edit-fw-end-time')?.value;
-        const totalTimeInput = document.getElementById('edit-fw-total-time');
-        
-        if (startTime && endTime && totalTimeInput) {
-            const totalHours = this.calculateTotalTime(startTime, endTime);
-            totalTimeInput.value = totalHours.toFixed(2);
-        }
-    },
-
     // Save edited fieldwork entry
     async saveEditFieldwork(fieldworkId) {
         const saveBtn = document.getElementById('edit-fw-save-btn');
@@ -1157,21 +1142,21 @@ window.SimpleModal = {
         
         // Get form values
         const workDate = document.getElementById('edit-fw-work-date').value;
-        const startTime = document.getElementById('edit-fw-start-time').value;
-        const endTime = document.getElementById('edit-fw-end-time').value;
         const totalTime = document.getElementById('edit-fw-total-time').value;
         const crew = document.getElementById('edit-fw-crew').value.trim();
         const droneCard = document.getElementById('edit-fw-drone-card').value.trim();
         const notes = document.getElementById('edit-fw-notes').value.trim();
         
         // Validation
-        if (!workDate || !startTime || !endTime) {
+        if (!workDate || !totalTime) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
         
-        if (!totalTime || parseFloat(totalTime) <= 0) {
-            this.showNotification('Invalid time range', 'error');
+        // Validate time format
+        const parsedTime = this.parseTimeInput(totalTime);
+        if (parsedTime === null || parsedTime <= 0) {
+            this.showNotification('Invalid time format. Use H:MM (e.g., 2:30)', 'error');
             return;
         }
         
@@ -1187,8 +1172,7 @@ window.SimpleModal = {
                 },
                 body: JSON.stringify({
                     work_date: workDate,
-                    start_time: startTime,
-                    end_time: endTime,
+                    total_time: totalTime,
                     crew: crew || null,
                     drone_card: droneCard || null,
                     notes: notes || null
