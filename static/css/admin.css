@@ -133,11 +133,17 @@ a,
 }
 
 /* Fix search input wrapper to prevent overflow */
-.admin-spa .relative.pl-0.pr-4,
-.admin-spa .relative.pl-4.pr-0 {
+.admin-spa .relative.pl-0.pr-4 {
   box-sizing: border-box !important;
   min-width: 0 !important;
   overflow: hidden !important;
+}
+
+/* Status dropdown container - allow overflow so dropdown is visible */
+.admin-spa .relative.pl-4.pr-0 {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: visible !important;
 }
 
 /* Fix input with pr-10 padding for clear button */

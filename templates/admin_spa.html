@@ -217,8 +217,8 @@
         </div>
 
         <!-- Search and Filters Card -->
-        <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-0">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-0">
+        <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-0" style="overflow: visible;">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-0" style="overflow: visible;">
             <div class="relative pl-0 pr-4" @keydown.escape="showJobSuggestions=false">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Search Jobs</span>
@@ -265,15 +265,17 @@
               </label>
               <button type="button" class="btn btn-outline w-full border-2 border-gray-400 p-0"
                       style="padding: 0 !important; margin: 0 !important; min-height: 0 !important;"
-                      @click="statusDropdownOpen = !statusDropdownOpen"
+                      @click.stop="toggleStatusDropdown()"
                       :aria-expanded="statusDropdownOpen" title="Filter by Status">
-                <span class="px-4 flex items-center gap-2 w-full justify-center" style="padding-top: 0.5rem; padding-bottom: 0.5rem; min-height: 2.75rem;">
+                <span class="px-4 flex items-center gap-2 w-full justify-center" style="padding-top: 0.5rem; padding-bottom: 0.5rem; min-height: 2.75rem; pointer-events: none;">
                   <i class="bi bi-funnel"></i>
                   <span x-text="statusSummary()"></span>
                 </span>
               </button>
             <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-xl"
-                 x-show="statusDropdownOpen" @click.outside="statusDropdownOpen=false">
+                 x-show="statusDropdownOpen" 
+                 x-transition
+                 @click.outside="statusDropdownOpen=false">
               <div class="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
                 <button class="btn btn-ghost btn-xs" @click="selectAllStatuses()">Select All</button>
                 <button class="btn btn-ghost btn-xs" @click="clearAllStatuses()">Clear</button>
@@ -2309,6 +2311,9 @@
             this.selectedStatuses = [];
             localStorage.setItem('admin_status_filters', JSON.stringify(this.selectedStatuses));
             this.filterJobs();
+          },
+          toggleStatusDropdown() {
+            this.statusDropdownOpen = !this.statusDropdownOpen;
           },
 
           // Tag helpers
