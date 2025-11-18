@@ -7,18 +7,17 @@ from flask import Flask, render_template, request, jsonify, redirect, session, s
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
-# Configure logging
+# Configure logging - compact format without duplicate timestamps
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(levelname)s [%(name)s] %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Configure Werkzeug logger to use our format (removes duplicate timestamp)
+# Configure Werkzeug logger - only show warnings/errors to reduce noise
 werkzeug_logger = logging.getLogger('werkzeug')
-# Remove Werkzeug's default handler that includes timestamps in the message
 werkzeug_logger.handlers.clear()
-# Let it propagate to root logger which uses our format
+werkzeug_logger.setLevel(logging.WARNING)  # Suppress INFO level HTTP access logs
 werkzeug_logger.propagate = True
 
 try:
@@ -264,13 +263,13 @@ def log_slow_queries():
 
 @app.after_request
 def log_query_performance(response):
-    """Log slow API requests"""
+    """Log slow API requests - compact format"""
     if hasattr(g, 'start_time') and request.path.startswith("/api/"):
         import time
         duration = (time.time() - g.start_time) * 1000
         if duration > 100:  # Log requests slower than 100ms
             logger.warning(
-                f"SLOW REQUEST: {request.method} {request.path} took {duration:.2f}ms"
+                f"SLOW: {request.method} {request.path} ({duration:.0f}ms)"
             )
     return response
 

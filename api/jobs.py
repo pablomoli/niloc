@@ -125,7 +125,7 @@ def get_jobs():
             # Log slow queries
             query_duration = (time.time() - query_start_time) * 1000
             if query_duration > 100:
-                logger.warning(f"SLOW QUERY (get_jobs search): {query_duration:.2f}ms for term: '{search_term}'")
+                logger.warning(f"SLOW QUERY: get_jobs(search) {query_duration:.0f}ms '{search_term[:30]}'")
 
             # Optimize serialization - batch process jobs
             jobs_list = []
@@ -182,7 +182,7 @@ def get_jobs():
             # Log slow queries
             query_duration = (time.time() - query_start_time) * 1000
             if query_duration > 100:
-                logger.warning(f"SLOW QUERY (get_jobs): {query_duration:.2f}ms")
+                logger.warning(f"SLOW QUERY: get_jobs {query_duration:.0f}ms")
 
             # Optimize serialization - batch process jobs
             jobs_list = []
@@ -234,7 +234,7 @@ def get_job(job_number):
     # Log slow queries
     query_duration = (time.time() - query_start_time) * 1000
     if query_duration > 100:
-        logger.warning(f"SLOW QUERY (get_job): {query_duration:.2f}ms")
+        logger.warning(f"SLOW QUERY: get_job {query_duration:.0f}ms")
 
     return jsonify(job.to_dict())
 
@@ -547,7 +547,7 @@ def get_deleted_jobs():
         # Log slow queries
         query_duration = (time.time() - query_start_time) * 1000
         if query_duration > 100:
-            logger.warning(f"SLOW QUERY (get_deleted_jobs): {query_duration:.2f}ms")
+            logger.warning(f"SLOW QUERY: get_deleted_jobs {query_duration:.0f}ms")
 
         return jsonify(
             {

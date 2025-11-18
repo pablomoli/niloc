@@ -45,7 +45,7 @@ def list_tags():
         # Log slow queries
         query_duration = (time.time() - query_start_time) * 1000
         if query_duration > 100:
-            logger.warning(f"SLOW QUERY (list_tags with usage): {query_duration:.2f}ms")
+            logger.warning(f"SLOW QUERY: list_tags(usage) {query_duration:.0f}ms")
         
         return jsonify(enriched)
     else:
