@@ -1,10 +1,11 @@
-.PHONY: help setup install run run-prod migrate upgrade health clean shell
+.PHONY: help setup install build run run-prod migrate upgrade health clean shell
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  make setup      - Create virtual environment and install dependencies"
 	@echo "  make install    - Install/update dependencies (assumes venv exists)"
+	@echo "  make build      - Build CSS assets (runs npm run build)"
 	@echo "  make run        - Run development server with auto-reload"
 	@echo "  make run-prod   - Run production server with gunicorn"
 	@echo "  make migrate    - Create a new database migration (use MESSAGE='description')"
@@ -23,12 +24,16 @@ setup:
 install:
 	. venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
 
+# Build CSS assets
+build:
+	npm run build
+
 # Run development server
-run:
+run: build
 	flask --app app run --reload
 
 # Run production server
-run-prod:
+run-prod: build
 	gunicorn app:app
 
 # Create database migration
