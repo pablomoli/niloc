@@ -821,6 +821,7 @@ window.isMarkerClusteringSupported = function() {
 
 // Filter and Search Functions
 window.activeStatusFilters = new Set(['all']);
+window.activeTagFilters = new Set();
 let searchTerm = '';
 
 // Update visible/total counts
@@ -902,6 +903,17 @@ function applyFilters() {
         // Status filter
         if (!window.activeStatusFilters.has('all') && !window.activeStatusFilters.has(job.status)) {
             return false;
+        }
+        
+        // Tag filter
+        if (window.activeTagFilters.size > 0) {
+            if (!Array.isArray(job.tags) || job.tags.length === 0) {
+                return false;
+            }
+            const hasMatchingTag = job.tags.some(tag => window.activeTagFilters.has(tag.id));
+            if (!hasMatchingTag) {
+                return false;
+            }
         }
         
         // Search filter

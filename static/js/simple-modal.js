@@ -76,6 +76,9 @@ window.SimpleModal = {
                 } else if (field === 'address') {
                     const input = document.getElementById('address-input');
                     if (input) input.value = this.currentJob.address || '';
+                } else if (field === 'notes') {
+                    const textarea = document.getElementById('notes-input');
+                    if (textarea) textarea.value = this.currentJob.notes || '';
                 }
             } else {
                 // Enter edit mode
@@ -94,6 +97,17 @@ window.SimpleModal = {
                     if (input) {
                         input.focus();
                         input.select();
+                    }
+                } else if (field === 'notes') {
+                    const textarea = document.getElementById('notes-input');
+                    if (textarea) {
+                        setTimeout(() => {
+                            textarea.focus();
+                            // Move cursor to end
+                            if (textarea.value) {
+                                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                            }
+                        }, 50);
                     }
                 }
             }
@@ -115,9 +129,13 @@ window.SimpleModal = {
         } else if (field === 'address') {
             const input = document.getElementById('address-input');
             newValue = input ? input.value.trim() : null;
+        } else if (field === 'notes') {
+            const textarea = document.getElementById('notes-input');
+            newValue = textarea ? textarea.value.trim() : null;
+            // Notes can be empty, so we allow null/empty string
         }
         
-        if (!newValue) {
+        if (field !== 'notes' && !newValue) {
             this.showNotification('Value cannot be empty', 'error');
             return;
         }
@@ -201,6 +219,18 @@ window.SimpleModal = {
                         const countyEl = document.getElementById('county-view-text');
                         if (countyEl) countyEl.textContent = data.job.county;
                     }
+                } else if (field === 'notes') {
+                    const viewText = document.getElementById('notes-view-text');
+                    const viewDiv = document.getElementById('notes-view');
+                    if (viewText) {
+                        viewText.textContent = newValue || 'No notes';
+                    }
+                    // Show/hide view div based on whether notes exist
+                    if (viewDiv) {
+                        viewDiv.style.display = newValue ? 'block' : 'none';
+                    }
+                    // Update current job notes
+                    this.currentJob.notes = newValue || null;
                 }
                 
                 // Exit edit mode
@@ -649,12 +679,38 @@ window.SimpleModal = {
                         </div>
                         ` : ''}
                         
-                        ${job.notes ? `
+                        <!-- Editable Notes -->
                         <div>
                             <h4 class="text-gray-400 text-sm font-medium mb-1">Notes</h4>
-                            <p class="text-gray-700">${job.notes}</p>
+                            <div id="notes-view" style="display: ${job.notes ? 'block' : 'none'};">
+                                <p class="text-gray-700 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 -mx-2 -my-1 transition-colors" 
+                                   onclick="SimpleModal.toggleEdit('notes')"
+                                   title="Click to edit">
+                                    <span id="notes-view-text">${job.notes || 'No notes'}</span>
+                                    <i class="bi bi-pencil-square ml-2 text-gray-400" style="font-size: 12px;"></i>
+                                </p>
+                            </div>
+                            <div id="notes-edit" style="display: none;" class="flex flex-col gap-2">
+                                <textarea id="notes-input" 
+                                       class="textarea textarea-bordered textarea-sm w-full" 
+                                       rows="3"
+                                       placeholder="Add notes..."
+                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('notes')">${job.notes || ''}</textarea>
+                                <div class="flex items-center gap-2">
+                                    <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('notes')">
+                                        <i class="bi bi-check-lg"></i> Save
+                                    </button>
+                                    <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('notes')">
+                                        <i class="bi bi-x-lg"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            ${!job.notes ? `
+                            <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('notes')" title="Add notes">
+                                <i class="bi bi-plus-circle mr-1"></i> Add Notes
+                            </button>
+                            ` : ''}
                         </div>
-                        ` : ''}
                         
                         <!-- Fieldwork Section -->
                         <div>

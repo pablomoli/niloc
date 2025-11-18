@@ -70,39 +70,47 @@ a,
 }
 
 /* Fix filter button - override global min-height and ensure zero padding */
-.admin-spa button.btn-outline.border-2.p-0,
 .admin-spa button.btn-outline.border-2[style*="padding: 0"] {
   padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   min-height: 0 !important;
-  height: auto !important;
-  line-height: normal !important;
+  line-height: 1 !important;
 }
 
 /* Ensure inner span in filter button displays correctly and matches input height */
-.admin-spa button.btn-outline.border-2.p-0 > span,
 .admin-spa button.btn-outline.border-2[style*="padding: 0"] > span {
   display: flex !important;
   box-sizing: border-box !important;
   width: 100% !important;
   margin: 0 !important;
   align-items: center !important;
+  line-height: 1 !important;
 }
 
 /* Match filter button height to input field - DaisyUI inputs are typically 2.75rem (44px) */
-.admin-spa .relative.pl-0.pr-4 .input.input-bordered,
-.admin-spa .relative.pl-4.pr-0 button.btn-outline.border-2.p-0 {
+.admin-spa .relative .input.input-bordered[style*="height: 2.75rem"],
+.admin-spa .relative button.btn-outline.border-2[style*="height: 2.75rem"] {
   height: 2.75rem !important;
   min-height: 2.75rem !important;
-  line-height: 1.5rem !important;
+  line-height: 1 !important;
 }
 
-/* Ensure filter button inner span matches input padding */
-.admin-spa .relative.pl-4.pr-0 button.btn-outline.border-2.p-0 > span {
-  min-height: 2.75rem !important;
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
+/* Ensure filter buttons with bg-white class have white background */
+.admin-spa button.btn.border.bg-white[style*="height: 2.75rem"] {
+  background-color: white !important;
+  background: white !important;
+  border-color: #d1d5db !important;
+}
+
+.admin-spa button.btn.border.bg-white[style*="height: 2.75rem"]:hover {
+  background-color: #f3f4f6 !important;
+  background: #f3f4f6 !important;
+}
+
+/* Ensure tag dropdown has proper max-height */
+.admin-spa .relative button[title="Filter by Tags"] + div[style*="max-height"] {
+  max-height: 28rem !important;
 }
 
 /* Fix grid layout to prevent Firefox layout issues */

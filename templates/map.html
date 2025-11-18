@@ -79,14 +79,6 @@
                 <i class="bi bi-search-heart" aria-hidden="true"></i>
             </button>
             
-            <!-- Create Job Button (90°) -->
-            <button class="btn btn-circle btn-success fab-action-btn create-btn tooltip tooltip-top w-12 h-12"
-                    type="button"
-                    aria-label="Create job"
-                    data-tip="Create Job"
-                    @click="openCreateJob()">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i>
-            </button>
         </div>
         
         <!-- Main FAB Button -->
@@ -265,7 +257,23 @@
                         @click="closeStatusFilter()">✕</button>
                         
                 <h3 class="font-bold text-lg mb-4 text-primary">Filters</h3>
-                <div class="space-y-4">
+                
+                <!-- Filter Tabs -->
+                <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
+                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
+                            :class="filterTab === 'status' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
+                            @click="filterTab = 'status'">
+                        <i class="bi bi-funnel mr-1"></i> Status
+                    </button>
+                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
+                            :class="filterTab === 'tags' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
+                            @click="filterTab = 'tags'">
+                        <i class="bi bi-tags mr-1"></i> Tags
+                    </button>
+                </div>
+                
+                <!-- Status Filters Tab -->
+                <div x-show="filterTab === 'status'" class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <!-- All option -->
                         <button class="flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors"
@@ -287,8 +295,25 @@
                         </template>
                     </div>
                 </div>
+                
+                <!-- Tag Filters Tab -->
+                <div x-show="filterTab === 'tags'" class="space-y-4">
+                    <div class="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto px-1">
+                        <template x-for="tag in availableTags" :key="tag.id">
+                            <button class="px-2 py-1.5 rounded-md text-xs font-medium transition-all hover:opacity-80"
+                                    :class="[isTagActive(tag.id) ? 'ring-2 ring-pink-500 ring-offset-1' : '', getTagTextColor(tag.color || '#007bff')]"
+                                    :style="`background-color: ${tag.color || '#007bff'}`"
+                                    @click="toggleTag(tag.id)">
+                                <span x-text="tag.name"></span>
+                            </button>
+                        </template>
+                        <template x-if="availableTags.length === 0">
+                            <div class="col-span-3 text-center text-gray-400 text-sm py-2">No tags available</div>
+                        </template>
+                    </div>
+                </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="clearAllStatuses()">Clear All</button>
+                    <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="clearAllStatuses(); clearAllTags()">Clear All</button>
                     <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" @click="applyStatusFilter()">Apply</button>
                 </div>
             </div>

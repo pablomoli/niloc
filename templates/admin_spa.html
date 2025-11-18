@@ -88,7 +88,7 @@
           <!-- Combined Row: All Status Cards -->
           <div class="grid !grid-cols-2 sm:!grid-cols-8 gap-3 mb-3 items-stretch">
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#28a745] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#28a745] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Completed/To be Filed')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Completed/To be Filed</h6>
@@ -97,7 +97,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#e09132] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#e09132] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Needs Fieldwork')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-rulers text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Needs Fieldwork</h6>
@@ -106,7 +106,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Set/Flag Pins')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
@@ -115,7 +115,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#0066cc] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#0066cc] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('To Be Printed')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-printer text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">To Be Printed</h6>
@@ -124,7 +124,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Fieldwork Complete')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Fieldwork Complete</h6>
@@ -133,7 +133,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748] h-full">
+              <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748] h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Survey Complete/Invoice Sent')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-80">Survey Complete<br>/Invoice Sent</h6>
@@ -142,7 +142,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#e685b5] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#e685b5] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Site Plan')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">Site Plan</h6>
@@ -151,7 +151,7 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full">
+              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('On Hold/Pending Estimate')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending Estimate</h6>
@@ -217,9 +217,9 @@
         </div>
 
         <!-- Search and Filters Card -->
-        <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-0" style="overflow: visible;">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 px-0" style="overflow: visible;">
-            <div class="relative pl-0 pr-4" @keydown.escape="showJobSuggestions=false">
+        <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-4" style="overflow: visible;">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3" style="overflow: visible;">
+            <div class="relative" @keydown.escape="showJobSuggestions=false">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Search Jobs</span>
               </label>
@@ -227,6 +227,7 @@
                 <input
                   type="text"
                   class="input input-bordered w-full pr-10"
+                  style="height: 2.75rem; box-sizing: border-box;"
                   x-model="jobSearch"
                   @input="onJobSearchInput"
                   @focus="onJobSearchInput"
@@ -259,15 +260,15 @@
               </template>
             </div>
           </div>
-            <div class="relative pl-4 pr-0">
+            <div class="relative">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Filter by Status</span>
               </label>
-              <button type="button" class="btn btn-outline w-full border-2 border-gray-400 p-0"
-                      style="padding: 0 !important; margin: 0 !important; min-height: 0 !important;"
+              <button type="button" class="btn w-full border border-gray-300 bg-white hover:bg-gray-100"
+                      style="height: 2.75rem; padding: 0 !important; box-sizing: border-box; line-height: 1;"
                       @click.stop="toggleStatusDropdown()"
                       :aria-expanded="statusDropdownOpen" title="Filter by Status">
-                <span class="px-4 flex items-center gap-2 w-full justify-center" style="padding-top: 0.5rem; padding-bottom: 0.5rem; min-height: 2.75rem; pointer-events: none;">
+                <span class="px-4 flex items-center gap-2 w-full justify-center h-full" style="pointer-events: none; line-height: 1;">
                   <i class="bi bi-funnel"></i>
                   <span x-text="statusSummary()"></span>
                 </span>
@@ -286,6 +287,39 @@
                     <input type="checkbox" class="checkbox checkbox-sm" :checked="selectedStatuses.includes(s)"
                            @change="toggleStatusOption(s, $event.target.checked)" :title="s">
                     <span x-text="s"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
+          </div>
+            <div class="relative">
+              <label class="label py-1 justify-center">
+                <span class="label-text text-sm font-medium">Filter by Tags</span>
+              </label>
+              <button type="button" class="btn w-full border border-gray-300 bg-white hover:bg-gray-100"
+                      style="height: 2.75rem; padding: 0 !important; box-sizing: border-box; line-height: 1;"
+                      @click.stop="toggleTagDropdown()"
+                      :aria-expanded="tagDropdownOpen" title="Filter by Tags">
+                <span class="px-4 flex items-center gap-2 w-full justify-center h-full" style="pointer-events: none; line-height: 1;">
+                  <i class="bi bi-tags"></i>
+                  <span x-text="tagSummary()"></span>
+                </span>
+              </button>
+            <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-xl overflow-auto"
+                 style="max-height: 28rem !important;"
+                 x-show="tagDropdownOpen" 
+                 x-transition
+                 @click.outside="tagDropdownOpen=false">
+              <div class="flex justify-between items-center px-3 py-2 border-b bg-gray-50">
+                <button class="btn btn-ghost btn-xs" @click="selectAllTags()">Select All</button>
+                <button class="btn btn-ghost btn-xs" @click="clearAllTags()">Clear</button>
+              </div>
+              <div class="py-1">
+                <template x-for="tag in tags" :key="tag.id">
+                  <label class="flex items-center px-3 py-2 cursor-pointer gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm" :checked="selectedTags.includes(tag.id)"
+                           @change="toggleTagOption(tag.id, $event.target.checked)" :title="tag.name">
+                    <span class="badge border-2" :style="`border-color:${tag.color||'#007bff'}; color:${tag.color||'#007bff'}`" x-text="tag.name"></span>
                   </label>
                 </template>
               </div>
@@ -1534,6 +1568,9 @@
           ],
           selectedStatuses: [],
           statusDropdownOpen: false,
+          // Tag filter
+          selectedTags: [],
+          tagDropdownOpen: false,
           // Autocomplete (issue #21)
           jobSuggestions: [],
           showJobSuggestions: false,
@@ -1654,20 +1691,43 @@
             } catch (_) {
               this.selectedStatuses = [...this.statuses];
             }
+            // Initialize tag filter from localStorage
+            try {
+              const savedTags = JSON.parse(localStorage.getItem('admin_tag_filters') || '[]');
+              if (Array.isArray(savedTags)) {
+                this.selectedTags = savedTags;
+              }
+            } catch (_) {
+              this.selectedTags = [];
+            }
           },
 
           activateTab(tab) {
             this.activeTab = tab;
             this.ensureTabData(tab);
           },
+          
+          async filterJobsByStatus(status) {
+            // Ensure jobs tab is active
+            this.activeTab = 'jobs';
+            // Load all jobs to ensure we have complete data for filtering
+            await this.loadJobs(true, 999999);
+            // Set the status filter
+            this.selectedStatuses = [status];
+            // Reset pagination to show all results
+            this.currentPage = 1;
+            this.jobsPerPage = 999999;
+            // Apply the filter
+            this.filterJobs();
+          },
 
-          ensureTabData(tab) {
+          async ensureTabData(tab) {
             if (tab === 'dashboard') {
               this.loadDashboardMetrics();
               return;
             }
             if (tab === 'jobs') {
-              this.loadJobs();
+              await this.loadJobs();
               return;
             }
             if (tab === 'users') {
@@ -2259,6 +2319,14 @@
               filtered = filtered.filter(job => set.has(job.status || ''));
             }
 
+            // Apply tag filter when tags are selected
+            if (Array.isArray(this.selectedTags) && this.selectedTags.length > 0) {
+              filtered = filtered.filter(job => {
+                if (!Array.isArray(job.tags) || job.tags.length === 0) return false;
+                return job.tags.some(tag => this.selectedTags.includes(tag.id));
+              });
+            }
+
             this.filteredJobs = filtered;
             this.applySorting();
             this.updatePagination();
@@ -2305,6 +2373,33 @@
           },
           toggleStatusDropdown() {
             this.statusDropdownOpen = !this.statusDropdownOpen;
+          },
+
+          // Tag filter helpers
+          tagSummary() {
+            if (!this.selectedTags || this.selectedTags.length === 0) return 'Tags: None';
+            if (this.selectedTags.length === this.tags.length) return 'Tags: All';
+            return `Tags: ${this.selectedTags.length} selected`;
+          },
+          toggleTagOption(tagId, checked) {
+            const exists = this.selectedTags.includes(tagId);
+            if (checked && !exists) this.selectedTags.push(tagId);
+            if (!checked && exists) this.selectedTags = this.selectedTags.filter(id => id !== tagId);
+            localStorage.setItem('admin_tag_filters', JSON.stringify(this.selectedTags));
+            this.filterJobs();
+          },
+          selectAllTags() {
+            this.selectedTags = this.tags.map(t => t.id);
+            localStorage.setItem('admin_tag_filters', JSON.stringify(this.selectedTags));
+            this.filterJobs();
+          },
+          clearAllTags() {
+            this.selectedTags = [];
+            localStorage.setItem('admin_tag_filters', JSON.stringify(this.selectedTags));
+            this.filterJobs();
+          },
+          toggleTagDropdown() {
+            this.tagDropdownOpen = !this.tagDropdownOpen;
           },
 
           // Tag helpers

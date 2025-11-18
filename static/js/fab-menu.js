@@ -21,9 +21,14 @@ function fabMenu() {
         brevardSearchType: 'tax-account',
         clientSuggestions: [],
         
+        // Filter Tab
+        filterTab: 'status',
+        
         // Existing properties
         availableStatuses: [],
         selectedStatuses: new Set(['all']), // Local reactive state for UI
+        availableTags: [],
+        selectedTags: new Set(), // Local reactive state for tag filters
         currentBaseLayer: 'satellite',
         countiesVisible: false,
         useClustering: true,
@@ -37,9 +42,16 @@ function fabMenu() {
             if (!window.activeStatusFilters) {
                 window.activeStatusFilters = new Set(['all']);
             }
+            if (!window.activeTagFilters) {
+                window.activeTagFilters = new Set();
+            }
             
             // Sync local reactive state with global state
             this.selectedStatuses = new Set(window.activeStatusFilters);
+            this.selectedTags = new Set(window.activeTagFilters);
+            
+            // Load tags
+            this.loadTags();
             
             // Sync map layer state
             this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
@@ -54,6 +66,19 @@ function fabMenu() {
             document.addEventListener('jobsLoaded', () => {
                 self.updateAvailableStatuses();
             });
+        },
+        
+        async loadTags() {
+            try {
+                const response = await fetch('/api/tags');
+                if (response.ok) {
+                    const tags = await response.json();
+                    this.availableTags = Array.isArray(tags) ? tags : [];
+                }
+            } catch (error) {
+                console.error('Failed to load tags:', error);
+                this.availableTags = [];
+            }
         },
         
         updateAvailableStatuses() {
@@ -436,8 +461,50 @@ function fabMenu() {
             if (!window.activeStatusFilters) {
                 window.activeStatusFilters = new Set(['all']);
             }
+            // Sync tag filters
+            if (!window.activeTagFilters) {
+                window.activeTagFilters = new Set();
+            }
+            window.activeTagFilters = new Set(this.selectedTags);
             window.applyStatusFilter(Array.from(window.activeStatusFilters));
             this.closeStatusFilter();
+        },
+        
+        toggleTag(tagId) {
+            if (!window.activeTagFilters) {
+                window.activeTagFilters = new Set();
+            }
+            
+            if (this.selectedTags.has(tagId)) {
+                this.selectedTags.delete(tagId);
+                window.activeTagFilters.delete(tagId);
+            } else {
+                this.selectedTags.add(tagId);
+                window.activeTagFilters.add(tagId);
+            }
+        },
+        
+        clearAllTags() {
+            this.selectedTags.clear();
+            if (window.activeTagFilters) {
+                window.activeTagFilters.clear();
+            }
+        },
+        
+        isTagActive(tagId) {
+            return this.selectedTags.has(tagId);
+        },
+        
+        getTagTextColor(tagColor) {
+            // Determine if text should be black or white based on background color brightness
+            if (!tagColor) return 'text-gray-900';
+            const hex = tagColor.replace("#", "");
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            // Calculate relative luminance
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 155 ? 'text-gray-900' : 'text-white';
         },
         
         getStatusColor(status) {
