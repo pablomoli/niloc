@@ -9,6 +9,75 @@ from pyproj import Transformer
 
 logger = logging.getLogger(__name__)
 
+# =============================================================================
+# JOB STATUS CONSTANTS - Single source of truth for status values
+# =============================================================================
+
+# Valid job status values (stored in database)
+VALID_JOB_STATUSES = [
+    "Completed/To be Filed",
+    "Fieldwork Complete",
+    "To Be Printed",
+    "Survey Complete/Invoice Sent",
+    "Needs Fieldwork",
+    "Set/Flag Pins",
+    "On Hold/Pending Estimate",
+    "Site Plan",
+    "Quote Available",
+]
+
+# Status display names (shorter versions for UI)
+STATUS_DISPLAY_NAMES = {
+    "Completed/To be Filed": "Completed/To be Filed",
+    "Fieldwork Complete": "Fieldwork Complete",
+    "To Be Printed": "To Be Printed",
+    "Survey Complete/Invoice Sent": "Survey Complete/Invoice Sent",
+    "Needs Fieldwork": "Needs Fieldwork",
+    "Set/Flag Pins": "Set/Flag Pins",
+    "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+    "Site Plan": "Site Plan",
+    "Quote Available": "Quote Available",
+}
+
+# Mapping from old status names to new status names (for migration)
+STATUS_MIGRATION_MAP = {
+    "Completed": "Completed/To be Filed",
+    "Needs Office Work": "Fieldwork Complete",
+    "Invoice Sent": "Survey Complete/Invoice Sent",
+    "Set Pins": "Set/Flag Pins",
+    "On Hold": "On Hold/Pending Estimate",
+    "Ongoing Site": "Site Plan",
+    "To Be Printed": "To Be Printed",  # No change
+    "Needs Fieldwork": "Needs Fieldwork",  # No change
+    "Quote Available": "Quote Available",  # No change
+}
+
+def is_valid_job_status(status):
+    """
+    Validate that a status value is in the allowed list.
+    
+    Args:
+        status: Status string to validate (can be None)
+    
+    Returns:
+        bool: True if status is valid or None, False otherwise
+    """
+    if status is None:
+        return True  # None/null is allowed
+    return status in VALID_JOB_STATUSES
+
+def get_status_display_name(status):
+    """
+    Get the display name for a status.
+    
+    Args:
+        status: Status string
+    
+    Returns:
+        str: Display name or original status if not found
+    """
+    return STATUS_DISPLAY_NAMES.get(status, status)
+
 # Load CSV data once when module loads
 _brevard_parcels_df = None
 

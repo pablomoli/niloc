@@ -282,7 +282,7 @@
                                     @click="toggleStatus(status)">
                                 <span class="w-3 h-3 rounded-full" 
                                       :style="`background-color: ${getStatusColor(status)}`"></span>
-                                <span x-text="getStatusName(status)"></span>
+                                <span x-html="getStatusDisplayName(status)"></span>
                             </button>
                         </template>
                     </div>

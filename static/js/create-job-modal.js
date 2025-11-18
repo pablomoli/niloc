@@ -5,17 +5,17 @@ window.CreateJobModal = {
     show(lat, lng, address) {
         console.log('CreateJobModal.show called with:', lat, lng, address);
         
-        // Get available statuses from MarkerUtils
+        // Get available statuses from MarkerUtils (single source of truth)
         const statuses = window.MarkerUtils ? Object.keys(window.MarkerUtils.EPIC_COLORS) : [
-            "On Hold",
-            "Set Pins",
-            "Ongoing Site",
-            "Completed",
-            "Quote Available",
-            "Invoice Sent",
-            "Needs Office Work",
+            "Completed/To be Filed",
+            "Fieldwork Complete",
             "To Be Printed",
-            "Needs Fieldwork"
+            "Survey Complete/Invoice Sent",
+            "Needs Fieldwork",
+            "Set/Flag Pins",
+            "On Hold/Pending Estimate",
+            "Site Plan",
+            "Quote Available"
         ];
         
         // Create status options HTML

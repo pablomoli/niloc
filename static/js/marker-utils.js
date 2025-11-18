@@ -4,30 +4,30 @@
  */
 
 // Epic Color System - Status-based colors
+// This is the single source of truth for status colors in the frontend
 const EPIC_COLORS = {
-  "On Hold": "#C0C0C0",
-  "Set Pins": "#FF0000",
-  "Ongoing Site": "#FF69B4",
-
-  "Completed": "#9ACD32",
-  "Quote Available": "#607080",
-  "Invoice Sent": "#FFFF00",
-  "Needs Office Work": "#8A2BE2",
-  "To Be Printed": "#1E90FF",
-  "Needs Fieldwork": "#FFA500",
+  "Completed/To be Filed": "#9ACD32",  // Green
+  "Fieldwork Complete": "#8A2BE2",     // Purple
+  "To Be Printed": "#1E90FF",           // Blue
+  "Survey Complete/Invoice Sent": "#FFFF00", // Yellow
+  "Needs Fieldwork": "#FFA500",          // Orange
+  "Set/Flag Pins": "#FF0000",           // Red
+  "On Hold/Pending Estimate": "#C0C0C0", // Grey
+  "Site Plan": "#FF69B4",                // Pink
+  "Quote Available": "#17a2b8",          // Teal (new color, was grey)
 };
 
-// Status Display Names (shorter versions for UI)
+// Status Display Names (for UI display)
 const STATUS_NAMES = {
-  "On Hold": "On Hold",
-  "Needs Fieldwork": "Needs Field",
-  "Needs Office Work": "Office Work",
-  "To Be Printed": "To Print",
-  "Invoice Sent": "Invoice Sent",
-  "Set Pins": "Set Pins",
-  "Completed": "Completed",
-  "Ongoing Site": "Site Plan",
-  "Quote Available": "Quote Ready",
+  "Completed/To be Filed": "Completed/To be Filed",
+  "Fieldwork Complete": "Fieldwork Complete",
+  "To Be Printed": "To Be Printed",
+  "Survey Complete/Invoice Sent": "Survey Complete/Invoice Sent",
+  "Needs Fieldwork": "Needs Fieldwork",
+  "Set/Flag Pins": "Set/Flag Pins",
+  "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+  "Site Plan": "Site Plan",
+  "Quote Available": "Quote Available",
 };
 
 /**

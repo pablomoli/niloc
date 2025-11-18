@@ -12,7 +12,7 @@ from api.search import create_fuzzy_search_conditions, normalize_search_term
 from auth_utils import login_required
 from models import db, Job, Tag, FieldWork, User, job_tags
 from db_utils import with_db_retry, handle_db_error
-from utils import get_brevard_property_link
+from utils import get_brevard_property_link, is_valid_job_status, VALID_JOB_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -284,12 +284,17 @@ def create_job():
         lng = geocode_result["lng"] if geocode_result else None
         county = geocode_result["county"] if geocode_result else None
 
+    # Validate status if provided
+    status = data.get("status", "").strip() or None
+    if status and not is_valid_job_status(status):
+        return jsonify({"error": f"Invalid status: {status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"}), 400
+
     # Create job object
     job_data = {
         "job_number": job_number,
         "client": data["client"].strip(),
         "address": address,
-        "status": data.get("status", "").strip() or None,
+        "status": status,
         "notes": (data.get("notes") or "").strip() or None,
         "created_at": datetime.now(timezone.utc),
         "created_by_id": session.get("user_id"),
@@ -358,6 +363,9 @@ def update_job(job_number):
     for field in updateable_fields:
         if field in data:
             value = data[field].strip() if isinstance(data[field], str) else data[field]
+            # Validate status if being updated
+            if field == "status" and value and not is_valid_job_status(value):
+                return jsonify({"error": f"Invalid status: {value}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"}), 400
             if field == "address" and value != job.address:
                 address_changed = True
             setattr(job, field, value)

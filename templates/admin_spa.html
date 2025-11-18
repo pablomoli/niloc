@@ -91,7 +91,7 @@
               <div class="card text-center shadow-lg bg-[#28a745] text-white h-full">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Completed</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Completed/To be Filed</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
                 </div>
               </div>
@@ -109,7 +109,7 @@
               <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set Pins</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
                 </div>
               </div>
@@ -127,7 +127,7 @@
               <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Office Work</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Fieldwork Complete</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
                 </div>
               </div>
@@ -136,7 +136,7 @@
               <div class="card text-center shadow-lg bg-[#f5c842] text-[#2d3748] h-full">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-bank text-2xl mb-2 opacity-80"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-80">Invoice Sent</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-80">Survey Complete<br>/Invoice Sent</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.invoiceSent">-</h2>
                 </div>
               </div>
@@ -154,7 +154,7 @@
               <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold</h6>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending Estimate</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
                 </div>
               </div>
@@ -1214,25 +1214,15 @@
                   x-model="editingJob.status"
                 >
                   <option value="">Select Status</option>
-                  <option value="On Hold">On Hold</option>
+                  <option value="Completed/To be Filed">Completed/To be Filed</option>
+                  <option value="Fieldwork Complete">Fieldwork Complete</option>
+                  <option value="To Be Printed">To Be Printed</option>
+                  <option value="Survey Complete/Invoice Sent">Survey Complete/Invoice Sent</option>
                   <option value="Needs Fieldwork">Needs Fieldwork</option>
-                  <option value="Needs Office Work">
-                    Needs Office Work
-                  </option>
-                  <option value="To Be Printed">
-                    To Be Printed
-                  </option>
-                  <option value="Invoice Sent">
-                    Invoice Sent
-                  </option>
-                  <option value="Set Pins">Set Pins</option>
-                  <option value="Completed">
-                    Completed
-                  </option>
-                  <option value="Ongoing Site">Ongoing Site</option>
-                  <option value="Quote Available">
-                    Quote Available
-                  </option>
+                  <option value="Set/Flag Pins">Set/Flag Pins</option>
+                  <option value="On Hold/Pending Estimate">On Hold/Pending Estimate</option>
+                  <option value="Site Plan">Site Plan</option>
+                  <option value="Quote Available">Quote Available</option>
                 </select>
               </div>
               <div class="mb-3">
@@ -1532,14 +1522,14 @@
           deletedJobSearch: "",
           // Multi-status filter
           statuses: [
-            "On Hold",
-            "Needs Fieldwork",
-            "Needs Office Work",
+            "Completed/To be Filed",
+            "Fieldwork Complete",
             "To Be Printed",
-            "Invoice Sent",
-            "Set Pins",
-            "Completed",
-            "Ongoing Site",
+            "Survey Complete/Invoice Sent",
+            "Needs Fieldwork",
+            "Set/Flag Pins",
+            "On Hold/Pending Estimate",
+            "Site Plan",
             "Quote Available",
           ],
           selectedStatuses: [],
@@ -2218,16 +2208,17 @@
                 const data = await response.json();
 
                 // Derive counts from API response
+                // Map both old and new status names for backward compatibility
                 const sc = data.status_counts || {};
-                this.stats.completed = sc["Completed"] || 0;
-                this.stats.needsFieldwork = sc["Needs Fieldwork"] || 0;
-                this.stats.setPins = sc["Set Pins"] || 0;
-                this.stats.toBePrinted = sc["To Be Printed"] || 0;
-                this.stats.fieldworkComplete = sc["Needs Office Work"] || 0;
-                this.stats.invoiceSent = sc["Invoice Sent"] || 0;
-                this.stats.ongoingSitePlan = sc["Ongoing Site"] || 0;
-                this.stats.onHoldPending = sc["On Hold"] || 0;
-                this.stats.estimateAvailable = sc["Quote Available"] || 0;
+                this.stats.completed = (sc["Completed/To be Filed"] || 0) + (sc["Completed"] || 0);
+                this.stats.needsFieldwork = (sc["Needs Fieldwork"] || 0);
+                this.stats.setPins = (sc["Set/Flag Pins"] || 0) + (sc["Set Pins"] || 0);
+                this.stats.toBePrinted = (sc["To Be Printed"] || 0);
+                this.stats.fieldworkComplete = (sc["Fieldwork Complete"] || 0) + (sc["Needs Office Work"] || 0);
+                this.stats.invoiceSent = (sc["Survey Complete/Invoice Sent"] || 0) + (sc["Invoice Sent"] || 0);
+                this.stats.ongoingSitePlan = (sc["Site Plan"] || 0) + (sc["Ongoing Site"] || 0);
+                this.stats.onHoldPending = (sc["On Hold/Pending Estimate"] || 0) + (sc["On Hold"] || 0);
+                this.stats.estimateAvailable = (sc["Quote Available"] || 0);
 
                 this.stats.uniqueClients = data.unique_clients || 0;
 
@@ -2442,15 +2433,22 @@
             // DaisyUI badge + theme-specific color classes per status
             const base = "badge whitespace-nowrap border-2";
             const map = {
-              "Completed": "badge-completed",
+              "Completed/To be Filed": "badge-completed",
               "Needs Fieldwork": "badge-needs-fieldwork",
-              "Set Pins": "badge-set-flag",
+              "Set/Flag Pins": "badge-set-flag",
               "To Be Printed": "badge-to-be-printed",
+              "Fieldwork Complete": "badge-office-work",
+              "Survey Complete/Invoice Sent": "badge-invoice-sent",
+              "Site Plan": "badge-ongoing-plan",
+              "On Hold/Pending Estimate": "badge-on-hold",
+              "Quote Available": "badge-estimate",
+              // Backward compatibility with old status names
+              "Completed": "badge-completed",
+              "Set Pins": "badge-set-flag",
               "Needs Office Work": "badge-office-work",
               "Invoice Sent": "badge-invoice-sent",
               "Ongoing Site": "badge-ongoing-plan",
               "On Hold": "badge-on-hold",
-              "Quote Available": "badge-estimate",
             };
             return `${base} ${map[status] || 'badge-default'}`;
           },

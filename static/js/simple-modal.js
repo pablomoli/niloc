@@ -533,7 +533,7 @@ window.SimpleModal = {
                                      style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};"
                                      onclick="SimpleModal.toggleEdit('status')"
                                      title="Click to edit">
-                                    <span id="status-view-text">${job.status || 'Unknown Status'}</span>
+                                    <span id="status-view-text">${window.MarkerUtils?.STATUS_NAMES[job.status] || job.status || 'Unknown Status'}</span>
                                     <i class="bi bi-pencil-square ml-1" style="font-size: 10px;"></i>
                                 </div>
                             </div>

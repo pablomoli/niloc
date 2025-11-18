@@ -63,15 +63,15 @@ The main entity representing field service jobs.
 
 **Job Status Options:**
 
-- `On Hold/Pending`
-- `Needs Fieldwork`
-- `Fieldwork Complete/Needs Office Work`
-- `To Be Printed/Packaged`
-- `Survey Complete/Invoice Sent/Unpaid`
-- `Set/Flag Pins`
-- `Completed/To Be Filed`
-- `Ongoing Site Plan`
-- `Estimate/Quote Available`
+- `Completed/To be Filed` (Green)
+- `Fieldwork Complete` (Purple)
+- `To Be Printed` (Blue)
+- `Survey Complete/Invoice Sent` (Yellow)
+- `Needs Fieldwork` (Orange)
+- `Set/Flag Pins` (Red)
+- `On Hold/Pending Estimate` (Grey)
+- `Site Plan` (Pink)
+- `Quote Available` (Teal)
 
 ### FieldWork Table (`fieldwork`)
 

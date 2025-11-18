@@ -64,17 +64,9 @@ def admin_jobs_view():
         "per_page": request.args.get("per_page", 20, type=int),
     }
 
-    # Status options for dropdowns
-    status_options = [
-        "On Hold/Pending",
-        "Needs Fieldwork",
-        "Fieldwork Complete/Needs Office Work",
-        "To Be Printed/Packaged",
-        "Survey Complete/Invoice Sent/Unpaid",
-        "Set/Flag Pins",
-        "Completed/To Be Filed",
-        "Ongoing Site Plan",
-    ]
+    # Status options for dropdowns - use centralized constants
+    from utils import VALID_JOB_STATUSES
+    status_options = VALID_JOB_STATUSES
 
     return render_template(
         "admin_jobs.html", filters=filters, status_options=status_options

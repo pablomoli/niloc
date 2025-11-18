@@ -448,6 +448,12 @@ function fabMenu() {
             return window.MarkerUtils?.STATUS_NAMES[status] || status;
         },
         
+        getStatusDisplayName(status) {
+            // Format status name for display with line break before "/"
+            const name = this.getStatusName(status);
+            return name.replace('/', '<br>/');
+        },
+        
         isStatusActive(status) {
             return this.selectedStatuses.has(status);
         },
