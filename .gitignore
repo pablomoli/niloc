@@ -1,6 +1,7 @@
 venv/
 __pycache__/
 *.pyc
+*.pyo
 *.db
 .env
 instance/
@@ -12,3 +13,6 @@ frontend_backup_20250606_233919/
 static/data/BCPAO_Reference.gdb/
 node_modules/
 static/dist/
+.pytest_cache/
+.coverage
+*.log
