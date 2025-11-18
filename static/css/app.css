@@ -399,3 +399,76 @@ body {
 .mt-3 {
   margin-top: 1rem !important;
 }
+
+/* Enhanced Modal Styles */
+#simpleJobModalContent {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f1f1;
+}
+
+#simpleJobModalContent .modal-section {
+  transition: all 0.2s ease;
+}
+
+#simpleJobModalContent .editable-field:hover {
+  background-color: rgba(255, 19, 147, 0.05);
+}
+
+#simpleJobModalContent input:focus,
+#simpleJobModalContent textarea:focus,
+#simpleJobModalContent select:focus {
+  outline: 2px solid #FF1393;
+  outline-offset: 2px;
+  border-color: #FF1393;
+}
+
+/* Smooth transitions for modal elements */
+#simpleJobModalContent * {
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Better badge styling */
+#simpleJobModalContent .badge {
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+#simpleJobModalContent .badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Improved scrollbar for webkit browsers */
+#simpleJobModalContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+#simpleJobModalContent::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#simpleJobModalContent::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+#simpleJobModalContent::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Enhanced button hover states */
+#simpleJobModalContent .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#simpleJobModalContent .btn:active {
+  transform: translateY(0);
+}
+
+/* Group hover effects */
+#simpleJobModalContent .group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
