@@ -2588,7 +2588,24 @@
 
           formatDate(dateString) {
             if (!dateString) return "Never";
-            return new Date(dateString).toLocaleDateString();
+            
+            // Parse date string - ensure UTC if no timezone specified
+            let date;
+            if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+              // Already has timezone info
+              date = new Date(dateString);
+            } else {
+              // Assume UTC if no timezone specified (server sends UTC)
+              date = new Date(dateString + 'Z');
+            }
+            
+            // Handle invalid dates
+            if (isNaN(date.getTime())) {
+              return "Invalid date";
+            }
+            
+            // Display in local timezone
+            return date.toLocaleDateString();
           },
 
           openAddJobModal() {
@@ -2780,9 +2797,25 @@
 
           formatDeletedDate(dateString) {
             if (!dateString) return "Unknown";
-            const date = new Date(dateString);
+            
+            // Parse date string - ensure UTC if no timezone specified
+            let date;
+            if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+              // Already has timezone info
+              date = new Date(dateString);
+            } else {
+              // Assume UTC if no timezone specified (server sends UTC)
+              date = new Date(dateString + 'Z');
+            }
+            
+            // Handle invalid dates
+            if (isNaN(date.getTime())) {
+              return "Invalid date";
+            }
+            
+            // Calculate difference using actual Date objects (they handle timezone internally)
             const now = new Date();
-            const diffMs = now - date;
+            const diffMs = Math.max(0, now.getTime() - date.getTime());
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             
             if (diffDays === 0) {
@@ -2809,7 +2842,21 @@
 
           formatDeletedTime(dateString) {
             if (!dateString) return "";
-            const date = new Date(dateString);
+            // Parse date string - ensure UTC if no timezone specified
+            let date;
+            if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+              date = new Date(dateString);
+            } else {
+              // Assume UTC if no timezone specified (server sends UTC)
+              date = new Date(dateString + 'Z');
+            }
+            
+            // Handle invalid dates
+            if (isNaN(date.getTime())) {
+              return "";
+            }
+            
+            // Display in local timezone
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           },
 
