@@ -30,11 +30,11 @@ build:
 
 # Run development server
 run: build
-	flask --app app run --reload
+	. venv/bin/activate && flask --app app run --reload
 
 # Run production server
 run-prod: build
-	gunicorn app:app
+	. venv/bin/activate && gunicorn app:app
 
 # Create database migration
 migrate:
@@ -42,11 +42,11 @@ migrate:
 		echo "Error: MESSAGE is required. Usage: make migrate MESSAGE='description'"; \
 		exit 1; \
 	fi
-	flask --app app db migrate -m "$(MESSAGE)"
+	. venv/bin/activate && flask --app app db migrate -m "$(MESSAGE)"
 
 # Apply database migrations
 upgrade:
-	flask --app app db upgrade
+	. venv/bin/activate && flask --app app db upgrade
 
 # Check API health
 health:

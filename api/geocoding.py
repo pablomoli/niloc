@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from flask import jsonify, request
 from sqlalchemy import text
 
-from api import api_bp
+from api import api_bp, geocode_address
 from auth_utils import login_required
 from models import db
 from utils import geocode_brevard_parcel, geocode_orange_parcel

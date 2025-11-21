@@ -996,8 +996,8 @@
       @keydown.escape="document.getElementById('editUserModal').classList.add('hidden')"
     >
       <div class="bg-white rounded-lg shadow-xl border-2 border-primary p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-t-lg"></div>
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-t-lg z-0"></div>
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10" 
                 onclick="document.getElementById('editUserModal').classList.add('hidden')"
                 title="Close (Esc)">✕</button>
         
@@ -1078,7 +1078,7 @@
             <button 
               type="submit" 
               class="btn btn-primary !text-white"
-              :disabled="!isValidEmail(editingUser.username) || (editingUser.password && editingUser.password.length < 8)"
+              :disabled="!isValidEmail(editingUser.username) || hasInvalidPassword(editingUser.password)"
             >
               Save Changes
             </button>
@@ -2153,9 +2153,25 @@
 
           formatUserDate(dateString) {
             if (!dateString) return "Never";
-            const date = new Date(dateString);
+            
+            // Parse date string - ensure UTC if no timezone specified
+            let date;
+            if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+              // Already has timezone info
+              date = new Date(dateString);
+            } else {
+              // Assume UTC if no timezone specified (server sends UTC)
+              date = new Date(dateString + 'Z');
+            }
+            
+            // Handle invalid dates
+            if (isNaN(date.getTime())) {
+              return "Invalid date";
+            }
+            
+            // Calculate difference using actual Date objects (they handle timezone internally)
             const now = new Date();
-            const diffMs = now - date;
+            const diffMs = Math.max(0, now.getTime() - date.getTime());
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             
             if (diffDays === 0) {
@@ -2182,7 +2198,21 @@
 
           formatUserTime(dateString) {
             if (!dateString) return "";
-            const date = new Date(dateString);
+            // Parse date string - ensure UTC if no timezone specified
+            let date;
+            if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+              date = new Date(dateString);
+            } else {
+              // Assume UTC if no timezone specified (server sends UTC)
+              date = new Date(dateString + 'Z');
+            }
+            
+            // Handle invalid dates
+            if (isNaN(date.getTime())) {
+              return "";
+            }
+            
+            // Display in local timezone
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           },
 
@@ -2190,6 +2220,14 @@
             if (!email) return false;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
+          },
+
+          hasInvalidPassword(password) {
+            // Only validate password if it has non-whitespace content
+            // Empty or whitespace-only = valid (means "don't change password")
+            if (!password) return false;
+            const trimmed = password.trim();
+            return trimmed.length > 0 && trimmed.length < 8;
           },
 
           isPrivateIP(ip) {
@@ -2935,8 +2973,18 @@
                 role: this.editingUser.role,
               };
 
-              if (this.editingUser.password) {
-                updateData.password = this.editingUser.password;
+              // Only include password if it has non-whitespace content
+              // Empty or whitespace-only = don't change password
+              const trimmedPassword = this.editingUser.password?.trim() || '';
+              if (trimmedPassword.length > 0) {
+                if (trimmedPassword.length < 8) {
+                  Alpine.store("notifications").add(
+                    "Password must be at least 8 characters",
+                    "error",
+                  );
+                  return;
+                }
+                updateData.password = trimmedPassword;
               }
 
               const response = await fetch(
@@ -2963,13 +3011,21 @@
                 // Hide modal
                 document.getElementById("editUserModal").classList.add("hidden");
               } else {
-                const error = await response.json();
-                throw new Error(error.error || "Failed to update user");
+                let errorMessage = "Failed to update user";
+                try {
+                  const errorData = await response.json();
+                  errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                  // If response is not JSON, use status text
+                  errorMessage = `Failed to update user: ${response.status} ${response.statusText}`;
+                }
+                console.error("Update user error:", errorMessage, response.status);
+                Alpine.store("notifications").add(errorMessage, "error");
               }
             } catch (error) {
               console.error("Update user error:", error);
               Alpine.store("notifications").add(
-                error.message || "Failed to update user",
+                error.message || "Failed to update user. Please check the console for details.",
                 "error",
               );
             }
