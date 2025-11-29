@@ -304,7 +304,7 @@ body {
   position: fixed;
   top: 1rem;
   right: 1rem;
-  z-index: 2000;
+  z-index: 3000;
   max-width: 400px;
 }
 
@@ -331,6 +331,8 @@ body {
 
 .notification.error {
   border-left: 4px solid var(--danger-color);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  font-weight: 500;
 }
 
 .notification.warning {
