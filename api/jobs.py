@@ -516,6 +516,176 @@ def promote_parcel_to_address(job_number: str):
         return jsonify({"error": "Database error occurred"}), 500
 
 
+@api_bp.route("/jobs/bulk-update-status", methods=["POST"])
+@login_required
+def bulk_update_status():
+    """POST /api/jobs/bulk-update-status - Update status for multiple jobs
+
+    Body: { "job_numbers": [...], "status": "..." }
+    Returns: 200 for complete success, 207 for partial success
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON data required"}), 400
+
+    job_numbers = data.get("job_numbers", [])
+    new_status = data.get("status", "").strip()
+
+    # Validation
+    if not isinstance(job_numbers, list) or len(job_numbers) == 0:
+        return jsonify({"error": "job_numbers array required"}), 400
+
+    if not new_status:
+        return jsonify({"error": "status is required"}), 400
+
+    # Validate status value
+    if not is_valid_job_status(new_status):
+        return jsonify({
+            "error": f"Invalid status: {new_status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"
+        }), 400
+
+    # Limit bulk operations to reasonable size
+    if len(job_numbers) > 100:
+        return jsonify({"error": "Maximum 100 jobs per bulk update"}), 400
+
+    # Track results
+    successes = []
+    failures = []
+
+    try:
+        # Process each job
+        for job_number in job_numbers:
+            job = Job.active().filter_by(job_number=job_number).first()
+
+            if not job:
+                failures.append({
+                    "job_number": job_number,
+                    "error": "Job not found"
+                })
+                continue
+
+            # Update status
+            job.status = new_status
+            successes.append(job_number)
+
+        # Commit all changes in one transaction
+        db.session.commit()
+
+        # Build response
+        total = len(job_numbers)
+        updated = len(successes)
+        failed = len(failures)
+
+        if failed == 0:
+            # Complete success
+            return jsonify({
+                "message": f"{updated} job{'s' if updated != 1 else ''} updated successfully",
+                "updated": updated,
+                "total": total,
+                "job_numbers": successes,
+                "status": new_status
+            }), 200
+        else:
+            # Partial success
+            return jsonify({
+                "message": f"{updated} of {total} jobs updated",
+                "updated": updated,
+                "total": total,
+                "failed": failed,
+                "status": new_status,
+                "successes": successes,
+                "failures": failures
+            }), 207  # Multi-Status
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Bulk update error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/bulk-delete", methods=["POST"])
+@login_required
+def bulk_delete_jobs():
+    """POST /api/jobs/bulk-delete - Soft delete multiple jobs (admin only)
+
+    Body: { "job_numbers": [...] }
+    Returns: 200 for complete success, 207 for partial success
+    """
+    # Check admin permission
+    admin_check = require_admin()
+    if admin_check:
+        return admin_check
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON data required"}), 400
+
+    job_numbers = data.get("job_numbers", [])
+
+    # Validation
+    if not isinstance(job_numbers, list) or len(job_numbers) == 0:
+        return jsonify({"error": "job_numbers array required"}), 400
+
+    # Limit bulk operations
+    if len(job_numbers) > 100:
+        return jsonify({"error": "Maximum 100 jobs per bulk delete"}), 400
+
+    # Track results
+    successes = []
+    failures = []
+
+    try:
+        user_id = session.get("user_id")
+
+        # Process each job
+        for job_number in job_numbers:
+            job = Job.active().filter_by(job_number=job_number).first()
+
+            if not job:
+                failures.append({
+                    "job_number": job_number,
+                    "error": "Job not found"
+                })
+                continue
+
+            # Perform soft delete
+            job.soft_delete()
+            job.deleted_by_id = user_id
+            successes.append(job_number)
+
+        # Commit all changes in one transaction
+        db.session.commit()
+
+        # Build response
+        total = len(job_numbers)
+        deleted = len(successes)
+        failed = len(failures)
+
+        if failed == 0:
+            # Complete success
+            return jsonify({
+                "message": f"{deleted} job{'s' if deleted != 1 else ''} deleted successfully",
+                "deleted": deleted,
+                "total": total,
+                "job_numbers": successes
+            }), 200
+        else:
+            # Partial success
+            return jsonify({
+                "message": f"{deleted} of {total} jobs deleted",
+                "deleted": deleted,
+                "total": total,
+                "failed": failed,
+                "successes": successes,
+                "failures": failures
+            }), 207  # Multi-Status
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Bulk delete error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
 @api_bp.route("/jobs/deleted", methods=["GET"])
 @login_required
 def get_deleted_jobs():
