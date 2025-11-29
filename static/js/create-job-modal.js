@@ -7,15 +7,14 @@ window.CreateJobModal = {
         
         // Get available statuses from MarkerUtils (single source of truth)
         const statuses = window.MarkerUtils ? Object.keys(window.MarkerUtils.EPIC_COLORS) : [
-            "Completed/To be Filed",
+            "On Hold/Pending Estimate",
+            "Needs Fieldwork",
             "Fieldwork Complete",
             "To Be Printed",
-            "Survey Complete/Invoice Sent",
-            "Needs Fieldwork",
             "Set/Flag Pins",
-            "On Hold/Pending Estimate",
-            "Site Plan",
-            "Quote Available"
+            "Survey Complete/Invoice Sent",
+            "Completed/To be Filed",
+            "Site Plan"
         ];
         
         // Create status options HTML

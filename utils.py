@@ -15,28 +15,26 @@ logger = logging.getLogger(__name__)
 
 # Valid job status values (stored in database)
 VALID_JOB_STATUSES = [
-    "Completed/To be Filed",
+    "On Hold/Pending Estimate",
+    "Needs Fieldwork",
     "Fieldwork Complete",
     "To Be Printed",
-    "Survey Complete/Invoice Sent",
-    "Needs Fieldwork",
     "Set/Flag Pins",
-    "On Hold/Pending Estimate",
+    "Survey Complete/Invoice Sent",
+    "Completed/To be Filed",
     "Site Plan",
-    "Quote Available",
 ]
 
 # Status display names (shorter versions for UI)
 STATUS_DISPLAY_NAMES = {
-    "Completed/To be Filed": "Completed/To be Filed",
+    "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+    "Needs Fieldwork": "Needs Fieldwork",
     "Fieldwork Complete": "Fieldwork Complete",
     "To Be Printed": "To Be Printed",
-    "Survey Complete/Invoice Sent": "Survey Complete/Invoice Sent",
-    "Needs Fieldwork": "Needs Fieldwork",
     "Set/Flag Pins": "Set/Flag Pins",
-    "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+    "Survey Complete/Invoice Sent": "Survey Complete/Invoice Sent",
+    "Completed/To be Filed": "Completed/To be Filed",
     "Site Plan": "Site Plan",
-    "Quote Available": "Quote Available",
 }
 
 # Mapping from old status names to new status names (for migration)
@@ -49,7 +47,6 @@ STATUS_MIGRATION_MAP = {
     "Ongoing Site": "Site Plan",
     "To Be Printed": "To Be Printed",  # No change
     "Needs Fieldwork": "Needs Fieldwork",  # No change
-    "Quote Available": "Quote Available",  # No change
 }
 
 def is_valid_job_status(status):

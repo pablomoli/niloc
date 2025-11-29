@@ -82,7 +82,7 @@ def main():
                 "job_number": str(row.get("Num", f"JOB-{i}")),
                 "client": str(row.get("Client", "Unknown Client")),
                 "address": str(row.get("Address", "Unknown Address")),
-                "status": "Quote Available",  # default status
+                "status": "On Hold/Pending Estimate",  # default status
             }
 
             # Make the API call - use form data as expected by the endpoint

@@ -88,11 +88,11 @@
           <!-- Combined Row: All Status Cards -->
           <div class="grid !grid-cols-2 sm:!grid-cols-8 gap-3 mb-3 items-stretch">
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#28a745] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Completed/To be Filed')">
+              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('On Hold/Pending Estimate')">
                 <div class="card-body py-3 flex flex-col justify-between">
-                  <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Completed/To be Filed</h6>
-                  <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
+                  <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending Estimate</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
                 </div>
               </div>
             </div>
@@ -106,11 +106,11 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Set/Flag Pins')">
+              <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Fieldwork Complete')">
                 <div class="card-body py-3 flex flex-col justify-between">
-                  <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
-                  <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
+                  <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Fieldwork Complete</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
                 </div>
               </div>
             </div>
@@ -124,11 +124,11 @@
               </div>
             </div>
             <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#6f42c1] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Fieldwork Complete')">
+              <div class="card text-center shadow-lg bg-[#dc3545] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Set/Flag Pins')">
                 <div class="card-body py-3 flex flex-col justify-between">
-                  <i class="bi bi-building text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Fieldwork Complete</h6>
-                  <h2 class="text-3xl font-bold mb-0" x-text="stats.fieldworkComplete">-</h2>
+                  <i class="bi bi-flag text-2xl mb-2 opacity-90"></i>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Set/Flag Pins</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.setPins">-</h2>
                 </div>
               </div>
             </div>
@@ -142,6 +142,15 @@
               </div>
             </div>
             <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#28a745] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Completed/To be Filed')">
+                <div class="card-body py-3 flex flex-col justify-between">
+                  <i class="bi bi-check-circle text-2xl mb-2 opacity-90"></i>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Completed/To be Filed</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.completed">-</h2>
+                </div>
+              </div>
+            </div>
+            <div class="h-full">
               <div class="card text-center shadow-lg bg-[#e685b5] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Site Plan')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-pencil-square text-2xl mb-2 opacity-90"></i>
@@ -150,28 +159,8 @@
                 </div>
               </div>
             </div>
-            <div class="h-full">
-              <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('On Hold/Pending Estimate')">
-                <div class="card-body py-3 flex flex-col justify-between">
-                  <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending Estimate</h6>
-                  <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <!-- Row 3: Quote Status -->
-          <div>
-            <div class="max-w-xs">
-              <div class="card text-center shadow-lg bg-[#6c757d] text-white">
-                <div class="card-body py-3">
-                  <h6 class="text-sm font-semibold mb-2 opacity-90">Quote Available</h6>
-                  <h2 class="text-3xl font-bold mb-0" x-text="stats.estimateAvailable">-</h2>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Business Metrics Section -->
@@ -335,18 +324,25 @@
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
               <i class="bi bi-check2-square text-primary text-xl"></i>
-              <span class="font-medium text-primary">
-                <span x-text="getSelectedCount()"></span>
+              <span class="font-medium text-primary flex items-center gap-2">
+                <span class="badge badge-sm" :class="getSelectedCount() > 500 ? 'badge-warning' : 'badge-info'">
+                  <span x-text="getSelectedCount()"></span>
+                </span>
                 <span x-text="getSelectedCount() === 1 ? 'job' : 'jobs'"></span> selected
+                <span x-show="getSelectedCount() > 500" class="text-warning text-xs font-semibold">
+                  (Max: 500)
+                </span>
               </span>
             </div>
             <div class="flex items-center gap-2">
               <button @click="openBulkUpdateModal()"
+                      :disabled="bulkOperation.inProgress"
                       class="btn btn-primary btn-sm !text-white"
                       title="Update status for selected jobs">
                 <i class="bi bi-arrow-repeat"></i> Update Status
               </button>
               <button @click="confirmBulkDelete()"
+                      :disabled="bulkOperation.inProgress"
                       class="btn btn-error btn-sm !text-white"
                       title="Delete selected jobs (admin only)">
                 <i class="bi bi-trash"></i> Delete
@@ -1312,15 +1308,14 @@
                   x-model="editingJob.status"
                 >
                   <option value="">Select Status</option>
-                  <option value="Completed/To be Filed">Completed/To be Filed</option>
+                  <option value="On Hold/Pending Estimate">On Hold/Pending Estimate</option>
+                  <option value="Needs Fieldwork">Needs Fieldwork</option>
                   <option value="Fieldwork Complete">Fieldwork Complete</option>
                   <option value="To Be Printed">To Be Printed</option>
-                  <option value="Survey Complete/Invoice Sent">Survey Complete/Invoice Sent</option>
-                  <option value="Needs Fieldwork">Needs Fieldwork</option>
                   <option value="Set/Flag Pins">Set/Flag Pins</option>
-                  <option value="On Hold/Pending Estimate">On Hold/Pending Estimate</option>
+                  <option value="Survey Complete/Invoice Sent">Survey Complete/Invoice Sent</option>
+                  <option value="Completed/To be Filed">Completed/To be Filed</option>
                   <option value="Site Plan">Site Plan</option>
-                  <option value="Quote Available">Quote Available</option>
                 </select>
               </div>
               <div class="mb-3">
@@ -1608,6 +1603,7 @@
           nextId: 1,
 
           add(message, type = "info", duration = 5000) {
+            const actualDuration = type === 'error' ? 10000 : duration;
             const notification = {
               id: this.nextId++,
               message,
@@ -1623,7 +1619,7 @@
 
             setTimeout(() => {
               this.remove(notification.id);
-            }, duration);
+            }, actualDuration);
           },
           
           // notifications store functions continue below
@@ -1687,15 +1683,14 @@
           deletedJobSearch: "",
           // Multi-status filter
           statuses: [
-            "Completed/To be Filed",
+            "On Hold/Pending Estimate",
+            "Needs Fieldwork",
             "Fieldwork Complete",
             "To Be Printed",
-            "Survey Complete/Invoice Sent",
-            "Needs Fieldwork",
             "Set/Flag Pins",
-            "On Hold/Pending Estimate",
+            "Survey Complete/Invoice Sent",
+            "Completed/To be Filed",
             "Site Plan",
-            "Quote Available",
           ],
           selectedStatuses: [],
           statusDropdownOpen: false,
@@ -2455,7 +2450,6 @@
                 this.stats.invoiceSent = (sc["Survey Complete/Invoice Sent"] || 0) + (sc["Invoice Sent"] || 0);
                 this.stats.ongoingSitePlan = (sc["Site Plan"] || 0) + (sc["Ongoing Site"] || 0);
                 this.stats.onHoldPending = (sc["On Hold/Pending Estimate"] || 0) + (sc["On Hold"] || 0);
-                this.stats.estimateAvailable = (sc["Quote Available"] || 0);
 
                 this.stats.uniqueClients = data.unique_clients || 0;
 
@@ -2536,7 +2530,17 @@
             if (checked && !exists) this.selectedStatuses.push(status);
             if (!checked && exists) this.selectedStatuses = this.selectedStatuses.filter(s => s !== status);
             localStorage.setItem('admin_status_filters', JSON.stringify(this.selectedStatuses));
-            this.filterJobs();
+            // When narrowing by status, make sure we have the full dataset so we don't miss older jobs
+            if (
+              this.selectedStatuses.length > 0 &&
+              this.selectedStatuses.length < this.statuses.length &&
+              !this.jobsLoadedAll &&
+              !this._loadingJobs
+            ) {
+              this.loadJobs(true, 999999).finally(() => this.filterJobs());
+            } else {
+              this.filterJobs();
+            }
           },
           selectAllStatuses() {
             this.selectedStatuses = [...this.statuses];
@@ -2713,7 +2717,6 @@
               "Survey Complete/Invoice Sent": "badge-invoice-sent",
               "Site Plan": "badge-ongoing-plan",
               "On Hold/Pending Estimate": "badge-on-hold",
-              "Quote Available": "badge-estimate",
               // Backward compatibility with old status names
               "Completed": "badge-completed",
               "Set Pins": "badge-set-flag",
@@ -2880,6 +2883,13 @@
             const jobNumbers = Array.from(this.selectedJobs);
             const count = jobNumbers.length;
 
+            if (count > 500) {
+              const confirmed = confirm(`You are updating ${count} jobs. This exceeds the recommended limit of 500 and may take 15-20 seconds. Continue?`);
+              if (!confirmed) {
+                return;
+              }
+            }
+
             this.bulkOperation.inProgress = true;
 
             try {
@@ -2928,10 +2938,15 @@
               }
             } catch (error) {
               console.error('Bulk update error:', error);
-              Alpine.store('notifications').add(
-                error.message || 'Failed to update jobs',
-                'error'
-              );
+              this.closeBulkUpdateModal();
+              this.bulkOperation.inProgress = false;
+
+              setTimeout(() => {
+                Alpine.store('notifications').add(
+                  error.message || 'Failed to update jobs',
+                  'error'
+                );
+              }, 300);
             } finally {
               this.bulkOperation.inProgress = false;
             }
@@ -3014,10 +3029,14 @@
               }
             } catch (error) {
               console.error('Bulk delete error:', error);
-              Alpine.store('notifications').add(
-                error.message || 'Failed to delete jobs',
-                'error'
-              );
+              this.hideConfirmModal();
+
+              setTimeout(() => {
+                Alpine.store('notifications').add(
+                  error.message || 'Failed to delete jobs',
+                  'error'
+                );
+              }, 300);
             }
           },
 

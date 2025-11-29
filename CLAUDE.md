@@ -71,7 +71,6 @@ The main entity representing field service jobs.
 - `Set/Flag Pins` (Red)
 - `On Hold/Pending Estimate` (Grey)
 - `Site Plan` (Pink)
-- `Quote Available` (Teal)
 
 ### FieldWork Table (`fieldwork`)
 
