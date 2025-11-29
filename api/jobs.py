@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_PER_PAGE = 1000  # Default to 1000 - reasonable for datasets with ~1000 entries
 MAX_PER_PAGE = 2000
 MAX_SEARCH_RESULTS = 500  # Limit search results to prevent huge responses
+MAX_BULK_OPERATION_SIZE = 500  # Maximum jobs per bulk update/delete operation
 
 @api_bp.route("/jobs", methods=["GET"])
 @login_required
@@ -545,8 +546,8 @@ def bulk_update_status():
         }), 400
 
     # Limit bulk operations to reasonable size
-    if len(job_numbers) > 100:
-        return jsonify({"error": "Maximum 100 jobs per bulk update"}), 400
+    if len(job_numbers) > MAX_BULK_OPERATION_SIZE:
+        return jsonify({"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk update"}), 400
 
     # Track results
     successes = []
@@ -627,8 +628,8 @@ def bulk_delete_jobs():
         return jsonify({"error": "job_numbers array required"}), 400
 
     # Limit bulk operations
-    if len(job_numbers) > 100:
-        return jsonify({"error": "Maximum 100 jobs per bulk delete"}), 400
+    if len(job_numbers) > MAX_BULK_OPERATION_SIZE:
+        return jsonify({"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk delete"}), 400
 
     # Track results
     successes = []
