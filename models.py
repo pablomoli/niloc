@@ -48,14 +48,14 @@ class Job(db.Model):
     parcel_data = db.Column(db.JSON, nullable=True)
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Foreign keys (must be defined before relationships)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     deleted_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     # Soft deletion fields
-    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # NEW: Enhanced deletion field
     original_job_number = db.Column(db.String(50), nullable=True)
@@ -243,7 +243,7 @@ class FieldWork(db.Model):
     crew = db.Column(db.String(100))
     drone_card = db.Column(db.String(100))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
@@ -266,8 +266,8 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default="user")
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    last_login = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_login = db.Column(db.DateTime(timezone=True))
     last_ip = db.Column(db.String(45))
 
     def to_dict(self):
@@ -288,7 +288,7 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     color = db.Column(db.String(7), default="#007bff")
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         """Convert tag to dictionary (optimized)"""
