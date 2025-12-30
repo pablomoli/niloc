@@ -30,7 +30,7 @@
 - Scope: one feature/fix per PR; keep diffs focused and self‑contained.
 
 ## Security & Configuration
-- Required env vars: `DATABASE_URL`, `SESSION_KEY`, optional `GOOGLE_GEOCODING_API_KEY`.
+- Required env vars: `DATABASE_URL`, `SESSION_KEY`, optional `GOOGLE_GEOCODING_API_KEY`, `OPENROUTE_API_KEY`.
 - Never commit secrets or `.env`. Use timeouts for network calls (see geocoding logic) and prefer soft‑delete helpers in models over hard deletes.
 
 ## Agent Collaboration Workflow

@@ -1,0 +1,426 @@
+/**
+ * Route Planner Styles for Epic Map
+ */
+
+/* Standalone Route FAB Button */
+.route-fab {
+    position: fixed;
+    bottom: 100px;
+    right: 25px; /* Align with main FAB center */
+    width: 48px;
+    height: 48px;
+    background: #d8197f;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(216, 25, 127, 0.4);
+    outline: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 999;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.route-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 16px rgba(216, 25, 127, 0.5);
+}
+
+.route-fab:active {
+    transform: scale(0.95);
+}
+
+.route-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    background: #22c55e;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Office Center Button */
+.office-fab {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    outline: 2px solid rgba(255, 255, 255, 0.35);
+    transition: box-shadow 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+.office-fab:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 14px 24px rgba(0, 0, 0, 0.32);
+}
+
+.office-fab:active {
+    transform: scale(0.95);
+    filter: brightness(0.92);
+}
+
+/* Side Panel Styles */
+.route-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 340px;
+    height: 100vh;
+    height: 100dvh;
+    background: white;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    z-index: 1500;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.route-panel.open {
+    transform: translateX(0);
+}
+
+/* Collapsed state - fully hide panel */
+.route-panel.collapsed {
+    transform: translateX(100%);
+}
+
+.route-panel.collapsed .route-panel-header,
+.route-panel.collapsed .route-panel-body,
+.route-panel.collapsed .route-panel-footer {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Collapse tab - floats independently, visible when .visible class added */
+.route-panel-collapse-tab {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 80px;
+    background: white;
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, background 0.2s ease;
+    color: #d8197f;
+    font-size: 18px;
+    z-index: 1500;
+}
+
+.route-panel-collapse-tab:hover {
+    background: #fdf2f8;
+}
+
+.route-panel-collapse-tab.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.collapse-tab-count {
+    font-size: 14px;
+    font-weight: 700;
+    color: #d8197f;
+    background: #fdf2f8;
+    border-radius: 10px;
+    padding: 2px 8px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Segment duration labels on route */
+.route-segment-label {
+    background: transparent !important;
+    border: none !important;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+}
+
+.segment-duration {
+    background: rgba(255, 255, 255, 0.95);
+    color: #d8197f;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    border: 1px solid rgba(216, 25, 127, 0.2);
+    text-align: center;
+    display: inline-block;
+}
+
+.route-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+}
+
+.route-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+    transition: opacity 0.2s ease;
+}
+
+.route-panel-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Mobile: full width panel */
+@media (max-width: 640px) {
+    .route-panel {
+        width: 100%;
+    }
+
+    .route-panel-collapse-tab {
+        width: 52px;
+        height: 72px;
+    }
+
+    .route-fab {
+        bottom: 90px;
+        right: 16px;
+    }
+}
+
+/* Tablet and up: panel leaves room for map interaction */
+@media (min-width: 641px) {
+    .route-panel {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+}
+
+/* Route stop markers on map */
+.route-stop-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.route-stop-number {
+    width: 28px;
+    height: 28px;
+    background: #d8197f;
+    border: 3px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.route-stop-number.office {
+    width: 32px;
+    height: 32px;
+    background: #22c55e;
+    font-size: 14px;
+}
+
+.route-office-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.route-gps-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.route-gps-dot {
+    width: 30px;
+    height: 30px;
+    background: #2563eb;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
+}
+
+/* Route polyline pulse animation */
+@keyframes routePulse {
+    0%, 100% {
+        stroke-opacity: 0.8;
+    }
+    50% {
+        stroke-opacity: 0.5;
+    }
+}
+
+/* Dragging states for stops list */
+.route-stop-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.route-stop-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: #fdf2f8 !important;
+    border-color: #d8197f !important;
+}
+
+.route-stop-item.drop-above {
+    border-top: 3px solid #d8197f !important;
+    margin-top: -1px;
+}
+
+.route-stop-item.drop-below {
+    border-bottom: 3px solid #d8197f !important;
+    margin-bottom: -1px;
+}
+
+/* Placeholder for touch drag */
+.route-stop-placeholder {
+    background: #fdf2f8;
+    border: 2px dashed #d8197f;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+/* Drag handle cursor */
+.drag-handle {
+    cursor: grab;
+    padding: 4px;
+    margin: -4px;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Mobile touch area enhancement */
+@media (max-width: 768px) {
+    .route-stop-item {
+        padding: 1rem;
+    }
+
+    .drag-handle {
+        padding: 8px;
+        margin: -8px;
+    }
+
+    .drag-handle i {
+        font-size: 1.5rem;
+    }
+}
+
+/* Selection indicator badge */
+.route-selection-badge {
+    position: fixed;
+    bottom: 100px;
+    right: 24px;
+    background: #d8197f;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(216, 25, 127, 0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.route-selection-badge button {
+    background: white;
+    color: #d8197f;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.route-selection-badge button:hover {
+    background: #fdf2f8;
+}
+
+/* Optimize button animation */
+@keyframes optimizePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(216, 25, 127, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(216, 25, 127, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(216, 25, 127, 0);
+    }
+}
+
+#routePlannerModal .btn-outline:hover {
+    animation: optimizePulse 1s ease infinite;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}

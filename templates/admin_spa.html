@@ -69,6 +69,12 @@
                 :class="{'tab-active': activeTab === 'tags'}">
           <i class="bi bi-tags"></i> <span class="ml-2">Tags</span>
         </button>
+        <button role="tab"
+                class="tab"
+                @click="activateTab('pois')"
+                :class="{'tab-active': activeTab === 'pois'}">
+          <i class="bi bi-geo-alt"></i> <span class="ml-2">POIs</span>
+        </button>
       </div>
 
       <!-- Dashboard Tab -->
@@ -859,6 +865,183 @@
         </div>
       </div>
 
+      <!-- POIs Tab -->
+      <div x-show="activeTab === 'pois'" class="space-y-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-semibold">Manage Points of Interest</h3>
+        </div>
+
+        <!-- Create New POI Card -->
+        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-[200px]">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">POI Name</span>
+              </label>
+              <input
+                class="input input-bordered w-full"
+                placeholder="Enter POI name"
+                x-model="newPoi.name"
+                @keydown.enter.prevent="createPoi()"
+              >
+            </div>
+            <div class="flex-1 min-w-[250px]">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Address</span>
+              </label>
+              <input
+                class="input input-bordered w-full"
+                placeholder="Enter address"
+                x-model="newPoi.address"
+                @keydown.enter.prevent="createPoi()"
+              >
+            </div>
+            <div class="w-28">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Icon</span>
+              </label>
+              <div class="relative">
+                  <button
+                  type="button"
+                  class="btn btn-outline w-full h-10 flex items-center justify-center gap-2"
+                  @click="openPoiIconPicker({ anchorEl: $event.currentTarget, value: newPoi.icon || 'bi-geo-alt', choices: poiIconChoices, size: 'large', onSelect: (icon) => { newPoi.icon = icon; } })"
+                >
+                  <i :class="`bi ${newPoi.icon || 'bi-geo-alt'} text-xl`"></i>
+                  <i class="bi bi-chevron-down text-xs opacity-60"></i>
+                </button>
+              </div>
+            </div>
+            <div class="w-32">
+              <label class="label py-1">
+                <span class="label-text text-sm font-medium">Color</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="color"
+                  class="absolute opacity-0 w-0 h-0 pointer-events-none"
+                  x-model="newPoi.color"
+                  x-ref="newPoiColorInput"
+                >
+                <div
+                  class="h-10 w-full rounded border border-base-300 flex items-center justify-center text-xs font-mono text-white shadow-sm px-2 cursor-pointer hover:opacity-90 transition-opacity"
+                  :style="`background-color: ${newPoi.color || '#3b82f6'}`"
+                  @click="$refs.newPoiColorInput.click()"
+                >
+                  <span x-text="(newPoi.color || '#3b82f6').toUpperCase()"></span>
+                </div>
+              </div>
+            </div>
+            <div class="pb-0">
+              <button
+                class="btn btn-primary !text-white"
+                @click="createPoi()"
+                :disabled="!newPoi.name || !newPoi.name.trim() || !newPoi.address || !newPoi.address.trim() || _creatingPoi"
+                title="Create POI"
+              >
+                <span class="loading loading-spinner loading-sm" x-show="_creatingPoi"></span>
+                <i class="bi bi-plus-lg" x-show="!_creatingPoi"></i>
+                Create POI
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- POIs Table -->
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-visible">
+          <div class="overflow-x-auto overflow-y-visible">
+            <table class="table w-full">
+              <thead class="bg-base-200">
+                <tr>
+                  <th class="w-1/4">Name</th>
+                  <th class="w-1/3">Address</th>
+                  <th class="w-24">Icon</th>
+                  <th class="w-28">Color</th>
+                  <th class="w-28 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="poi in pois" :key="poi.id">
+                  <tr class="hover:bg-base-200/50 transition-colors">
+                    <td>
+                      <input
+                        class="input input-bordered input-sm w-full"
+                        x-model="poi.name"
+                        @keydown.enter.prevent="savePoi(poi)"
+                      >
+                    </td>
+                    <td>
+                      <input
+                        class="input input-bordered input-sm w-full"
+                        x-model="poi.address"
+                        @keydown.enter.prevent="savePoi(poi)"
+                      >
+                    </td>
+                    <td>
+                      <div class="relative">
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-sm h-8 px-3 flex items-center justify-center gap-1 border border-base-300"
+                          @click="openPoiIconPicker({ anchorEl: $event.currentTarget, value: poi.icon || 'bi-geo-alt', choices: poiIconChoices, size: 'small', onSelect: (icon) => { poi.icon = icon; savePoi(poi); } })"
+                        >
+                          <i :class="`bi ${poi.icon || 'bi-geo-alt'} text-lg`"></i>
+                          <i class="bi bi-chevron-down text-xs opacity-50"></i>
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="relative">
+                        <input
+                          type="color"
+                          class="absolute opacity-0 w-0 h-0 pointer-events-none"
+                          x-model="poi.color"
+                          @change="savePoi(poi)"
+                          :id="`poiColorInput_${poi.id}`"
+                        >
+                        <div
+                          class="h-8 w-24 rounded border border-base-300 flex items-center justify-center text-xs font-mono text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                          :style="`background-color: ${poi.color}`"
+                          @click="document.getElementById(`poiColorInput_${poi.id}`).click()"
+                        >
+                          <span x-text="poi.color.toUpperCase()"></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="btn btn-sm btn-ghost"
+                          @click="savePoi(poi)"
+                          title="Save Changes"
+                          :disabled="_savingPoi === poi.id"
+                        >
+                          <span class="loading loading-spinner loading-xs" x-show="_savingPoi === poi.id"></span>
+                          <i class="bi bi-save" x-show="_savingPoi !== poi.id"></i>
+                        </button>
+                        <button
+                          class="btn btn-sm btn-error btn-outline"
+                          @click="deletePoi(poi)"
+                          title="Delete POI"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="!pois || pois.length === 0">
+                  <tr>
+                    <td colspan="5" class="text-center py-8 text-gray-500">
+                      No POIs yet. Create your first point of interest above.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Deleted Jobs Tab -->
       <div x-show="activeTab === 'deleted'" class="space-y-4">
         <!-- Header -->
@@ -1589,6 +1772,7 @@
       </div>
     </div>
 
+    <div id="poi-icon-portal" class="fixed inset-0 z-[9999] hidden"></div>
 
 {% endblock %}
 
@@ -1596,6 +1780,238 @@
     <!-- Admin JavaScript -->
     <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
     <script>
+      (function () {
+        const sizeConfigs = {
+          large: {
+            panelWidth: 150,
+            panelHeight: 160,
+            gapClass: "gap-1.5",
+            buttonClass: "w-11 h-11",
+            iconClass: "text-xl"
+          },
+          small: {
+            panelWidth: 138,
+            panelHeight: 136,
+            gapClass: "gap-1",
+            buttonClass: "w-10 h-10",
+            iconClass: "text-lg"
+          }
+        };
+
+        const state = {
+          portal: null,
+          panel: null,
+          active: null,
+          onKey: null,
+          onScroll: null,
+          onResize: null
+        };
+
+        function getPortal() {
+          if (state.portal) return state.portal;
+          state.portal = document.getElementById("poi-icon-portal");
+          return state.portal;
+        }
+
+        function clampPosition({ left, top, width, height }) {
+          const padding = 8;
+          const maxLeft = window.innerWidth - width - padding;
+          const maxTop = window.innerHeight - height - padding;
+          return {
+            left: Math.max(padding, Math.min(left, maxLeft)),
+            top: Math.max(padding, Math.min(top, maxTop))
+          };
+        }
+
+        function positionPanel() {
+          if (!state.active || !state.panel) return;
+          const { anchorEl, config } = state.active;
+          if (!anchorEl || !anchorEl.getBoundingClientRect) {
+            closePoiIconPicker();
+            return;
+          }
+          const rect = anchorEl.getBoundingClientRect();
+          const width = config.panelWidth;
+          const height = config.panelHeight;
+          let left = rect.left;
+          let top = rect.bottom + 8;
+
+          if (left + width > window.innerWidth - 8) {
+            left = rect.right - width;
+          }
+          if (top + height > window.innerHeight - 8) {
+            top = rect.top - height - 8;
+          }
+
+          const clamped = clampPosition({ left, top, width, height });
+          state.panel.style.left = `${clamped.left}px`;
+          state.panel.style.top = `${clamped.top}px`;
+          state.panel.style.width = `${width}px`;
+        }
+
+        function attachGlobalListeners() {
+          state.onKey = (event) => {
+            if (event.key === "Escape") {
+              closePoiIconPicker();
+            }
+          };
+          state.onScroll = () => {
+            positionPanel();
+          };
+          state.onResize = () => {
+            positionPanel();
+          };
+          window.addEventListener("keydown", state.onKey);
+          window.addEventListener("scroll", state.onScroll, true);
+          window.addEventListener("resize", state.onResize);
+        }
+
+        function detachGlobalListeners() {
+          if (state.onKey) window.removeEventListener("keydown", state.onKey);
+          if (state.onScroll) window.removeEventListener("scroll", state.onScroll, true);
+          if (state.onResize) window.removeEventListener("resize", state.onResize);
+          state.onKey = null;
+          state.onScroll = null;
+          state.onResize = null;
+        }
+
+        function renderPortal({ value, onSelect, choices, config }) {
+          const portal = getPortal();
+          if (!portal) return;
+          const baseButtonClass = "rounded-lg flex items-center justify-center hover:bg-base-200 transition-colors";
+          const selectedClass = "bg-primary/10 ring-2 ring-primary";
+          const panelClass = "fixed bg-base-100 border border-base-300 rounded-lg shadow-xl p-2 z-50";
+
+          const visibleChoices = Array.isArray(choices) ? choices.slice(0, Math.max(choices.length - 1, 0)) : [];
+          const buttons = visibleChoices
+            .map((icon) => {
+              const activeClass = icon === value ? selectedClass : "bg-base-100";
+              return `
+                <button
+                  type="button"
+                  class="${config.buttonClass} ${baseButtonClass} ${activeClass}"
+                  data-poi-icon="${icon}"
+                >
+                  <i class="bi ${icon} ${config.iconClass}"></i>
+                </button>
+              `;
+            })
+            .join("");
+
+          portal.innerHTML = `
+            <div class="fixed inset-0" data-poi-backdrop></div>
+            <div class="${panelClass}" data-poi-panel>
+              <div class="grid grid-cols-3 ${config.gapClass}">
+                ${buttons}
+                <button
+                  type="button"
+                  class="${config.buttonClass} ${baseButtonClass} bg-base-100"
+                  data-poi-custom-toggle
+                >
+                  <span class="text-xl font-semibold leading-none">+</span>
+                </button>
+              </div>
+              <div class="mt-2 hidden" data-poi-custom-input>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="text"
+                    class="input input-bordered input-sm w-full"
+                    placeholder="bi-geo-alt"
+                    data-poi-custom-field
+                  >
+                  <button type="button" class="btn btn-sm btn-primary" data-poi-custom-apply>Apply</button>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Enter a Bootstrap icon name, e.g. bi-geo-alt</div>
+              </div>
+            </div>
+          `;
+          portal.classList.remove("hidden");
+          state.panel = portal.querySelector("[data-poi-panel]");
+
+          const backdrop = portal.querySelector("[data-poi-backdrop]");
+          if (backdrop) {
+            backdrop.addEventListener("click", closePoiIconPicker);
+          }
+
+          portal.querySelectorAll("[data-poi-icon]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const icon = button.getAttribute("data-poi-icon");
+              if (onSelect) onSelect(icon);
+              closePoiIconPicker();
+            });
+          });
+
+          const customToggle = portal.querySelector("[data-poi-custom-toggle]");
+          const customInputWrap = portal.querySelector("[data-poi-custom-input]");
+          const customField = portal.querySelector("[data-poi-custom-field]");
+          const customApply = portal.querySelector("[data-poi-custom-apply]");
+
+          function applyCustomIcon() {
+            if (!customField) return;
+            let icon = (customField.value || "").trim();
+            if (!icon) return;
+            if (!icon.startsWith("bi-")) {
+              icon = `bi-${icon}`;
+            }
+            // Validate icon name to prevent XSS via class attribute injection
+            const ICON_REGEX = /^bi-[a-z0-9-]+$/i;
+            if (!ICON_REGEX.test(icon)) {
+              alert("Invalid icon name. Use only letters, numbers, and hyphens.");
+              return;
+            }
+            if (onSelect) onSelect(icon);
+            closePoiIconPicker();
+          }
+
+          if (customToggle && customInputWrap) {
+            customToggle.addEventListener("click", () => {
+              customInputWrap.classList.toggle("hidden");
+              if (!customInputWrap.classList.contains("hidden") && customField) {
+                customField.focus();
+                customField.select();
+              }
+            });
+          }
+
+          if (customField) {
+            customField.addEventListener("keydown", (event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applyCustomIcon();
+              }
+            });
+          }
+
+          if (customApply) {
+            customApply.addEventListener("click", applyCustomIcon);
+          }
+        }
+
+        function openPoiIconPicker({ anchorEl, value, onSelect, choices, size }) {
+          if (!anchorEl) return;
+          if (!Array.isArray(choices) || choices.length === 0) return;
+          closePoiIconPicker();
+          const config = sizeConfigs[size] || sizeConfigs.large;
+          state.active = { anchorEl, value, onSelect, choices, config };
+          renderPortal({ value, onSelect, choices, config });
+          positionPanel();
+          attachGlobalListeners();
+        }
+
+        function closePoiIconPicker() {
+          const portal = getPortal();
+          if (!portal) return;
+          portal.classList.add("hidden");
+          portal.innerHTML = "";
+          state.panel = null;
+          state.active = null;
+          detachGlobalListeners();
+        }
+
+        window.openPoiIconPicker = openPoiIconPicker;
+        window.closePoiIconPicker = closePoiIconPicker;
+      })();
+
       document.addEventListener("alpine:init", () => {
         // Notifications Store (reuse from main app)
         Alpine.store("notifications", {
@@ -1652,6 +2068,23 @@
           deletedSortField: 'deleted_at',
           deletedSortAsc: false,
           tags: [],
+          pois: [],
+          poiIconChoices: [
+            'bi-building',
+            'bi-geo-alt',
+            'bi-house',
+            'bi-briefcase',
+            'bi-hospital',
+            'bi-cone-striped',
+            'bi-tree',
+            'bi-bank',
+            'bi-pin-map'
+          ],
+          poisLoaded: false,
+          _loadingPois: false,
+          _creatingPoi: false,
+          _savingPoi: null,
+          newPoi: { name: '', address: '', icon: 'bi-geo-alt', color: '#3b82f6' },
           dashboardLoaded: false,
           jobsLoaded: false,
           usersLoaded: false,
@@ -1875,6 +2308,11 @@
             if (tab === 'tags') {
               if (this.tags.length === 0) {
                 this.loadTags(true);
+              }
+            }
+            if (tab === 'pois') {
+              if (!this.poisLoaded) {
+                this.loadPois();
               }
             }
           },
@@ -2196,6 +2634,167 @@
                 await this.loadTags(true, true);
                 Alpine.store('notifications').add('Tag deleted','success');
               } catch (e) { console.error(e); Alpine.store('notifications').add(e.message,'error'); }
+            }, 'Delete');
+          },
+
+          // POI Management
+          _originalPoiAddresses: {}, // Store original addresses for change detection
+
+          async loadPois(force = false) {
+            if (this._loadingPois) return;
+            if (this.poisLoaded && !force) return;
+            this._loadingPois = true;
+            try {
+              const resp = await fetch('/api/pois');
+              if (!resp.ok) throw new Error('Failed to load POIs');
+              const data = await resp.json();
+              this.pois = Array.isArray(data) ? data : [];
+              // Store original addresses for change detection
+              this._originalPoiAddresses = {};
+              this.pois.forEach(poi => {
+                this._originalPoiAddresses[poi.id] = poi.address;
+              });
+              this.poisLoaded = true;
+            } catch (e) {
+              console.error('Failed to load POIs:', e);
+              Alpine.store('notifications').add('Failed to load POIs', 'error');
+              this.pois = [];
+            } finally {
+              this._loadingPois = false;
+            }
+          },
+
+          async geocodeAddress(address) {
+            try {
+              const resp = await fetch(`/api/geocode?address=${encodeURIComponent(address + ', Florida')}`);
+              if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error || 'Geocoding failed');
+              }
+              return await resp.json();
+            } catch (e) {
+              console.error('Geocoding error:', e);
+              throw e;
+            }
+          },
+
+          async createPoi() {
+            const name = (this.newPoi.name || '').trim();
+            const address = (this.newPoi.address || '').trim();
+            if (!name || !address) return;
+
+            this._creatingPoi = true;
+            try {
+              // Geocode the address first
+              let geocodeResult;
+              try {
+                geocodeResult = await this.geocodeAddress(address);
+              } catch (e) {
+                Alpine.store('notifications').add('Could not geocode address: ' + e.message, 'error');
+                return;
+              }
+
+              // Create the POI with geocoded coordinates
+              const payload = {
+                name: name,
+                address: geocodeResult.formatted_address || address,
+                lat: geocodeResult.lat,
+                lng: geocodeResult.lng,
+                icon: (this.newPoi.icon || 'bi-geo-alt').trim(),
+                color: (this.newPoi.color || '#3b82f6').trim()
+              };
+
+              const resp = await fetch('/api/pois', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              const data = await resp.json();
+              if (!resp.ok) throw new Error(data.error || 'Create failed');
+
+              // Reset form
+              this.newPoi = { name: '', address: '', icon: 'bi-geo-alt', color: '#3b82f6' };
+              await this.loadPois(true);
+              Alpine.store('notifications').add('POI created successfully', 'success');
+            } catch (e) {
+              console.error('Create POI error:', e);
+              Alpine.store('notifications').add(e.message, 'error');
+            } finally {
+              this._creatingPoi = false;
+            }
+          },
+
+          async savePoi(poi) {
+            if (!poi || !poi.id) return;
+            const name = (poi.name || '').trim();
+            const address = (poi.address || '').trim();
+            if (!name) {
+              Alpine.store('notifications').add('POI name is required', 'error');
+              return;
+            }
+
+            this._savingPoi = poi.id;
+            try {
+              // Check if address changed and needs re-geocoding
+              const originalAddress = this._originalPoiAddresses[poi.id] || '';
+              let lat = poi.lat;
+              let lng = poi.lng;
+
+              if (address && address !== originalAddress) {
+                // Address changed, re-geocode
+                try {
+                  const geocodeResult = await this.geocodeAddress(address);
+                  lat = geocodeResult.lat;
+                  lng = geocodeResult.lng;
+                  poi.address = geocodeResult.formatted_address || address;
+                } catch (e) {
+                  Alpine.store('notifications').add('Could not geocode new address: ' + e.message, 'error');
+                  return;
+                }
+              }
+
+              const payload = {
+                name: name,
+                address: poi.address,
+                lat: lat,
+                lng: lng,
+                icon: (poi.icon || 'bi-geo-alt').trim(),
+                color: (poi.color || '#3b82f6').trim()
+              };
+
+              const resp = await fetch(`/api/pois/${poi.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              const data = await resp.json();
+              if (!resp.ok) throw new Error(data.error || 'Save failed');
+
+              await this.loadPois(true);
+              Alpine.store('notifications').add('POI saved', 'success');
+            } catch (e) {
+              console.error('Save POI error:', e);
+              Alpine.store('notifications').add(e.message, 'error');
+            } finally {
+              this._savingPoi = null;
+            }
+          },
+
+          async deletePoi(poi) {
+            if (!poi || !poi.id) return;
+            this.showConfirm('Delete POI', `Delete '${poi.name}'?`, async () => {
+              try {
+                const resp = await fetch(`/api/pois/${poi.id}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Delete failed');
+                await this.loadPois(true);
+                Alpine.store('notifications').add('POI deleted', 'success');
+              } catch (e) {
+                console.error('Delete POI error:', e);
+                Alpine.store('notifications').add(e.message, 'error');
+              }
             }, 'Delete');
           },
 

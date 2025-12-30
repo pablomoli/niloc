@@ -232,6 +232,84 @@ function createStatusLegend() {
   return legend;
 }
 
+// =============================================================================
+// POI (Point of Interest) Marker Utilities
+// =============================================================================
+
+/**
+ * Generate SVG markup for a 32x32 circular POI marker.
+ *
+ * The generated SVG is a filled circle using the provided color and a contrasting stroke;
+ * when `isSelected` is true the stroke is red and thicker. Icons are overlaid separately
+ * by getPoiIcon().
+ *
+ * @param {string} color - Fill color for the circle (hex string, e.g., "#3b82f6").
+ * @param {boolean} isSelected - If true, use a red stroke and thicker border to indicate selection.
+ * @returns {string} SVG markup for a circular marker filled with `color` and stroked according to `isSelected`.
+ */
+function createPoiMarkerSVG(color = "#3b82f6", isSelected = false) {
+  const strokeColor = isSelected ? "#ff0000" : "#fff";
+  const strokeWidth = isSelected ? "3" : "2";
+
+  return `
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="14"
+              fill="${color}"
+              stroke="${strokeColor}"
+              stroke-width="${strokeWidth}"/>
+    </svg>
+  `;
+}
+
+/**
+ * Get Leaflet icon for a POI
+ * @param {string} icon - Bootstrap icon class (e.g., 'bi-building')
+ * @param {string} color - Hex color code
+ * @param {boolean} isSelected - Whether the marker is selected
+ * @returns {L.DivIcon} Leaflet DivIcon object
+ */
+function getPoiIcon(icon = "bi-geo-alt", color = "#3b82f6", isSelected = false) {
+  const svgContent = createPoiMarkerSVG(color, isSelected);
+  // Icon sits on colored background, use white for contrast
+  const iconColor = "#fff";
+
+  const html = `
+    <div class="poi-marker-wrapper ${isSelected ? 'selected' : ''}">
+      ${svgContent}
+      <i class="bi ${icon}" style="color: ${iconColor};"></i>
+    </div>
+  `;
+
+  return L.divIcon({
+    html: html,
+    className: `poi-marker ${isSelected ? "selected" : ""}`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
+}
+
+/**
+ * Create a Leaflet marker for a point of interest (POI).
+ *
+ * @param {Object} poi - POI data; must include `lat`, `lng`, and `name`. Optional fields: `icon`, `color`.
+ * @param {boolean} [isSelected=false] - Whether the marker should render in its selected state.
+ * @returns {L.Marker} The created Leaflet marker with `poiData` and `isPoi` properties set.
+ */
+function createPoiMarker(poi, isSelected = false) {
+  const marker = L.marker([poi.lat, poi.lng], {
+    icon: getPoiIcon(poi.icon, poi.color, isSelected),
+    title: poi.name,
+    zIndexOffset: 500, // Keep POIs above job markers
+  });
+
+  // Store POI data on marker for easy access
+  marker.poiData = poi;
+  marker.isPoi = true;
+
+  return marker;
+}
+
 /**
  * Helper function to determine if a color is light
  * @param {string} color - Hex color code
@@ -247,7 +325,10 @@ function isLightColor(color) {
 }
 
 /**
- * Add marker styles to the page
+ * Injects marker-related CSS rules into the document head.
+ *
+ * Adds styles used by Epic markers, temporary/search/user-location markers,
+ * POI markers and their tooltips, status filter buttons, and related animations.
  */
 function addMarkerStyles() {
   const style = document.createElement("style");
@@ -373,6 +454,65 @@ function addMarkerStyles() {
             stroke-width: 1;
             stroke-opacity: 0.3;
         }
+
+        /* POI Marker Styles */
+        .poi-marker {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .poi-marker-wrapper {
+            position: relative;
+            width: 32px;
+            height: 32px;
+        }
+
+        .poi-marker-wrapper svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .poi-marker-wrapper i.bi {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            font-style: normal;
+            font-weight: normal;
+            line-height: 1;
+            z-index: 3;
+            pointer-events: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .poi-marker-wrapper.selected {
+            filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.6));
+        }
+
+        .poi-marker.selected .poi-marker-wrapper {
+            filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.6));
+        }
+
+        /* POI tooltip styling - clean floating pill */
+        .poi-tooltip {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: none !important;
+            border-radius: 16px !important;
+            padding: 6px 12px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #333 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+            white-space: nowrap !important;
+        }
+
+        .poi-tooltip::before {
+            display: none !important;
+        }
     `;
   document.head.appendChild(style);
 }
@@ -393,4 +533,8 @@ window.MarkerUtils = {
   createStatusFilters,
   createStatusLegend,
   isLightColor,
+  // POI marker utilities
+  createPoiMarkerSVG,
+  getPoiIcon,
+  createPoiMarker,
 };

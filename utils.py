@@ -5,7 +5,6 @@ import logging
 from sqlalchemy import text
 from flask import current_app as app
 from models import db
-from pyproj import Transformer
 
 logger = logging.getLogger(__name__)
 

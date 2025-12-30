@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ static_version }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/fab-menu.css') }}?v={{ static_version }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}?v={{ static_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/route-planner.css') }}?v={{ static_version }}">
 {% endblock %}
 
 {% block body_attrs %}x-data data-theme="epicmap"{% endblock %}
@@ -38,6 +39,15 @@
     <!-- Mobile-First Notification Container -->
     <div id="notification-container" class="notification-container"></div>
     
+    <!-- Office Center Button (bottom left, above location button) -->
+    <button class="btn btn-circle office-fab fixed bottom-24 left-5 w-14 h-14 z-[1000]"
+            type="button"
+            aria-label="Center map on office"
+            title="Center on Office"
+            onclick="centerOnOffice()">
+        <i class="bi bi-building text-lg" aria-hidden="true"></i>
+    </button>
+
     <!-- Standalone Location Button (bottom left) -->
     <button class="btn btn-circle btn-success location-fab fixed bottom-5 left-5 w-14 h-14 z-[1000]"
             type="button"
@@ -47,7 +57,24 @@
         <i class="bi bi-crosshair text-lg" aria-hidden="true"></i>
         <div class="tooltip tooltip-right" data-tip="Center on Location"></div>
     </button>
-    
+
+    <!-- Route Planning FAB (bottom right, above main FAB) - appears when 1+ stops selected -->
+    <button x-data="routeFab()"
+            x-show="selectedCount >= 1"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-75"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-75"
+            class="route-fab"
+            type="button"
+            aria-label="Plan route with selected jobs"
+            @click="openRoutePlanner()">
+        <i class="bi bi-signpost-split" aria-hidden="true"></i>
+        <span class="route-fab-badge" x-text="selectedCount"></span>
+    </button>
+
     <!-- FAB Button with Arc Menu -->
     <div class="fab-container" x-data="fabMenu()">
         <!-- Secondary Action Buttons (hidden by default) -->
@@ -78,7 +105,7 @@
                     @click="openAdvancedSearch()">
                 <i class="bi bi-search-heart" aria-hidden="true"></i>
             </button>
-            
+
         </div>
         
         <!-- Main FAB Button -->
@@ -403,6 +430,7 @@
 <script src="{{ url_for('static', filename='js/simple-modal.js') }}"></script>
 <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fab-menu.js') }}"></script>
+<script src="{{ url_for('static', filename='js/route-planner.js') }}"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 <script>
   document.addEventListener('alpine:init', () => {

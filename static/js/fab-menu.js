@@ -3,7 +3,12 @@
  * Handles the floating action button with arc menu pattern
  */
 
-// FAB Menu Alpine Component
+/**
+ * Create the Alpine.js FAB menu component that manages FAB state, enhanced search, filters, map layer controls, and route-planning helpers for the Epic Map UI.
+ *
+ * The returned object contains reactive properties (menu and sub-menu flags, search inputs, filter selections, layer state, tag/status lists, and selected job count) and methods to operate on them (initialization, tag/status toggles, search actions, layer controls, and route planner integration). The `selectedJobCount` includes both selected jobs and POIs and is kept in sync via events and polling.
+ *
+ * @returns {Object} An Alpine.js component object exposing state and methods for the FAB menu UI, enhanced search, filters, map layer controls, and route-planning actions.
 function fabMenu() {
     return {
         menuOpen: false,
@@ -33,8 +38,24 @@ function fabMenu() {
         countiesVisible: false,
         useClustering: true,
         clusteringSupported: true,
-        
+        selectedJobCount: 0, // Track selected jobs for route planning button (includes POIs)
+
         init() {
+            // Update selected job count periodically and on events (includes both jobs and POIs)
+            const updateSelectedCount = () => {
+                const jobCount = window.AppState?.selectedJobs?.size || 0;
+                const poiCount = window.AppState?.selectedPois?.size || 0;
+                this.selectedJobCount = jobCount + poiCount;
+            };
+
+            // Initial update
+            updateSelectedCount();
+
+            // Listen for selection changes
+            document.addEventListener('jobSelectionChanged', updateSelectedCount);
+
+            // Also poll periodically as fallback (every 500ms)
+            setInterval(updateSelectedCount, 500);
             // Store reference to this component for event handlers
             const self = this;
             
@@ -530,6 +551,64 @@ function fabMenu() {
             console.log('Available statuses:', this.availableStatuses);
             console.log('AppState jobs count:', window.AppState?.allJobs?.length || 0);
             console.log('Active filters:', Array.from(window.activeStatusFilters || []));
+        },
+
+        // Route Planning Methods
+        hasRouteableSelection() {
+            return this.selectedJobCount >= 2;
+        },
+
+        getSelectedCount() {
+            return this.selectedJobCount;
+        },
+
+        openRoutePlanner() {
+            this.menuOpen = false;
+            if (window.RoutePlanner) {
+                window.RoutePlanner.show();
+            } else if (window.showNotification) {
+                window.showNotification('Route planner not available', 'error');
+            }
+        }
+    };
+}
+
+/**
+ * Alpine component for a standalone route FAB that tracks selected jobs/POIs and opens the route planner.
+ *
+ * @returns {{selectedCount: number, init: function(): void, updateCount: function(): void, openRoutePlanner: function(): void}} An Alpine component object with:
+ * - `selectedCount`: current number of selected jobs and POIs,
+ * - `init()`: initializes event listeners and polling to keep `selectedCount` up to date,
+ * - `updateCount()`: recalculates `selectedCount` from `window.AppState`,
+ * - `openRoutePlanner()`: opens the global `RoutePlanner` with the selected jobs or shows an error notification if unavailable.
+ */
+function routeFab() {
+    return {
+        selectedCount: 0,
+
+        init() {
+            // Update selected count on init
+            this.updateCount();
+
+            // Listen for selection changes
+            document.addEventListener('jobSelectionChanged', () => this.updateCount());
+
+            // Poll as fallback
+            setInterval(() => this.updateCount(), 500);
+        },
+
+        updateCount() {
+            const jobCount = window.AppState?.selectedJobs?.size || 0;
+            const poiCount = window.AppState?.selectedPois?.size || 0;
+            this.selectedCount = jobCount + poiCount;
+        },
+
+        openRoutePlanner() {
+            if (window.RoutePlanner) {
+                window.RoutePlanner.show();
+            } else if (window.showNotification) {
+                window.showNotification('Route planner not available', 'error');
+            }
         }
     };
 }
@@ -537,6 +616,7 @@ function fabMenu() {
 // Register Alpine data on init
 document.addEventListener('alpine:init', () => {
     Alpine.data('fabMenu', fabMenu);
+    Alpine.data('routeFab', routeFab);
 });
 
 // Export for debugging

@@ -3,25 +3,30 @@ import os
 import logging
 from datetime import datetime, timezone, timedelta
 
-from flask import Flask, render_template, request, jsonify, redirect, session, send_from_directory, g
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    redirect,
+    session,
+    send_from_directory,
+    g,
+)
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 # Configure logging - compact format without duplicate timestamps
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s [%(name)s] %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s [%(name)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 # Configure Werkzeug logger - only show warnings/errors to reduce noise
-werkzeug_logger = logging.getLogger('werkzeug')
-werkzeug_logger.handlers.clear()
-werkzeug_logger.setLevel(logging.WARNING)  # Suppress INFO level HTTP access logs
-werkzeug_logger.propagate = True
+werkzeug_logger = logging.getLogger("werkzeug")
+werkzeug_logger.setLevel(logging.WARNING)
 
 try:
     from flask_compress import Compress  # type: ignore
+
     _compress_available = True
 except Exception:
     Compress = None  # type: ignore
@@ -44,13 +49,13 @@ app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(days=365)
 # Configure connection pooling for better reliability with Supabase
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,  # Test connections before using them
-    "pool_recycle": 300,    # Recycle connections after 5 minutes
-    "pool_size": 5,         # Number of connections to maintain in pool
-    "max_overflow": 10,     # Maximum overflow connections allowed
+    "pool_recycle": 300,  # Recycle connections after 5 minutes
+    "pool_size": 5,  # Number of connections to maintain in pool
+    "max_overflow": 10,  # Maximum overflow connections allowed
     "connect_args": {
         "connect_timeout": 10,  # Connection timeout in seconds
-        "options": "-c statement_timeout=30000"  # 30 second statement timeout
-    }
+        "options": "-c statement_timeout=30000",  # 30 second statement timeout
+    },
 }
 
 app.secret_key = os.getenv("SESSION_KEY")
@@ -100,13 +105,19 @@ def _inject_static_version():
 
 @app.route("/favicon.ico")
 def favicon():
-    """Serve favicon from existing PNG to stop 404s."""
+    """
+    Serve the application's favicon from the static/data PNG to prevent 404 responses.
+    
+    Returns:
+        response (flask.wrappers.Response): HTTP response serving the PNG favicon.
+    """
     return send_from_directory(
         os.path.join(app.root_path, "static", "data"),
         "EMS-llc-4.png",
         mimetype="image/png",
         conditional=True,
     )
+
 
 # =============================================================================
 # MAIN ROUTES - Updated to use consolidated API logic
@@ -225,7 +236,17 @@ def logout():
 
 @app.after_request
 def add_cache_headers(response):
-    """Add cache headers to static files and API responses"""
+    """
+    Set caching headers for static assets and GET API responses.
+    
+    For requests targeting static assets (URL path starting with "/static/" or the "static" endpoint), sets long-lived immutable caching when a version query parameter is present; otherwise sets a shorter cache TTL. For GET requests under "/api/", computes and sets an ETag from the response body when available and sets a short public Cache-Control TTL.
+    
+    Parameters:
+        response (flask.wrappers.Response): The response object to modify.
+    
+    Returns:
+        flask.wrappers.Response: The same response object with appropriate caching headers applied.
+    """
     # Handle static files (both /static/ path and static endpoint)
     if request.path.startswith("/static/") or request.endpoint == "static":
         # If versioned, allow long-lived immutable caching
@@ -235,42 +256,53 @@ def add_cache_headers(response):
             )
         else:
             # Shorter default to allow timely updates
-            response.headers.setdefault(
-                "Cache-Control", "public, max-age=300"
-            )
+            response.headers.setdefault("Cache-Control", "public, max-age=300")
     # Add cache headers for API GET requests
     elif request.path.startswith("/api/") and request.method == "GET":
         # Add ETag support for conditional requests
-        if hasattr(response, 'get_data'):
+        if hasattr(response, "get_data"):
             import hashlib
+
             etag = hashlib.md5(response.get_data()).hexdigest()
             response.set_etag(etag)
-        
+
         # Cache-Control for API responses (shorter TTL)
         response.cache_control.max_age = 60  # Cache for 1 minute
         response.cache_control.public = True
-    
+
     return response
 
 
 @app.before_request
 def log_slow_queries():
-    """Log slow database queries for performance monitoring"""
+    """
+    Record the request start time for API endpoints.
+    
+    If the current request path starts with "/api/", stores the current epoch time in `g.start_time` so downstream handlers can measure request duration for slow-query or performance logging.
+    """
     if request.path.startswith("/api/"):
         import time
+
         g.start_time = time.time()
 
 
 @app.after_request
 def log_query_performance(response):
-    """Log slow API requests - compact format"""
-    if hasattr(g, 'start_time') and request.path.startswith("/api/"):
+    """
+    Log a warning for API requests whose handling time exceeded 100 milliseconds.
+    
+    Parameters:
+        response (werkzeug.wrappers.Response): The HTTP response object produced by the view.
+    
+    Returns:
+        werkzeug.wrappers.Response: The unchanged response object.
+    """
+    if hasattr(g, "start_time") and request.path.startswith("/api/"):
         import time
+
         duration = (time.time() - g.start_time) * 1000
         if duration > 100:  # Log requests slower than 100ms
-            logger.warning(
-                f"SLOW: {request.method} {request.path} ({duration:.0f}ms)"
-            )
+            logger.warning(f"SLOW: {request.method} {request.path} ({duration:.0f}ms)")
     return response
 
 
@@ -312,8 +344,8 @@ if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     host = os.getenv("FLASK_HOST", "127.0.0.1")
     port = int(os.getenv("FLASK_PORT", "5000"))
-    
+
     if debug_mode:
         logger.warning("Running in DEBUG mode - not recommended for production!")
-    
+
     app.run(debug=debug_mode, host=host, port=port)
