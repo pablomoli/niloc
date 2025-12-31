@@ -368,17 +368,17 @@
             <table class="table w-full">
               <thead class="bg-base-200">
                 <tr>
-                  <th class="w-8 px-2">
+                  <th class="w-10 px-1">
                     <div class="flex items-center justify-center">
                       <div class="dropdown">
-                        <label tabindex="0" class="btn btn-ghost btn-xs px-0 min-h-0 h-auto">
+                        <label tabindex="0" class="btn btn-ghost btn-xs px-0 flex flex-nowrap items-center gap-1 h-8 min-h-8 whitespace-nowrap leading-none">
                           <input type="checkbox"
-                                 class="checkbox checkbox-sm"
+                                 class="checkbox checkbox-sm shrink-0"
                                  :checked="paginatedJobs.length > 0 && paginatedJobs.every(j => isJobSelected(j.job_number))"
                                  @change="$event.target.checked ? selectAllVisible() : clearSelection()"
                                  @click.stop
                                  title="Select jobs">
-                          <i class="bi bi-chevron-down text-xs ml-0.5"></i>
+                          <i class="bi bi-chevron-down text-xs ml-0.5 shrink-0"></i>
                         </label>
                         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-300">
                           <li><a @click="selectAllVisible()"><i class="bi bi-check-square"></i> Select Page</a></li>
