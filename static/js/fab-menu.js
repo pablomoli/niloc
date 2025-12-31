@@ -9,6 +9,7 @@
  * The returned object contains reactive properties (menu and sub-menu flags, search inputs, filter selections, layer state, tag/status lists, and selected job count) and methods to operate on them (initialization, tag/status toggles, search actions, layer controls, and route planner integration). The `selectedJobCount` includes both selected jobs and POIs and is kept in sync via events and polling.
  *
  * @returns {Object} An Alpine.js component object exposing state and methods for the FAB menu UI, enhanced search, filters, map layer controls, and route-planning actions.
+ */
 function fabMenu() {
     return {
         menuOpen: false,
