@@ -15,19 +15,7 @@ logger = logging.getLogger(__name__)
 @admin_bp.route("/")
 @login_required
 def admin_dashboard():
-    """Main admin dashboard - redirects to SPA"""
-    if session.get("role") != "admin":
-        return redirect("/")
-    from models import User
-    current_user = User.query.get(session.get("user_id"))
-    user_name = current_user.name if current_user else "User"
-    return render_template("admin_spa.html", current_user_name=user_name)
-
-
-@admin_bp.route("/spa")
-@login_required
-def admin_spa():
-    """Explicit SPA route for navigation"""
+    """Main admin dashboard SPA"""
     if session.get("role") != "admin":
         return redirect("/")
     from models import User

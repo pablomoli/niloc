@@ -1154,8 +1154,28 @@ window.isMarkerClusteringSupported = function() {
 };
 
 // Filter and Search Functions
-window.activeStatusFilters = new Set(['all']);
-window.activeTagFilters = new Set();
+// Load saved filters from localStorage or use defaults
+const FILTER_STORAGE_KEY = 'epicmap_status_filters';
+const TAG_FILTER_STORAGE_KEY = 'epicmap_tag_filters';
+const DEFAULT_STATUS_FILTER = ['Needs Fieldwork'];
+
+let initialStatusFilters = DEFAULT_STATUS_FILTER;
+let initialTagFilters = [];
+try {
+    const storedStatuses = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (storedStatuses) {
+        initialStatusFilters = JSON.parse(storedStatuses);
+    }
+    const storedTags = localStorage.getItem(TAG_FILTER_STORAGE_KEY);
+    if (storedTags) {
+        initialTagFilters = JSON.parse(storedTags);
+    }
+} catch (e) {
+    console.warn('Failed to load saved filters from localStorage:', e);
+}
+
+window.activeStatusFilters = new Set(initialStatusFilters);
+window.activeTagFilters = new Set(initialTagFilters);
 let searchTerm = '';
 
 // Update visible/total counts

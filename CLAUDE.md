@@ -196,7 +196,6 @@ Categorization system for jobs (currently unused but available).
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `GET` | `/admin/` | Admin dashboard SPA | Admin |
-| `GET` | `/admin/spa` | Explicit admin SPA route | Admin |
 
 ## Tech Stack Details
 

@@ -3,6 +3,9 @@
  * Handles the floating action button with arc menu pattern
  */
 
+// localStorage keys for persisting filter preferences (defined in map.js, referenced here)
+// Uses window globals to avoid redeclaration when both scripts are loaded
+
 /**
  * Create the Alpine.js FAB menu component that manages FAB state, enhanced search, filters, map layer controls, and route-planning helpers for the Epic Map UI.
  *
@@ -59,15 +62,16 @@ function fabMenu() {
             setInterval(updateSelectedCount, 500);
             // Store reference to this component for event handlers
             const self = this;
-            
-            // Initialize global state if needed
+
+            // Filters are initialized in map.js which loads first
+            // Just sync local state with global state here
             if (!window.activeStatusFilters) {
-                window.activeStatusFilters = new Set(['all']);
+                window.activeStatusFilters = new Set(['Needs Fieldwork']);
             }
             if (!window.activeTagFilters) {
                 window.activeTagFilters = new Set();
             }
-            
+
             // Sync local reactive state with global state
             this.selectedStatuses = new Set(window.activeStatusFilters);
             this.selectedTags = new Set(window.activeTagFilters);
@@ -488,6 +492,15 @@ function fabMenu() {
                 window.activeTagFilters = new Set();
             }
             window.activeTagFilters = new Set(this.selectedTags);
+
+            // Save filters to localStorage for persistence
+            try {
+                localStorage.setItem('epicmap_status_filters', JSON.stringify(Array.from(window.activeStatusFilters)));
+                localStorage.setItem('epicmap_tag_filters', JSON.stringify(Array.from(this.selectedTags)));
+            } catch (e) {
+                console.warn('Failed to save filters to localStorage:', e);
+            }
+
             window.applyStatusFilter(Array.from(window.activeStatusFilters));
             this.closeStatusFilter();
         },
