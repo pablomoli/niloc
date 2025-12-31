@@ -213,10 +213,9 @@ window.CreateJobModal = {
             modal.remove();
         }
         document.body.style.overflow = '';
-        // Clear any temporary markers
-        if (window.tempParcelMarker) {
-            window.AppState.map.removeLayer(window.tempParcelMarker);
-            window.tempParcelMarker = null;
+        // Clear any temporary markers using ParcelGeocoding module
+        if (window.ParcelGeocoding && window.AppState?.map) {
+            window.ParcelGeocoding.removeTempMarker(window.AppState.map);
         }
     },
     
@@ -305,20 +304,20 @@ window.CreateJobModal = {
                 
                 geocodeData = await geocodeResponse.json();
             } else {
-                // Parcel mode
+                // Parcel mode - use ParcelGeocoding module
                 const county = document.getElementById('parcel_county').value;
-                
+
                 if (!county) {
                     if (window.showNotification) {
                         window.showNotification('Please select a county', 'error');
                     }
                     return;
                 }
-                
+
                 submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Looking up parcel...';
-                
-                let parcelResponse;
-                
+
+                let parcelResult;
+
                 if (county === 'brevard') {
                     const taxAccount = document.getElementById('brevard_tax_account').value.trim();
                     if (!taxAccount) {
@@ -327,111 +326,68 @@ window.CreateJobModal = {
                         }
                         return;
                     }
-                    parcelResponse = await fetch(`/api/geocode/brevard-parcel?tax_account=${encodeURIComponent(taxAccount)}`);
+                    parcelResult = await window.ParcelGeocoding.lookupBrevard(taxAccount);
                 } else if (county === 'orange') {
                     const parcelId = document.getElementById('orange_parcel_id').value.trim();
-                    
                     if (!parcelId) {
                         if (window.showNotification) {
                             window.showNotification('Please enter Parcel ID', 'error');
                         }
                         return;
                     }
-                    
-                    parcelResponse = await fetch(`/api/geocode/orange-parcel?parcel_id=${encodeURIComponent(parcelId)}`);
+                    parcelResult = await window.ParcelGeocoding.lookupOrange(parcelId);
                 }
-                
-                if (!parcelResponse.ok) {
-                    const errorData = await parcelResponse.json();
-                    throw new Error(errorData.error || 'Could not find parcel');
-                }
-                
-                const parcelResult = await parcelResponse.json();
-                
-                console.log('Parcel API response:', parcelResult);
-                
+
                 // Store parcel data for later
                 parcelData = {
-                    county: county,
-                    parcel_id: parcelResult.parcel_id || parcelResult.tax_account,
-                    raw_response: parcelResult
+                    county: parcelResult.county,
+                    parcel_id: parcelResult.parcel_id,
+                    raw_response: parcelResult.raw_response
                 };
-                
-                // Use parcel geocoding data
+
+                // Use normalized geocode data from module
                 geocodeData = {
-                    lat: parcelResult.lat || parcelResult.latitude,
-                    lng: parcelResult.lng || parcelResult.longitude || parcelResult.lon,
-                    formatted_address: parcelResult.address || parcelResult.formatted_address || 'Parcel Location'
+                    lat: parcelResult.lat,
+                    lng: parcelResult.lng,
+                    formatted_address: parcelResult.address
                 };
-                
-                console.log('Processed geocode data:', geocodeData);
-                
+
                 // Show temporary marker and ask for confirmation
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
-                
+
                 // Hide the create job modal temporarily
                 const createModal = document.getElementById('createJobModal');
                 if (createModal) {
                     createModal.style.display = 'none';
                 }
-                
-                // Create temporary marker using SVG
-                if (window.tempParcelMarker) {
-                    window.AppState.map.removeLayer(window.tempParcelMarker);
-                }
-                
-                console.log('Creating purple marker at:', geocodeData.lat, geocodeData.lng);
-                console.log('Map object:', window.AppState.map);
-                
-                const lat = parseFloat(geocodeData.lat);
-                const lng = parseFloat(geocodeData.lng);
-                
-                console.log('Parsed coordinates:', lat, lng);
-                
-                if (isNaN(lat) || isNaN(lng)) {
-                    console.error('Invalid coordinates:', geocodeData);
-                    throw new Error('Invalid coordinates received from parcel lookup');
-                }
-                
-                // Try simple circle marker first
-                window.tempParcelMarker = L.circleMarker([lat, lng], {
-                    color: '#9b59b6',
-                    fillColor: '#9b59b6',
-                    fillOpacity: 0.8,
-                    radius: 15,
-                    weight: 3
-                }).addTo(window.AppState.map);
-                
-                console.log('Marker created:', window.tempParcelMarker);
-                
-                // Pan to location
-                window.AppState.map.setView([lat, lng], 17);
-                
-                // No popup here; confirmation UI shows details on the side
-                
-                // Show confirmation dialog
-                const confirmResult = await CreateJobModal.showParcelConfirmation(geocodeData, parcelData);
-                
+
+                // Create temporary marker using ParcelGeocoding module
+                window.ParcelGeocoding.createTempMarker(
+                    parcelResult.lat,
+                    parcelResult.lng,
+                    window.AppState.map
+                );
+
+                // Show confirmation dialog using ParcelGeocoding module
+                const confirmResult = await window.ParcelGeocoding.showConfirmation(
+                    { lat: parcelResult.lat, lng: parcelResult.lng, address: parcelResult.address },
+                    parcelData
+                );
+
                 // Show the create modal again
                 if (createModal) {
                     createModal.style.display = 'flex';
                 }
-                
+
                 if (!confirmResult) {
                     // User cancelled - remove temporary marker
-                    if (window.tempParcelMarker) {
-                        window.AppState.map.removeLayer(window.tempParcelMarker);
-                        window.tempParcelMarker = null;
-                    }
+                    window.ParcelGeocoding.removeTempMarker(window.AppState.map);
                     return;
                 }
-                
+
                 // User confirmed - remove temporary marker before creating job
-                if (window.tempParcelMarker) {
-                    window.AppState.map.removeLayer(window.tempParcelMarker);
-                    window.tempParcelMarker = null;
-                }
+                window.ParcelGeocoding.removeTempMarker(window.AppState.map);
             }
             
             // Get form values
@@ -537,59 +493,6 @@ window.CreateJobModal = {
             // Restore button state
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
-        }
-    },
-    
-    showParcelConfirmation(geocodeData, parcelData) {
-        return new Promise((resolve) => {
-            const isMobile = window.innerWidth <= 768;
-            const widthClass = isMobile ? 'w-[85%]' : 'w-[380px]';
-            const leftBackdropWidth = isMobile ? 'w-full' : 'w-[400px]';
-            const confirmHTML = `
-                <div id="parcelConfirmModal" class="fixed inset-0 z-[999999] pointer-events-none">
-                    <div class="absolute top-0 left-0 ${leftBackdropWidth} h-full bg-black/30 pointer-events-auto"></div>
-                    <div class="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-5 rounded-r-lg shadow-2xl pointer-events-auto ${widthClass} max-w-[400px]">
-                        <h3 class="mt-0 font-bold text-lg">Confirm Parcel Location</h3>
-                        <div class="my-5">
-                            <p class="mb-2"><strong>Does this location look correct?</strong></p>
-                            <div class="bg-gray-100 p-3 rounded text-sm">
-                                <div class="mb-1"><strong>Parcel ID:</strong> ${parcelData.parcel_id}</div>
-                                <div class="mb-1"><strong>County:</strong> ${parcelData.county.charAt(0).toUpperCase() + parcelData.county.slice(1)}</div>
-                                <div><strong>Address:</strong> ${geocodeData.formatted_address}</div>
-                            </div>
-                            <p class="mt-2 text-sm text-gray-500">
-                                <i class="bi bi-geo-alt-fill text-purple-500"></i> The purple marker shows the parcel location on the map.
-                            </p>
-                        </div>
-                        <div class="flex gap-2 justify-end">
-                            <button onclick="CreateJobModal.resolveConfirmation(false)" class="btn btn-ghost">No, Try Again</button>
-                            <button onclick="CreateJobModal.resolveConfirmation(true)" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Yes, Create Job
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Store resolve function
-            window.parcelConfirmResolve = resolve;
-            
-            // Add modal to body
-            document.body.insertAdjacentHTML('beforeend', confirmHTML);
-        });
-    },
-    
-    resolveConfirmation(confirmed) {
-        // Remove confirmation modal
-        const confirmModal = document.getElementById('parcelConfirmModal');
-        if (confirmModal) {
-            confirmModal.remove();
-        }
-        
-        // Resolve the promise
-        if (window.parcelConfirmResolve) {
-            window.parcelConfirmResolve(confirmed);
-            window.parcelConfirmResolve = null;
         }
     }
 };
