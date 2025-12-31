@@ -164,6 +164,70 @@ window.RoutePlanner = {
         // Listen for POIs loaded event to update available starts
         this.poisListener = () => this.loadAvailableStarts();
         document.addEventListener('poisLoaded', this.poisListener);
+
+        // Create the persistent collapse tab (always visible)
+        this.createPersistentTab();
+    },
+
+    /**
+     * Create the persistent collapse tab that's always visible on the right side
+     */
+    createPersistentTab() {
+        // Don't create if already exists
+        if (document.getElementById('routePlannerCollapseTab')) return;
+
+        const tab = document.createElement('div');
+        tab.id = 'routePlannerCollapseTab';
+        tab.className = 'route-panel-collapse-tab visible';
+        tab.innerHTML = `
+            <i class="bi bi-signpost-split"></i>
+            <span class="collapse-tab-count">0</span>
+        `;
+        tab.onclick = () => this.handleTabClick();
+        document.body.appendChild(tab);
+
+        // Listen for selection changes to update the count
+        document.addEventListener('jobSelectionChanged', () => this.updateTabCount());
+    },
+
+    /**
+     * Handle click on the persistent tab
+     */
+    handleTabClick() {
+        if (!this.isOpen) {
+            // Panel not open - open it
+            this.showPanel();
+        } else if (this.isCollapsed) {
+            // Panel is collapsed - expand it
+            this.toggleCollapse();
+        } else {
+            // Panel is open and expanded - collapse it
+            this.toggleCollapse();
+        }
+    },
+
+    /**
+     * Update the count shown on the persistent tab
+     */
+    updateTabCount() {
+        const tabCount = document.querySelector('#routePlannerCollapseTab .collapse-tab-count');
+        if (tabCount) {
+            const jobCount = window.AppState?.selectedJobs?.size || 0;
+            const poiCount = window.AppState?.selectedPois?.size || 0;
+            tabCount.textContent = jobCount + poiCount;
+        }
+    },
+
+    /**
+     * Show the panel (can be called with 0 stops)
+     */
+    showPanel() {
+        this.stops = this.buildStopsFromSelection() || [];
+        this.isOpen = true;
+        this.isCollapsed = false;
+        this.renderModal();
+        this.drawRoute();
+        this.startListeningForSelectionChanges();
     },
 
     /**
@@ -291,14 +355,13 @@ window.RoutePlanner = {
      */
     hide() {
         this.stopListeningForSelectionChanges();
+        this.clearVisualization();
         const panel = document.getElementById('routePlannerPanel');
-        const tab = document.getElementById('routePlannerCollapseTab');
         if (panel) {
             panel.classList.remove('open');
-            // Remove after animation completes
+            // Remove panel after animation completes (keep tab visible)
             setTimeout(() => {
                 panel.remove();
-                if (tab) tab.remove();
             }, 300);
         }
         this.isOpen = false;
@@ -308,6 +371,8 @@ window.RoutePlanner = {
         this.useGpsStart = false;
         this.gpsStartPending = false;
         this.previousOfficeStart = null;
+        this.stops = [];
+        this.updateTabCount();
         if (this.routeRedrawTimer) {
             clearTimeout(this.routeRedrawTimer);
             this.routeRedrawTimer = null;
@@ -898,8 +963,8 @@ window.RoutePlanner = {
             });
             this.routeLayer.addLayer(polyline);
 
-            // Add segment duration labels at midpoints
-            this.addSegmentLabels(segments, coordinates);
+            // Add segment duration labels at midpoints along actual route
+            this.addSegmentLabels(segments, geometry.coordinates);
             this.centerMapOnRoute(routeCoords);
         } else {
             // Fallback to straight lines
@@ -1090,12 +1155,10 @@ window.RoutePlanner = {
         // Reset route data when opening panel
         this.routeData = null;
 
+        // Update the persistent tab count
+        this.updateStopsHeader();
+
         const panelHTML = `
-            <!-- Collapse Tab (separate from panel for proper fixed positioning) -->
-            <div id="routePlannerCollapseTab" class="route-panel-collapse-tab" onclick="RoutePlanner.toggleCollapse()">
-                <i class="bi bi-signpost-split"></i>
-                <span class="collapse-tab-count">${this.stops.length}</span>
-            </div>
             <div id="routePlannerPanel" class="route-panel">
                 <!-- Panel Header -->
                 <div class="route-panel-header">
@@ -1305,34 +1368,36 @@ window.RoutePlanner = {
     },
 
     /**
-     * Add duration labels at the midpoint of each route segment
+     * Add duration labels at the midpoint of each route segment along the actual path
      * @param {Array} segments - Segments array from ORS response
-     * @param {Array} coordinates - Array of [lng, lat] waypoint coordinates
+     * @param {Array} routeCoords - Full route geometry coordinates [lng, lat] from ORS
      */
-    addSegmentLabels(segments, coordinates) {
-        if (!segments || segments.length === 0 || coordinates.length < 2) return;
+    addSegmentLabels(segments, routeCoords) {
+        if (!segments || segments.length === 0 || !routeCoords || routeCoords.length < 2) return;
 
-        // Each segment corresponds to travel between consecutive waypoints
-        segments.forEach((segment, index) => {
-            if (index >= coordinates.length - 1) return;
-
-            const duration = segment.duration; // seconds
+        segments.forEach((segment) => {
+            const duration = segment.duration;
             if (!duration || duration <= 0) return;
 
-            // Get start and end coordinates for this segment
-            const start = coordinates[index];     // [lng, lat]
-            const end = coordinates[index + 1];   // [lng, lat]
+            // Get the start and end indices in the route geometry from the segment's steps
+            const steps = segment.steps || [];
+            if (steps.length === 0) return;
 
-            // Calculate midpoint
-            const midLat = (start[1] + end[1]) / 2;
-            const midLng = (start[0] + end[0]) / 2;
+            const startIdx = steps[0]?.way_points?.[0] ?? 0;
+            const endIdx = steps[steps.length - 1]?.way_points?.[1] ?? (routeCoords.length - 1);
+
+            // Find the midpoint index along the actual route path for this segment
+            const midIdx = Math.floor((startIdx + endIdx) / 2);
+            const midCoord = routeCoords[midIdx];
+
+            if (!midCoord) return;
 
             // Format duration and distance
             const durationText = this.formatShortDuration(duration);
             const distanceMi = Math.round(segment.distance / 1609.34);
 
-            // Create label marker
-            const label = L.marker([midLat, midLng], {
+            // Create label marker at the actual route midpoint [lat, lng] from [lng, lat]
+            const label = L.marker([midCoord[1], midCoord[0]], {
                 icon: L.divIcon({
                     className: 'route-segment-label',
                     html: `<div class="segment-duration">${durationText} - ${distanceMi}mi</div>`,

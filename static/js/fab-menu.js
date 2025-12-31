@@ -40,6 +40,7 @@ function fabMenu() {
         selectedTags: new Set(), // Local reactive state for tag filters
         currentBaseLayer: 'satellite',
         countiesVisible: false,
+        poisVisible: true, // POI visibility toggle (default: visible)
         useClustering: true,
         clusteringSupported: true,
         selectedJobCount: 0, // Track selected jobs for route planning button (includes POIs)
@@ -84,7 +85,22 @@ function fabMenu() {
                 ? window.isMarkerClusteringSupported()
                 : (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function');
             this.useClustering = window.AppState?.useClustering ?? this.useClustering;
-            
+
+            // Load POI visibility preference from localStorage
+            try {
+                const storedPoisVisible = localStorage.getItem('epicmap_pois_visible');
+                if (storedPoisVisible !== null) {
+                    this.poisVisible = storedPoisVisible === 'true';
+                }
+            } catch (e) {
+                console.warn('Failed to load POI visibility preference:', e);
+            }
+
+            // Apply initial POI visibility state
+            if (window.setPoisVisible) {
+                window.setPoisVisible(this.poisVisible);
+            }
+
             // Get available statuses from jobs
             this.updateAvailableStatuses();
             
@@ -388,6 +404,7 @@ function fabMenu() {
             if (window.AppState) {
                 this.currentBaseLayer = window.AppState.currentBaseLayer;
                 this.countiesVisible = window.AppState.countiesVisible;
+                this.poisVisible = window.AppState.poisVisible;
                 this.useClustering = window.AppState.useClustering;
             }
             this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
@@ -421,7 +438,23 @@ function fabMenu() {
                 }
             }
         },
-        
+
+        togglePoisLayer() {
+            this.poisVisible = !this.poisVisible;
+
+            // Save preference to localStorage
+            try {
+                localStorage.setItem('epicmap_pois_visible', this.poisVisible.toString());
+            } catch (e) {
+                console.warn('Failed to save POI visibility preference:', e);
+            }
+
+            // Apply visibility change
+            if (window.setPoisVisible) {
+                window.setPoisVisible(this.poisVisible);
+            }
+        },
+
         toggleClusteringMode() {
             if (!this.clusteringSupported) {
                 if (window.showNotification) {
@@ -587,50 +620,9 @@ function fabMenu() {
     };
 }
 
-/**
- * Alpine component for a standalone route FAB that tracks selected jobs/POIs and opens the route planner.
- *
- * @returns {{selectedCount: number, init: function(): void, updateCount: function(): void, openRoutePlanner: function(): void}} An Alpine component object with:
- * - `selectedCount`: current number of selected jobs and POIs,
- * - `init()`: initializes event listeners and polling to keep `selectedCount` up to date,
- * - `updateCount()`: recalculates `selectedCount` from `window.AppState`,
- * - `openRoutePlanner()`: opens the global `RoutePlanner` with the selected jobs or shows an error notification if unavailable.
- */
-function routeFab() {
-    return {
-        selectedCount: 0,
-
-        init() {
-            // Update selected count on init
-            this.updateCount();
-
-            // Listen for selection changes
-            document.addEventListener('jobSelectionChanged', () => this.updateCount());
-
-            // Poll as fallback
-            setInterval(() => this.updateCount(), 500);
-        },
-
-        updateCount() {
-            const jobCount = window.AppState?.selectedJobs?.size || 0;
-            const poiCount = window.AppState?.selectedPois?.size || 0;
-            this.selectedCount = jobCount + poiCount;
-        },
-
-        openRoutePlanner() {
-            if (window.RoutePlanner) {
-                window.RoutePlanner.show();
-            } else if (window.showNotification) {
-                window.showNotification('Route planner not available', 'error');
-            }
-        }
-    };
-}
-
 // Register Alpine data on init
 document.addEventListener('alpine:init', () => {
     Alpine.data('fabMenu', fabMenu);
-    Alpine.data('routeFab', routeFab);
 });
 
 // Export for debugging

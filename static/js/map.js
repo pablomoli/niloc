@@ -144,8 +144,19 @@ const AppState = {
     // POI (Point of Interest) state
     pois: [],
     poiMarkers: new Map(), // Store POI marker references by id
-    selectedPois: new Set() // Track selected POI ids
+    selectedPois: new Set(), // Track selected POI ids
+    poisVisible: true // Whether POIs are shown on map
 };
+
+// Load POI visibility preference from localStorage
+try {
+    const storedPoisVisible = localStorage.getItem('epicmap_pois_visible');
+    if (storedPoisVisible !== null) {
+        AppState.poisVisible = storedPoisVisible === 'true';
+    }
+} catch (e) {
+    console.warn('Failed to load POI visibility preference:', e);
+}
 
 // Initialize map with persisted or default view
 const initialView = MapViewState.getInitialView();
@@ -697,7 +708,10 @@ async function loadJobs(force = false) {
         
         // Emit event for FAB menu to update statuses
         document.dispatchEvent(new CustomEvent('jobsLoaded'));
-        
+
+        // Apply saved filters from localStorage (or default filters)
+        applyFilters();
+
         console.log(`Loaded ${AppState.allJobs.length} jobs`);
     } catch (error) {
         console.error('Failed to load jobs:', error);
@@ -986,6 +1000,11 @@ function renderPoiMarkers() {
     });
     AppState.poiMarkers.clear();
 
+    // Don't render markers if POIs are hidden
+    if (!AppState.poisVisible) {
+        return;
+    }
+
     // Create markers for each POI
     AppState.pois.forEach(poi => {
         if (poi.lat && poi.lng) {
@@ -1021,6 +1040,15 @@ function renderPoiMarkers() {
             marker.addTo(AppState.map);
         }
     });
+}
+
+/**
+ * Set the visibility of POI markers on the map.
+ * @param {boolean} visible - Whether POIs should be visible
+ */
+function setPoisVisible(visible) {
+    AppState.poisVisible = visible;
+    renderPoiMarkers();
 }
 
 /**
@@ -1438,6 +1466,7 @@ window.getDefaultStartPoi = getDefaultStartPoi;
 window.getSelectedPois = getSelectedPois;
 window.updatePoiMarker = updatePoiMarker;
 window.togglePoiSelection = togglePoiSelection;
+window.setPoisVisible = setPoisVisible;
 
 // Create job at location function
 window.createJobAtLocation = function(lat, lng, address) {
