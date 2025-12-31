@@ -1,4 +1,5 @@
 venv/
+static/guide/*
 __pycache__/
 *.pyc
 *.pyo
