@@ -1,7 +1,7 @@
 # Generated from api_routes.py split
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 from flask import jsonify, request, session, g
 from sqlalchemy import func, or_
@@ -21,6 +21,7 @@ DEFAULT_PER_PAGE = 1000  # Default to 1000 - reasonable for datasets with ~1000 
 MAX_PER_PAGE = 2000
 MAX_SEARCH_RESULTS = 500  # Limit search results to prevent huge responses
 MAX_BULK_OPERATION_SIZE = 500  # Maximum jobs per bulk update/delete operation
+
 
 @api_bp.route("/jobs", methods=["GET"])
 @login_required
@@ -62,9 +63,15 @@ def get_jobs():
         # Check if tags are needed (can be skipped for map views that don't display tags)
         include_tags = request.args.get("include_tags", "true").lower() == "true"
         if include_deleted:
-            query = Job.query.options(joinedload(Job.tags)) if include_tags else Job.query
+            query = (
+                Job.query.options(joinedload(Job.tags)) if include_tags else Job.query
+            )
         else:
-            query = Job.active().options(joinedload(Job.tags)) if include_tags else Job.active()
+            query = (
+                Job.active().options(joinedload(Job.tags))
+                if include_tags
+                else Job.active()
+            )
 
         # Check if this is a comprehensive search request
         if search_term:
@@ -83,9 +90,9 @@ def get_jobs():
                 f"{search_term.lower()}%",
                 f"{normalize_search_term(search_term)}%",
             ]
-            tags_condition = or_(
-                *[Tag.name.ilike(p) for p in tag_patterns]
-            ) if search_term else None
+            tags_condition = (
+                or_(*[Tag.name.ilike(p) for p in tag_patterns]) if search_term else None
+            )
 
             if search_condition is not None and tags_condition is not None:
                 query = (
@@ -126,13 +133,15 @@ def get_jobs():
             # Log slow queries
             query_duration = (time.time() - query_start_time) * 1000
             if query_duration > 100:
-                logger.warning(f"SLOW QUERY: get_jobs(search) {query_duration:.0f}ms '{search_term[:30]}'")
+                logger.warning(
+                    f"SLOW QUERY: get_jobs(search) {query_duration:.0f}ms '{search_term[:30]}'"
+                )
 
             # Optimize serialization - batch process jobs
             jobs_list = []
             for job in jobs:
                 jobs_list.append(job.to_dict())
-            
+
             return jsonify(
                 {
                     "jobs": jobs_list,
@@ -176,9 +185,7 @@ def get_jobs():
             query = query.order_by(Job.created_at.desc())
 
             # Always use pagination (enforced limit)
-            pagination = query.paginate(
-                page=page, per_page=per_page, error_out=False
-            )
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
             # Log slow queries
             query_duration = (time.time() - query_start_time) * 1000
@@ -189,7 +196,7 @@ def get_jobs():
             jobs_list = []
             for job in pagination.items:
                 jobs_list.append(job.to_dict())
-            
+
             return jsonify(
                 {
                     "jobs": jobs_list,
@@ -217,18 +224,23 @@ def get_jobs():
 def get_job(job_number):
     """GET /api/jobs/JOB123 - Get specific job with eager-loaded relationships"""
     query_start_time = time.time()
-    
+
     include_deleted = request.args.get("include_deleted", "false").lower() == "true"
 
     if include_deleted:
-        job = Job.query.options(joinedload(Job.tags)).filter(
-            Job.job_number == job_number
-        ).first()
+        job = (
+            Job.query.options(joinedload(Job.tags))
+            .filter(Job.job_number == job_number)
+            .first()
+        )
     else:
-        job = Job.active().options(joinedload(Job.tags)).filter_by(
-            job_number=job_number
-        ).first()
-    
+        job = (
+            Job.active()
+            .options(joinedload(Job.tags))
+            .filter_by(job_number=job_number)
+            .first()
+        )
+
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -265,12 +277,14 @@ def create_job():
     # Handle geocoding based on job type
     is_parcel = bool(data.get("is_parcel_job"))
     address = (data.get("address") or "").strip()
-    
+
     if is_parcel:
         # For parcel jobs, use the coordinates provided from frontend
         parcel_info = data.get("parcel_data", {})
-        logger.info(f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}")
-        
+        logger.info(
+            f"Parcel job creation: County={parcel_info.get('county')}, ID={parcel_info.get('parcel_id')}"
+        )
+
         # Don't re-geocode parcel jobs - use provided coordinates
         geocode_result = None
         lat = data.get("latitude")
@@ -288,8 +302,14 @@ def create_job():
     # Validate status if provided
     status = data.get("status", "").strip() or None
     if status and not is_valid_job_status(status):
-        return jsonify({"error": f"Invalid status: {status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"}), 400
+        return jsonify(
+            {
+                "error": f"Invalid status: {status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"
+            }
+        ), 400
 
+    due_date_raw = (data.get("due_date") or "").strip()
+    due_date = date.fromisoformat(due_date_raw) if due_date_raw else None
     # Create job object
     job_data = {
         "job_number": job_number,
@@ -298,6 +318,7 @@ def create_job():
         "status": status,
         "notes": (data.get("notes") or "").strip() or None,
         "created_at": datetime.now(timezone.utc),
+        "due_date": due_date,
         "created_by_id": session.get("user_id"),
         "visited": 0,
         "total_time_spent": 0.0,
@@ -336,7 +357,7 @@ def update_job(job_number):
     job = Job.active().filter_by(job_number=job_number).first()
     if not job:
         return jsonify({"error": "Job not found"}), 404
-    
+
     # Note: Parcel jobs can be edited, but address is managed by parcel lookup
     # and should not be modified directly via this endpoint.
 
@@ -355,6 +376,7 @@ def update_job(job_number):
         "plat_link",
         "fema_link",
         "document_url",
+        "due_date",
     ]
     # For parcel jobs, prevent updating address directly
     if job.is_parcel_job and "address" in updateable_fields:
@@ -363,10 +385,18 @@ def update_job(job_number):
     address_changed = False
     for field in updateable_fields:
         if field in data:
-            value = data[field].strip() if isinstance(data[field], str) else data[field]
+            if field == "due_date":
+                raw_value = data[field].strip() if isinstance(data[field], str) else data[field]
+                value = date.fromisoformat(raw_value) if raw_value else None
+            else:
+                value = data[field].strip() if isinstance(data[field], str) else data[field]
             # Validate status if being updated
             if field == "status" and value and not is_valid_job_status(value):
-                return jsonify({"error": f"Invalid status: {value}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"}), 400
+                return jsonify(
+                    {
+                        "error": f"Invalid status: {value}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"
+                    }
+                ), 400
             if field == "address" and value != job.address:
                 address_changed = True
             setattr(job, field, value)
@@ -386,7 +416,6 @@ def update_job(job_number):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Database error occurred"}), 500
-
 
 
 @api_bp.route("/jobs/<job_number>", methods=["DELETE"])
@@ -496,7 +525,11 @@ def promote_parcel_to_address(job_number: str):
         # Try to geocode to enrich coordinates/county
         geo = geocode_address(address)
 
-        job.address = geo.get("formatted_address") if geo and geo.get("formatted_address") else address
+        job.address = (
+            geo.get("formatted_address")
+            if geo and geo.get("formatted_address")
+            else address
+        )
         if geo:
             job.lat = str(geo.get("lat")) if geo.get("lat") is not None else job.lat
             job.long = str(geo.get("lng")) if geo.get("lng") is not None else job.long
@@ -506,10 +539,12 @@ def promote_parcel_to_address(job_number: str):
 
         db.session.commit()
 
-        return jsonify({
-            "message": f"Job {job_number} promoted to address job successfully",
-            "job": job.to_dict()
-        })
+        return jsonify(
+            {
+                "message": f"Job {job_number} promoted to address job successfully",
+                "job": job.to_dict(),
+            }
+        )
 
     except Exception as e:
         db.session.rollback()
@@ -541,13 +576,17 @@ def bulk_update_status():
 
     # Validate status value
     if not is_valid_job_status(new_status):
-        return jsonify({
-            "error": f"Invalid status: {new_status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"
-        }), 400
+        return jsonify(
+            {
+                "error": f"Invalid status: {new_status}. Must be one of: {', '.join(VALID_JOB_STATUSES)}"
+            }
+        ), 400
 
     # Limit bulk operations to reasonable size
     if len(job_numbers) > MAX_BULK_OPERATION_SIZE:
-        return jsonify({"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk update"}), 400
+        return jsonify(
+            {"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk update"}
+        ), 400
 
     # Track results
     successes = []
@@ -559,10 +598,7 @@ def bulk_update_status():
             job = Job.active().filter_by(job_number=job_number).first()
 
             if not job:
-                failures.append({
-                    "job_number": job_number,
-                    "error": "Job not found"
-                })
+                failures.append({"job_number": job_number, "error": "Job not found"})
                 continue
 
             # Update status
@@ -579,24 +615,28 @@ def bulk_update_status():
 
         if failed == 0:
             # Complete success
-            return jsonify({
-                "message": f"{updated} job{'s' if updated != 1 else ''} updated successfully",
-                "updated": updated,
-                "total": total,
-                "job_numbers": successes,
-                "status": new_status
-            }), 200
+            return jsonify(
+                {
+                    "message": f"{updated} job{'s' if updated != 1 else ''} updated successfully",
+                    "updated": updated,
+                    "total": total,
+                    "job_numbers": successes,
+                    "status": new_status,
+                }
+            ), 200
         else:
             # Partial success
-            return jsonify({
-                "message": f"{updated} of {total} jobs updated",
-                "updated": updated,
-                "total": total,
-                "failed": failed,
-                "status": new_status,
-                "successes": successes,
-                "failures": failures
-            }), 207  # Multi-Status
+            return jsonify(
+                {
+                    "message": f"{updated} of {total} jobs updated",
+                    "updated": updated,
+                    "total": total,
+                    "failed": failed,
+                    "status": new_status,
+                    "successes": successes,
+                    "failures": failures,
+                }
+            ), 207  # Multi-Status
 
     except Exception as e:
         db.session.rollback()
@@ -629,7 +669,9 @@ def bulk_delete_jobs():
 
     # Limit bulk operations
     if len(job_numbers) > MAX_BULK_OPERATION_SIZE:
-        return jsonify({"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk delete"}), 400
+        return jsonify(
+            {"error": f"Maximum {MAX_BULK_OPERATION_SIZE} jobs per bulk delete"}
+        ), 400
 
     # Track results
     successes = []
@@ -643,10 +685,7 @@ def bulk_delete_jobs():
             job = Job.active().filter_by(job_number=job_number).first()
 
             if not job:
-                failures.append({
-                    "job_number": job_number,
-                    "error": "Job not found"
-                })
+                failures.append({"job_number": job_number, "error": "Job not found"})
                 continue
 
             # Perform soft delete
@@ -664,22 +703,26 @@ def bulk_delete_jobs():
 
         if failed == 0:
             # Complete success
-            return jsonify({
-                "message": f"{deleted} job{'s' if deleted != 1 else ''} deleted successfully",
-                "deleted": deleted,
-                "total": total,
-                "job_numbers": successes
-            }), 200
+            return jsonify(
+                {
+                    "message": f"{deleted} job{'s' if deleted != 1 else ''} deleted successfully",
+                    "deleted": deleted,
+                    "total": total,
+                    "job_numbers": successes,
+                }
+            ), 200
         else:
             # Partial success
-            return jsonify({
-                "message": f"{deleted} of {total} jobs deleted",
-                "deleted": deleted,
-                "total": total,
-                "failed": failed,
-                "successes": successes,
-                "failures": failures
-            }), 207  # Multi-Status
+            return jsonify(
+                {
+                    "message": f"{deleted} of {total} jobs deleted",
+                    "deleted": deleted,
+                    "total": total,
+                    "failed": failed,
+                    "successes": successes,
+                    "failures": failures,
+                }
+            ), 207  # Multi-Status
 
     except Exception as e:
         db.session.rollback()
@@ -701,7 +744,9 @@ def get_deleted_jobs():
         search_term = request.args.get("q", "").strip()
 
         # Start with deleted jobs query with eager loading
-        query = Job.deleted().options(joinedload(Job.tags)).order_by(Job.deleted_at.desc())
+        query = (
+            Job.deleted().options(joinedload(Job.tags)).order_by(Job.deleted_at.desc())
+        )
 
         # Apply search filter if provided
         if search_term:

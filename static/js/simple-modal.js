@@ -73,6 +73,9 @@ window.SimpleModal = {
                 } else if (field === 'client') {
                     const input = document.getElementById('client-input');
                     if (input) input.value = this.currentJob.client;
+                } else if (field === 'due_date') {
+                    const input = document.getElementById('due_date-input');
+                    if (input) input.value = this.currentJob.due_date || '';
                 } else if (field === 'address') {
                     const input = document.getElementById('address-input');
                     if (input) input.value = this.currentJob.address || '';
@@ -91,6 +94,11 @@ window.SimpleModal = {
                     if (input) {
                         input.focus();
                         input.select();
+                    }
+                } else if (field === 'due_date') {
+                    const input = document.getElementById('due_date-input');
+                    if (input) {
+                        input.focus();
                     }
                 } else if (field === 'address') {
                     const input = document.getElementById('address-input');
@@ -126,6 +134,9 @@ window.SimpleModal = {
         } else if (field === 'client') {
             const input = document.getElementById('client-input');
             newValue = input ? input.value.trim() : null;
+        } else if (field === 'due_date') {
+            const input = document.getElementById('due_date-input');
+            newValue = input ? input.value : null;
         } else if (field === 'address') {
             const input = document.getElementById('address-input');
             newValue = input ? input.value.trim() : null;
@@ -135,7 +146,7 @@ window.SimpleModal = {
             // Notes can be empty, so we allow null/empty string
         }
         
-        if (field !== 'notes' && !newValue) {
+        if (field !== 'notes' && field !== 'due_date' && !newValue) {
             this.showNotification('Value cannot be empty', 'error');
             return;
         }
@@ -199,6 +210,14 @@ window.SimpleModal = {
                     }
                     if (statusText) {
                         statusText.textContent = newValue;
+                    }
+                } else if (field === 'due_date') {
+                    const dueDateText = document.getElementById('due_date-view-text');
+                    const updatedDueDate = (data.job && data.job.due_date !== undefined)
+                        ? data.job.due_date
+                        : newValue;
+                    if (dueDateText) {
+                        dueDateText.textContent = updatedDueDate || 'None';
                     }
                 } else if (field === 'client') {
                     const clientText = document.getElementById('client-view-text');
@@ -639,6 +658,37 @@ window.SimpleModal = {
                                     <i class="bi bi-check-lg"></i>
                                 </button>
                                 <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('client')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Due Date Section - Enhanced -->
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Due Date</label>
+                            <div id="due_date-view" style="display: block;">
+                                <div class="flex items-center justify-between group">
+                                    <p class="text-gray-900 font-medium cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 -mx-3 -my-2"
+                                       onclick="SimpleModal.toggleEdit('due_date')"
+                                       title="Click to edit">
+                                        <span id="due_date-view-text">${job.due_date || 'None'}</span>
+                                    </p>
+                                    <button class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-xs btn-ghost" onclick="SimpleModal.toggleEdit('due_date')" title="Edit due date">
+                                        <i class="bi bi-pencil-square text-gray-400"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="due_date-edit" style="display: none;" class="flex items-center gap-2 mt-2">
+                                <input type="date"
+                                       id="due_date-input"
+                                       class="input input-bordered input-sm flex-1"
+                                       value="${job.due_date || ''}"
+                                       onkeypress="if(event.key === 'Enter') SimpleModal.saveField('due_date')"
+                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('due_date')">
+                                <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('due_date')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('due_date')">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>

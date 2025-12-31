@@ -1502,6 +1502,15 @@
                 </select>
               </div>
               <div class="mb-3">
+                <label for="editJobDueDate" class="form-label">Due Date</label>
+                <input
+                  type="date"
+                  class="input input-bordered w-full"
+                  id="editJobDueDate"
+                  x-model="editingJob.due_date"
+                />
+              </div>
+              <div class="mb-3">
                 <label for="editJobNotes" class="form-label">Notes</label>
                 <textarea
                   class="textarea textarea-bordered w-full"
@@ -1921,6 +1930,7 @@
             client: "",
             address: "",
             status: "",
+            due_date: "",
             notes: "",
           },
           newJob: {
@@ -2975,6 +2985,7 @@
               client: job.client,
               address: job.address,
               status: job.status || "",
+              due_date: job.due_date || "",
               notes: job.notes || "",
               is_parcel_job: !!job.is_parcel_job,
             };
@@ -3654,6 +3665,7 @@
                 client: this.editingJob.client,
                 address: this.editingJob.address,
                 status: this.editingJob.status,
+                due_date: this.editingJob.due_date || null,
                 notes: this.editingJob.notes,
               };
 

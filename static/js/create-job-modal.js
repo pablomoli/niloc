@@ -97,6 +97,11 @@ window.CreateJobModal = {
                                 ${statusOptions}
                             </select>
                         </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-600 text-sm font-medium mb-2">Due Date</label>
+                            <input type="date" id="job_due_date" class="input input-bordered w-full">
+                        </div>
                         
                         <div class="mb-4">
                             <label class="block text-gray-600 text-sm font-medium mb-2">Notes</label>
@@ -398,6 +403,7 @@ window.CreateJobModal = {
                 address: isAddressMode ? (document.getElementById('job_address_input').value.trim()) : undefined,
                 status: document.getElementById('job_status').value,
                 notes: document.getElementById('job_notes').value || null,
+                due_date: document.getElementById('job_due_date').value || null,
                 latitude: parseFloat(geocodeData.lat),
                 longitude: parseFloat(geocodeData.lng),
                 is_parcel_job: !isAddressMode,

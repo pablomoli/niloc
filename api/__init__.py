@@ -1,11 +1,13 @@
 # api/__init__.py - API Blueprint and shared utilities
 from flask import Blueprint, jsonify, session
+from datetime import date
 import os
 import logging
 import requests
 
 from auth_utils import login_required
 from models import db
+from datetime import date
 
 # Create API blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -39,11 +41,23 @@ def validate_job_data(data):
         # For parcel jobs, latitude and longitude are required
         if data.get("latitude") in (None, "") or data.get("longitude") in (None, ""):
             errors.append("Latitude and longitude are required for parcel jobs")
-
+    due_date_raw = (data.get("due_date") or "").strip()
+    if due_date_raw:
+        try:
+            date.fromisoformat(due_date_raw)
+        except ValueError:
+            errors.append("Invalid due date format")
     # Business rules
     job_number = data.get("job_number", "").strip().upper()
     if job_number and len(job_number) < 3:
         errors.append("Job number must be at least 3 characters")
+
+    due_date_raw = (data.get("due_date") or "").strip()
+    if due_date_raw:
+        try:
+            date.fromisoformat(due_date_raw)
+        except ValueError:
+            errors.append("Due date must be in YYYY-MM-DD format")
 
     return errors, job_number
 
@@ -88,4 +102,3 @@ def geocode_address(address):
 # Note: Import order matters - search must be imported before jobs since jobs uses search utilities
 from api import search  # Must be first - provides utilities used by jobs
 from api import jobs, tags, fieldwork, users, geocoding, routing, pois
-

@@ -10,8 +10,18 @@ logger = logging.getLogger(__name__)
 # Association table for many-to-many relation between jobs and tags
 job_tags = db.Table(
     "job_tags",
-    db.Column("job_id", db.Integer, db.ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True),
-    db.Column("tag_id", db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
+    db.Column(
+        "job_id",
+        db.Integer,
+        db.ForeignKey("jobs.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "tag_id",
+        db.Integer,
+        db.ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -42,13 +52,17 @@ class Job(db.Model):
     total_time_spent = db.Column(db.Float, default=0.0)
     # Remove tags field - it's causing database type mismatch
     # tags = db.Column(db.JSON, default=list)
-    
+
     # Parcel geocoding fields
     is_parcel_job = db.Column(db.Boolean, default=False)
     parcel_data = db.Column(db.JSON, nullable=True)
 
     # Timestamps
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    due_date = db.Column(db.Date, nullable=True)
 
     # Foreign keys (must be defined before relationships)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
@@ -183,15 +197,16 @@ class Job(db.Model):
         # Cache is_deleted check to avoid multiple calls
         is_deleted = self.is_deleted()
         display_job_number = self.original_job_number if is_deleted else self.job_number
-        
+
         # Optimize tag serialization - only serialize if tags are loaded
         tags = getattr(self, "tags", [])
         tags_dict = [tag.to_dict() for tag in tags] if tags else []
-        
+
         # Cache datetime formatting
         created_at_iso = self.created_at.isoformat() if self.created_at else None
         deleted_at_iso = self.deleted_at.isoformat() if self.deleted_at else None
-        
+        due_date_iso = self.due_date.isoformat() if self.due_date else None
+
         return {
             "id": self.id,
             "job_number": self.job_number,
@@ -216,6 +231,7 @@ class Job(db.Model):
             "parcel_data": self.parcel_data,
             "created_at": created_at_iso,
             "deleted_at": deleted_at_iso,
+            "due_date": due_date_iso,
             "deleted_by_id": self.deleted_by_id,
             "created_by_id": self.created_by_id,
             "is_deleted": is_deleted,
@@ -243,7 +259,9 @@ class FieldWork(db.Model):
     crew = db.Column(db.String(100))
     drone_card = db.Column(db.String(100))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     def to_dict(self):
         return {
@@ -266,7 +284,9 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default="user")
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     last_login = db.Column(db.DateTime(timezone=True))
     last_ip = db.Column(db.String(45))
 
@@ -288,12 +308,14 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     color = db.Column(db.String(7), default="#007bff")
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     def to_dict(self):
         """
         Serialize the Tag model to a plain dictionary for external use.
-        
+
         Returns:
             dict: Mapping with keys:
                 - "id" (int): Tag primary key.
@@ -313,6 +335,7 @@ class Tag(db.Model):
 
 class POI(db.Model):
     """Point of Interest - permanent map markers like Office, warehouse, etc."""
+
     __tablename__ = "pois"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -322,12 +345,14 @@ class POI(db.Model):
     lng = db.Column(db.Numeric(10, 7), nullable=False)
     icon = db.Column(db.String(50), default="bi-geo-alt")
     color = db.Column(db.String(7), default="#3b82f6")
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     def to_dict(self):
         """
         Return a serializable dictionary representation of the POI.
-        
+
         Returns:
             dict: Mapping with keys:
                 - id (int): Primary key of the POI.
@@ -353,8 +378,9 @@ class POI(db.Model):
     def __repr__(self):
         """
         Return a concise developer-facing representation of the POI.
-        
+
         Returns:
             A string in the format "<POI {name}>" where {name} is the POI's name.
         """
         return f"<POI {self.name}>"
+
