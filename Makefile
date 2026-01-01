@@ -1,4 +1,4 @@
-.PHONY: help setup install build run run-prod migrate upgrade health clean shell
+.PHONY: help setup install build run run-prod migrate upgrade health lint-static clean shell
 
 # Default target
 help:
@@ -11,6 +11,7 @@ help:
 	@echo "  make migrate    - Create a new database migration (use MESSAGE='description')"
 	@echo "  make upgrade    - Apply database migrations"
 	@echo "  make health     - Check API health endpoint"
+	@echo "  make lint-static - Verify cache-busting on static JS script tags"
 	@echo "  make clean      - Remove Python cache files"
 	@echo "  make shell      - Activate virtual environment shell"
 
@@ -52,6 +53,10 @@ upgrade:
 health:
 	curl http://localhost:5000/api/health
 
+# Verify static JS cache-busting is present in templates
+lint-static:
+	python3 python_scripts/check_static_version.py
+
 # Clean Python cache files
 clean:
 	find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
@@ -63,4 +68,3 @@ clean:
 shell:
 	@echo "To activate the virtual environment, run:"
 	@echo "  source venv/bin/activate"
-

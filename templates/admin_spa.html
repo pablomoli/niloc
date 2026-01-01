@@ -1787,12 +1787,12 @@
 
 {% block scripts %}
     <!-- Admin JavaScript Modules -->
-    <script src="{{ url_for('static', filename='js/admin/utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/admin/poi-icon-picker.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/admin/notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/admin/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/utils.js') }}?v={{ static_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/poi-icon-picker.js') }}?v={{ static_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/notifications.js') }}?v={{ static_version }}"></script>
+    <script src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}?v={{ static_version }}"></script>
+    <script src="{{ url_for('static', filename='js/create-job-modal.js') }}?v={{ static_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/app.js') }}?v={{ static_version }}"></script>
     <script>
       document.addEventListener("alpine:init", () => {
         // Register Admin App Component from external module
