@@ -211,14 +211,18 @@ async function performAddressSearch(searchQuery) {
                 AppState.map.removeLayer(window.currentSearchMarker);
             }
 
+            const safeDisplayName = escapeHtml(displayName);
             const popupContent = `
                 <div style="text-align: center; min-width: 200px;">
                     <strong>Search Result</strong><br>
-                    <p style="margin: 10px 0; font-size: 12px;">${displayName}</p>
+                    <p style="margin: 10px 0; font-size: 12px;">${safeDisplayName}</p>
                     <button
                         class="btn btn-primary btn-sm"
                         style="margin-top: 10px;"
-                        onclick="createJobAtLocation(${lat}, ${lng}, '${displayName.replace(/'/g, "\\'")}')"
+                        data-lat="${lat}"
+                        data-lng="${lng}"
+                        data-name="${safeDisplayName}"
+                        onclick="createJobAtLocation(parseFloat(this.dataset.lat), parseFloat(this.dataset.lng), this.dataset.name)"
                     >
                         <i class="bi bi-plus-circle"></i> Create Job Here
                     </button>

@@ -185,7 +185,8 @@ SimpleModal.renderModal = function(job, femaLink) {
                                 ${job.address && job.address !== 'N/A' ? `
                                     <button
                                         id="copyAddressBtn"
-                                        onclick="SimpleModal.copyAddress('${job.address.replace(/'/g, "\\'")}')"
+                                        data-address="${escapeHtml(job.address)}"
+                                        onclick="SimpleModal.copyAddress(this.dataset.address)"
                                         class="btn btn-sm btn-primary flex-shrink-0"
                                         title="Copy address to clipboard">
                                         <i class="bi bi-clipboard mr-1"></i>
@@ -195,7 +196,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                             </div>
                         </div>
                         <div id="address-edit" style="display: none;" class="flex items-center gap-2 mt-2">
-                            <input type="text" id="address-input" class="input input-bordered input-sm flex-1" value="${(job.address || '').replace(/"/g,'&quot;') }" onkeypress="if(event.key==='Enter') SimpleModal.saveField('address')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('address')">
+                            <input type="text" id="address-input" class="input input-bordered input-sm flex-1" value="${escapeHtml(job.address)}" onkeypress="if(event.key==='Enter') SimpleModal.saveField('address')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('address')">
                             <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('address')">
                                 <i class="bi bi-check-lg"></i>
                             </button>

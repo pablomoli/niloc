@@ -131,9 +131,9 @@ function performMarkerUpdate() {
             } else {
                 marker = L.marker([lat, lng])
                     .bindPopup(`
-                        <strong>${job.job_number}</strong><br>
-                        ${job.client}<br>
-                        ${job.address}
+                        <strong>${escapeHtml(job.job_number)}</strong><br>
+                        ${escapeHtml(job.client)}<br>
+                        ${escapeHtml(job.address)}
                     `);
             }
 
@@ -228,9 +228,9 @@ function updateJobMarker(jobNumber, updatedJob) {
             const popup = marker.getPopup();
             if (popup) {
                 popup.setContent(`
-                    <strong>${updatedJob.job_number}</strong><br>
-                    Client: ${updatedJob.client}<br>
-                    Status: ${updatedJob.status}
+                    <strong>${escapeHtml(updatedJob.job_number)}</strong><br>
+                    Client: ${escapeHtml(updatedJob.client)}<br>
+                    Status: ${escapeHtml(updatedJob.status)}
                 `);
             }
         }

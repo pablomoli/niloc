@@ -3,6 +3,26 @@
  * Centralized state management and persistence for the map application.
  */
 
+/**
+ * Escape HTML special characters to prevent XSS.
+ * Shared utility used across all map and modal modules.
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string safe for HTML insertion
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[c]));
+}
+
+// Export escapeHtml globally for use in other modules
+window.escapeHtml = escapeHtml;
+
 // Map view state persistence (center, zoom, base layer)
 const MapViewState = {
     STORAGE_KEY: 'epicmap_map_view',

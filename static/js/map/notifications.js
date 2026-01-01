@@ -15,19 +15,29 @@ function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
 
-    const icons = {
-        success: '<i class="bi bi-check-circle-fill"></i>',
-        error: '<i class="bi bi-exclamation-triangle-fill"></i>',
-        info: '<i class="bi bi-info-circle-fill"></i>',
-        warning: '<i class="bi bi-exclamation-triangle-fill"></i>'
+    const iconClasses = {
+        success: 'bi-check-circle-fill',
+        error: 'bi-exclamation-triangle-fill',
+        info: 'bi-info-circle-fill',
+        warning: 'bi-exclamation-triangle-fill'
     };
 
-    notification.innerHTML = `
-        <div class="flex items-center gap-3">
-            <span class="notification-icon">${icons[type] || icons.info}</span>
-            <span class="notification-message">${message}</span>
-        </div>
-    `;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex items-center gap-3';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'notification-icon';
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClasses[type] || iconClasses.info}`;
+    iconSpan.appendChild(icon);
+
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'notification-message';
+    messageSpan.textContent = message;
+
+    wrapper.appendChild(iconSpan);
+    wrapper.appendChild(messageSpan);
+    notification.appendChild(wrapper);
 
     container.appendChild(notification);
 

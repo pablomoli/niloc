@@ -179,7 +179,10 @@ SimpleModal.saveField = async function(field) {
                 const updatedAddr = (data.job && data.job.address) ? data.job.address : newValue;
                 if (addrText) addrText.textContent = updatedAddr;
                 if (copyBtn) {
-                    copyBtn.setAttribute('onclick', `SimpleModal.copyAddress('${(updatedAddr || '').replace(/'/g, "\\'")}')`);
+                    copyBtn.dataset.address = updatedAddr || '';
+                    copyBtn.onclick = function() {
+                        SimpleModal.copyAddress(this.dataset.address);
+                    };
                 }
                 if (data.job && data.job.county) {
                     const countyEl = document.getElementById('county-view-text');

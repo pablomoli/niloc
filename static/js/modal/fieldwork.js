@@ -248,17 +248,17 @@ SimpleModal.editFieldwork = function(fieldworkId) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
-                        <input type="text" id="edit-fw-crew" class="input input-bordered input-md w-full" value="${fieldwork.crew || ''}" placeholder="Optional">
+                        <input type="text" id="edit-fw-crew" class="input input-bordered input-md w-full" value="${escapeHtml(fieldwork.crew)}" placeholder="Optional">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
-                        <input type="text" id="edit-fw-drone-card" class="input input-bordered input-md w-full" value="${fieldwork.drone_card || ''}" placeholder="Optional">
+                        <input type="text" id="edit-fw-drone-card" class="input input-bordered input-md w-full" value="${escapeHtml(fieldwork.drone_card)}" placeholder="Optional">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea id="edit-fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2">${fieldwork.notes || ''}</textarea>
+                    <textarea id="edit-fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2">${escapeHtml(fieldwork.notes)}</textarea>
                 </div>
 
                 <div class="flex gap-2 pt-2">
