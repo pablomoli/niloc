@@ -19,15 +19,15 @@ This document outlines a plan to split large monolithic files into smaller, more
    - **Split Strategy**: Break into focused modules (state, UI, calculations)
    - **Status**: COMPLETED - Split into 6 modules
 
-3. **`static/js/map.js`** - 1,481 lines
+3. **`static/js/map.js`** - 64 lines (was 1,481)
    - **Issue**: Contains map initialization, markers, clustering, search, filters
    - **Split Strategy**: Separate concerns into modules
-   - **Status**: NOT STARTED (grew from original 1,092 lines)
+   - **Status**: COMPLETED - Split into 8 modules
 
-4. **`static/js/simple-modal.js`** - 1,383 lines
+4. **`static/js/simple-modal.js`** - 17 lines (was 1,434)
    - **Issue**: Single file handling all modal functionality
    - **Split Strategy**: Break into focused modules
-   - **Status**: NOT STARTED
+   - **Status**: COMPLETED - Split into 7 modules
 
 5. **`api/jobs.py`** - 765 lines
    - **Status**: Split from api_routes.py, could use further modularization
@@ -150,43 +150,46 @@ This document outlines a plan to split large monolithic files into smaller, more
 - [x] Update imports in map.html
 - [x] Syntax validation passed
 
-#### 2.3 Split `static/js/map.js`
-**Current State**: 1,481 lines with multiple concerns (grew from 1,092)
+#### 2.3 Split `static/js/map.js` - COMPLETED
+**Original State**: 1,481 lines with multiple concerns (grew from 1,092)
+**Current State**: 64 lines main entry + 1,419 lines in 8 modules
 **Target**: Separate concerns into modules
-**Status**: NOT STARTED
+**Status**: COMPLETED
 
-**Actions**:
-- [ ] Create `static/js/map/` directory structure
-- [ ] Split into modules:
-  - Map initialization → `static/js/map/init.js`
-  - Marker management → `static/js/map/markers.js`
-  - Clustering → `static/js/map/clustering.js`
-  - Search functionality → `static/js/map/search.js`
-  - Filtering → `static/js/map/filters.js`
-  - User location → `static/js/map/user-location.js`
-  - Layer management → `static/js/map/layers.js`
-  - State management → `static/js/map/state.js`
-- [ ] Create `static/js/map/index.js` as main entry point
-- [ ] Update imports in templates
-- [ ] Test all map functionality
+**Completed Actions**:
+- [x] Create `static/js/map/` directory structure
+- [x] Split into modules:
+  - State management → `static/js/map/state.js` (176 lines)
+  - Notifications → `static/js/map/notifications.js` (76 lines)
+  - User location → `static/js/map/location.js` (188 lines)
+  - Layer management → `static/js/map/layers.js` (169 lines)
+  - Marker management → `static/js/map/markers.js` (255 lines)
+  - POI management → `static/js/map/pois.js` (161 lines)
+  - Selection handling → `static/js/map/selection.js` (81 lines)
+  - Filtering/search → `static/js/map/filters.js` (313 lines)
+- [x] Keep `static/js/map.js` as main entry point (64 lines)
+- [x] Update imports in map.html
+- [x] Syntax validation passed
 
-#### 2.4 Split `static/js/simple-modal.js`
-**Current State**: 1,383 lines handling all modal functionality
+#### 2.4 Split `static/js/simple-modal.js` - COMPLETED
+**Original State**: 1,434 lines handling all modal functionality
+**Current State**: 17 lines main entry + 1,532 lines in 7 modules
 **Target**: Break into focused modules
-**Status**: NOT STARTED
+**Status**: COMPLETED
 
-**Actions**:
-- [ ] Create `static/js/modal/` directory structure
-- [ ] Split into modules:
-  - Core modal logic → `static/js/modal/core.js`
-  - Job display → `static/js/modal/job-display.js`
-  - Job editing → `static/js/modal/job-edit.js`
-  - Fieldwork management → `static/js/modal/fieldwork.js`
-  - Tag management → `static/js/modal/tags.js`
-  - Link generation → `static/js/modal/links.js`
-- [ ] Create `static/js/modal/index.js` as main entry point
-- [ ] Update imports in templates
-- [ ] Test modal functionality
+**Completed Actions**:
+- [x] Create `static/js/modal/` directory structure
+- [x] Split into modules:
+  - State management → `static/js/modal/state.js` (47 lines)
+  - Utilities → `static/js/modal/utils.js` (200 lines)
+  - Field editing → `static/js/modal/field-editing.js` (230 lines)
+  - Tag management → `static/js/modal/tags.js` (191 lines)
+  - Fieldwork CRUD → `static/js/modal/fieldwork.js` (415 lines)
+  - Job promotion → `static/js/modal/promotion.js` (82 lines)
+  - Modal rendering → `static/js/modal/render.js` (367 lines)
+- [x] Keep `static/js/simple-modal.js` as documentation entry point (17 lines)
+- [x] Update imports in map.html
+- [x] Syntax validation passed
 
 #### 2.5 Refactor `static/js/create-job-modal.js` - COMPLETED
 **Original State**: 595 lines
@@ -249,24 +252,23 @@ static/js/
 │   ├── calculation.js        # 207 lines
 │   ├── visualization.js      # 373 lines
 │   └── ui.js                 # 547 lines
-├── map/                      # Extract from map.js
-│   ├── index.js
-│   ├── init.js
-│   ├── state.js
-│   ├── markers.js
-│   ├── clustering.js
-│   ├── search.js
-│   ├── filters.js
-│   ├── user-location.js
-│   └── layers.js
-├── modal/                    # Extract from simple-modal.js
-│   ├── index.js
-│   ├── core.js
-│   ├── job-display.js
-│   ├── job-edit.js
-│   ├── fieldwork.js
-│   ├── tags.js
-│   └── links.js
+├── map/                      # Extract from map.js (COMPLETED)
+│   ├── state.js              # 176 lines
+│   ├── notifications.js      # 76 lines
+│   ├── location.js           # 188 lines
+│   ├── layers.js             # 169 lines
+│   ├── markers.js            # 255 lines
+│   ├── pois.js               # 161 lines
+│   ├── selection.js          # 81 lines
+│   └── filters.js            # 313 lines
+├── modal/                    # Extract from simple-modal.js (COMPLETED)
+│   ├── state.js              # 47 lines
+│   ├── utils.js              # 200 lines
+│   ├── field-editing.js      # 230 lines
+│   ├── tags.js               # 191 lines
+│   ├── fieldwork.js          # 415 lines
+│   ├── promotion.js          # 82 lines
+│   └── render.js             # 367 lines
 └── jobs/                     # Extract from create-job-modal.js
     └── parcel-geocoding.js   # CREATED
 
@@ -305,8 +307,8 @@ After each phase:
 1. ~~**Phase 1** (Backend API) - Complete existing split work~~ COMPLETED
 2. **Phase 2.1** (Admin SPA JS) - Phase 1 done (utilities extracted), Phase 2 pending
 3. ~~**Phase 2.2** (Route Planner JS) - New large file (1,689 lines)~~ COMPLETED
-4. **Phase 2.3** (Map JS) - Core functionality (1,481 lines)
-5. **Phase 2.4** (Simple Modal JS) - Modal functionality (1,383 lines)
+4. ~~**Phase 2.3** (Map JS) - Core functionality (1,481 lines)~~ COMPLETED
+5. ~~**Phase 2.4** (Simple Modal JS) - Modal functionality (1,434 lines)~~ COMPLETED
 6. ~~**Phase 2.5** (Create Job Modal) - Quick win (595 lines)~~ COMPLETED
 7. **Phase 3** (CSS) - Lower priority, all files under 500 lines
 
@@ -326,8 +328,8 @@ After each phase:
 | Phase 1: Backend API | COMPLETED | api_routes.py reduced to 8-line shim |
 | Phase 2.1: Admin SPA JS | PHASE 1 DONE | 4,305 -> 3,841 lines + 3 extracted modules (522 lines) |
 | Phase 2.2: Route Planner JS | COMPLETED | 1,689 -> 440 lines + 6 extracted modules (1,668 lines) |
-| Phase 2.3: Map JS | NOT STARTED | 1,481 lines |
-| Phase 2.4: Simple Modal JS | NOT STARTED | 1,383 lines |
+| Phase 2.3: Map JS | COMPLETED | 1,481 -> 64 lines + 8 extracted modules (1,419 lines) |
+| Phase 2.4: Simple Modal JS | COMPLETED | 1,434 -> 17 lines + 7 extracted modules (1,532 lines) |
 | Phase 2.5: Create Job Modal | COMPLETED | 595 -> 498 lines + parcel-geocoding.js |
 | Phase 3: CSS | NOT STARTED | All files under threshold |
 
