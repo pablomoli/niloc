@@ -277,7 +277,7 @@
                     </button>
                     <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
                             :class="filterTab === 'tags' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="filterTab = 'tags'">
+                            @click="switchToTags()">
                         <i class="bi bi-tags mr-1"></i> Tags
                     </button>
                 </div>
@@ -417,39 +417,44 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Leaflet MarkerCluster (optional for clustering) -->
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="{{ url_for('static', filename='js/marker-utils.js') }}?v={{ static_version }}"></script>
+<script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script defer src="{{ url_for('static', filename='js/marker-utils.js') }}?v={{ static_version }}"></script>
 <!-- Map modules -->
-<script src="{{ url_for('static', filename='js/map/state.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/notifications.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/location.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/layers.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/selection.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/markers.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/pois.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map/filters.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/map.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/state.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/notifications.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/location.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/layers.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/selection.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/markers.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/pois.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map/filters.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/map.js') }}?v={{ static_version }}"></script>
 <!-- Modal modules -->
-<script src="{{ url_for('static', filename='js/modal/state.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/utils.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/field-editing.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/tags.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/fieldwork.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/promotion.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/modal/render.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/create-job-modal.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/state.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/utils.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/field-editing.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/tags.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/fieldwork.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/promotion.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/modal/render.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}?v={{ static_version }}"></script>
+<script defer src="{{ url_for('static', filename='js/create-job-modal.js') }}?v={{ static_version }}"></script>
 <script src="{{ url_for('static', filename='js/fab-menu.js') }}?v={{ static_version }}"></script>
-<!-- Route Planner modules -->
-<script src="{{ url_for('static', filename='js/route-planner/state.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner/stops.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner/gps.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner/calculation.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner/visualization.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner/ui.js') }}?v={{ static_version }}"></script>
-<script src="{{ url_for('static', filename='js/route-planner.js') }}?v={{ static_version }}"></script>
+<!-- Route Planner (lazy-loaded) -->
+<script>
+  window.ROUTE_PLANNER_SCRIPTS = [
+    "{{ url_for('static', filename='js/route-planner/state.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/stops.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/gps.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/calculation.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/visualization.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/ui.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner.js') }}?v={{ static_version }}"
+  ];
+</script>
+<script defer src="{{ url_for('static', filename='js/route-planner-loader.js') }}?v={{ static_version }}"></script>
 <script>
   document.addEventListener('alpine:init', () => {
     console.log('Alpine initialized');

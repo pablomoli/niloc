@@ -38,19 +38,28 @@ function fabMenu() {
         selectedStatuses: new Set(['all']), // Local reactive state for UI
         availableTags: [],
         selectedTags: new Set(), // Local reactive state for tag filters
+        tagsLoaded: false,
+        tagsLoadingPromise: null,
         currentBaseLayer: 'satellite',
         countiesVisible: false,
         poisVisible: true, // POI visibility toggle (default: visible)
         useClustering: true,
         clusteringSupported: true,
         selectedJobCount: 0, // Track selected jobs for route planning button (includes POIs)
+        routePlannerPrefetched: false,
 
         init() {
             // Update selected job count periodically and on events (includes both jobs and POIs)
             const updateSelectedCount = () => {
                 const jobCount = window.AppState?.selectedJobs?.size || 0;
                 const poiCount = window.AppState?.selectedPois?.size || 0;
-                this.selectedJobCount = jobCount + poiCount;
+                const total = jobCount + poiCount;
+                this.selectedJobCount = total;
+
+                // Preload route planner after the user has something selected.
+                if (total > 0) {
+                    this.prefetchRoutePlanner();
+                }
             };
 
             // Initial update
@@ -76,9 +85,6 @@ function fabMenu() {
             // Sync local reactive state with global state
             this.selectedStatuses = new Set(window.activeStatusFilters);
             this.selectedTags = new Set(window.activeTagFilters);
-            
-            // Load tags
-            this.loadTags();
             
             // Sync map layer state
             this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
@@ -110,17 +116,40 @@ function fabMenu() {
             });
         },
         
-        async loadTags() {
-            try {
-                const response = await fetch('/api/tags');
-                if (response.ok) {
-                    const tags = await response.json();
-                    this.availableTags = Array.isArray(tags) ? tags : [];
+        async ensureTagsLoaded() {
+            if (this.tagsLoaded && this.availableTags.length > 0) return this.availableTags;
+            if (this.tagsLoadingPromise) return this.tagsLoadingPromise;
+
+            this.tagsLoadingPromise = (async () => {
+                try {
+                    if (window.TagCache && typeof window.TagCache.loadOnce === 'function') {
+                        const tags = await window.TagCache.loadOnce();
+                        this.availableTags = Array.isArray(tags) ? tags : [];
+                    } else {
+                        const response = await fetch('/api/tags');
+                        if (response.ok) {
+                            const tags = await response.json();
+                            this.availableTags = Array.isArray(tags) ? tags : [];
+                        } else {
+                            this.availableTags = [];
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load tags:', error);
+                    this.availableTags = [];
+                } finally {
+                    this.tagsLoaded = true;
+                    this.tagsLoadingPromise = null;
                 }
-            } catch (error) {
-                console.error('Failed to load tags:', error);
-                this.availableTags = [];
-            }
+                return this.availableTags;
+            })();
+
+            return this.tagsLoadingPromise;
+        },
+
+        switchToTags() {
+            this.filterTab = 'tags';
+            this.ensureTagsLoaded();
         },
         
         updateAvailableStatuses() {
@@ -151,6 +180,7 @@ function fabMenu() {
             this.$nextTick(() => {
                 this.$refs.searchInput?.focus();
             });
+            this.ensureTagsLoaded();
         },
         
         closeAdvancedSearch() {
@@ -611,19 +641,55 @@ function fabMenu() {
 
         openRoutePlanner() {
             this.menuOpen = false;
-            if (window.RoutePlanner) {
-                window.RoutePlanner.show();
-            } else if (window.showNotification) {
-                window.showNotification('Route planner not available', 'error');
+            this.ensureRoutePlannerLoaded()
+                .then(() => {
+                    if (window.RoutePlanner && typeof window.RoutePlanner.show === 'function') {
+                        window.RoutePlanner.show();
+                    } else if (window.showNotification) {
+                        window.showNotification('Route planner not available', 'error');
+                    }
+                })
+                .catch(() => {
+                    if (window.showNotification) {
+                        window.showNotification('Route planner not available', 'error');
+                    }
+                });
+        },
+
+        async ensureRoutePlannerLoaded() {
+            if (window.RoutePlanner) return;
+            if (window.RoutePlannerLoader && typeof window.RoutePlannerLoader.load === 'function') {
+                await window.RoutePlannerLoader.load();
+                if (window.RoutePlanner && typeof window.RoutePlanner.init === 'function' && window.AppState?.map && !window.RoutePlanner.initialized) {
+                    window.RoutePlanner.init();
+                }
+            } else {
+                throw new Error('Route planner loader unavailable');
             }
+        },
+
+        prefetchRoutePlanner() {
+            if (this.routePlannerPrefetched) return;
+            this.routePlannerPrefetched = true;
+            this.ensureRoutePlannerLoaded().catch((error) => {
+                console.warn('Route planner preload failed:', error);
+                this.routePlannerPrefetched = false;
+            });
         }
     };
 }
 
-// Register Alpine data on init
-document.addEventListener('alpine:init', () => {
-    Alpine.data('fabMenu', fabMenu);
-});
+// Register Alpine data, even if Alpine loaded earlier
+function registerFabMenu() {
+    if (window.Alpine && typeof window.Alpine.data === 'function') {
+        window.Alpine.data('fabMenu', fabMenu);
+    }
+}
+if (window.Alpine) {
+    registerFabMenu();
+} else {
+    document.addEventListener('alpine:init', registerFabMenu);
+}
 
 // Export for debugging
 window.fabMenu = fabMenu;

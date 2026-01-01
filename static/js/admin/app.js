@@ -25,6 +25,9 @@ window.adminAppComponent = function() {
     deletedSortField: 'deleted_at',
     deletedSortAsc: false,
     tags: [],
+    tagsLoaded: false,
+    tagsIncludeUsage: false,
+    _tagsPromise: null,
     pois: [],
     poiIconChoices: [
       'bi-building',
@@ -197,7 +200,6 @@ window.adminAppComponent = function() {
 
     init() {
       this.ensureTabData('dashboard');
-      this.loadTags(true);
       document.addEventListener('jobCreated', async () => {
         await Promise.all([
           this.loadJobs(true),
@@ -259,8 +261,8 @@ window.adminAppComponent = function() {
         return;
       }
       if (tab === 'tags') {
-        if (this.tags.length === 0) {
-          this.loadTags(true);
+        if (!this.tagsLoaded || !this.tagsIncludeUsage) {
+          await this.loadTags(true);
         }
       }
       if (tab === 'pois') {
@@ -518,21 +520,38 @@ window.adminAppComponent = function() {
     },
 
     async loadTags(includeUsage = false, force = false) {
-      try {
-        const fetcher = window.cachedFetch || window.fetch;
-        const url = '/api/tags' + (includeUsage ? '?include_usage=true' : '');
-        const resp = await fetcher(url, {}, { ttl: 120_000, force });
-        if (!resp.ok) {
-          throw new Error(`Failed to load tags: ${resp.status} ${resp.statusText}`);
-        }
-        const arr = await resp.json();
-        this.tags = Array.isArray(arr) ? arr : [];
-        this.tagsWithUsage = Array.isArray(arr) ? arr : [];
-      } catch (e) {
-        console.error('Failed to load tags', e);
-        this.tags = [];
-        this.tagsWithUsage = [];
+      if (this._tagsPromise) return this._tagsPromise;
+      if (this.tagsLoaded && !force) {
+        // If usage counts are requested and not yet fetched, continue; otherwise skip.
+        if (!includeUsage || this.tagsIncludeUsage) return;
       }
+
+      this._tagsPromise = (async () => {
+        try {
+          const fetcher = window.cachedFetch || window.fetch;
+          const url = '/api/tags' + (includeUsage ? '?include_usage=true' : '');
+          const resp = await fetcher(url, {}, { ttl: 120_000, force });
+          if (!resp.ok) {
+            throw new Error(`Failed to load tags: ${resp.status} ${resp.statusText}`);
+          }
+          const arr = await resp.json();
+          this.tags = Array.isArray(arr) ? arr : [];
+          this.tagsWithUsage = Array.isArray(arr) ? arr : [];
+          this.tagsLoaded = true;
+          if (includeUsage) {
+            this.tagsIncludeUsage = true;
+          }
+        } catch (e) {
+          console.error('Failed to load tags', e);
+          this.tags = [];
+          this.tagsWithUsage = [];
+          this.tagsLoaded = false;
+        } finally {
+          this._tagsPromise = null;
+        }
+      })();
+
+      return this._tagsPromise;
     },
 
     async createTag() {
@@ -1017,6 +1036,9 @@ window.adminAppComponent = function() {
 
     toggleTagDropdown() {
       this.tagDropdownOpen = !this.tagDropdownOpen;
+      if (this.tagDropdownOpen && (!this.tagsLoaded || this.tags.length === 0)) {
+        this.loadTags(false);
+      }
     },
 
     // Tag helpers
@@ -1913,4 +1935,3 @@ window.adminAppComponent = function() {
 
   };
 };
-

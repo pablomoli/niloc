@@ -51,14 +51,56 @@ function initializeApplication() {
 
     // Load POIs from server
     loadPois();
-
-    // Initialize user location after a short delay
-    setTimeout(initUserLocation, 1000);
 }
 
 // Run initialization when script loads
 initializeApplication();
 
+// Provide a lightweight centerOnOffice fallback; Route Planner overrides when loaded.
+const DEFAULT_OFFICE_LOCATION = {
+    lat: 28.5039192,
+    lng: -81.0773325,
+    name: 'Office'
+};
+
+async function centerOnOfficeFallback() {
+    const initialHandler = window.centerOnOffice;
+
+    // If RoutePlanner has loaded, defer to its implementation.
+    if (window.RoutePlannerLoader?.isLoaded() && window.centerOnOffice !== centerOnOfficeFallback) {
+        return window.centerOnOffice();
+    }
+
+    // Try to load the route planner on demand.
+    if (window.RoutePlannerLoader && typeof window.RoutePlannerLoader.load === 'function') {
+        try {
+            await window.RoutePlannerLoader.load();
+        } catch (error) {
+            console.error('Failed to load route planner for centering:', error);
+        }
+        if (window.centerOnOffice && window.centerOnOffice !== initialHandler) {
+            return window.centerOnOffice();
+        }
+    }
+
+    // Fallback: center on epicenter POI or default office.
+    const pois = window.AppState?.pois || [];
+    const epicenter = pois.find(poi =>
+        poi.name && poi.name.toLowerCase().includes('epicenter')
+    );
+    const start = epicenter || DEFAULT_OFFICE_LOCATION;
+
+    if (start && window.AppState?.map && Number.isFinite(start.lat) && Number.isFinite(start.lng)) {
+        window.AppState.map.setView([start.lat, start.lng], 14);
+        if (window.showNotification) {
+            window.showNotification(`Centered on ${start.name || 'office'}`, 'info');
+        }
+    } else {
+        console.warn('No office location available to center on.');
+    }
+}
+
+window.centerOnOffice = centerOnOfficeFallback;
+
 // Export AppState for debugging and external access
 window.AppState = AppState;
-
