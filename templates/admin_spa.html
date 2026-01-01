@@ -659,10 +659,10 @@
                       <i class="bi" :class="userSortField === 'role' ? (userSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
                     </div>
                   </th>
-                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortUsers('last_login')">
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortUsers('last_active')">
                     <div class="flex items-center gap-2">
-                      Last Login
-                      <i class="bi" :class="userSortField === 'last_login' ? (userSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
+                      Last Active
+                      <i class="bi" :class="userSortField === 'last_active' ? (userSortAsc ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up text-gray-400'"></i>
                     </div>
                   </th>
                   <th class="text-right">Actions</th>
@@ -682,8 +682,8 @@
                       ></span>
                     </td>
                     <td>
-                      <div class="text-sm" x-text="formatUserDate(user.last_login)"></div>
-                      <div class="text-xs text-gray-500" x-show="user.last_login" x-text="formatUserTime(user.last_login)"></div>
+                      <div class="text-sm" x-text="formatUserDate(user.last_active)"></div>
+                      <div class="text-xs text-gray-500" x-show="user.last_active" x-text="formatUserTime(user.last_active)"></div>
                     </td>
                     <td>
                       <div class="flex justify-end gap-2">

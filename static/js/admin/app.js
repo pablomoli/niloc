@@ -786,7 +786,7 @@ window.adminAppComponent = function() {
         if (aVal == null) aVal = '';
         if (bVal == null) bVal = '';
 
-        if (this.userSortField === 'last_login') {
+        if (this.userSortField === 'last_active') {
           if (!aVal) return 1;
           if (!bVal) return -1;
           aVal = new Date(aVal);

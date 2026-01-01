@@ -101,7 +101,7 @@ System user accounts and authentication.
 | `password` | VARCHAR(255) | NOT NULL | Bcrypt hashed password |
 | `role` | VARCHAR(20) | DEFAULT 'user' | User role (user/admin) |
 | `created_at` | TIMESTAMP | DEFAULT NOW() | Account creation timestamp |
-| `last_login` | TIMESTAMP | | Last login timestamp |
+| `last_active` | TIMESTAMP | | Last activity timestamp (updates on any authenticated request) |
 | `last_ip` | VARCHAR(45) | | Last login IP address |
 
 ### Tags Table (`tags`)

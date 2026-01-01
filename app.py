@@ -214,7 +214,7 @@ def login():
             session.permanent = user.role == "admin"
             session["user_id"] = user.id
             session["role"] = user.role
-            user.last_login = datetime.now(timezone.utc)
+            user.last_active = datetime.now(timezone.utc)
             user.last_ip = get_client_ip()
             db.session.commit()
             return redirect("/")
@@ -277,13 +277,30 @@ def add_cache_headers(response):
 def log_slow_queries():
     """
     Record the request start time for API endpoints.
-    
+
     If the current request path starts with "/api/", stores the current epoch time in `g.start_time` so downstream handlers can measure request duration for slow-query or performance logging.
     """
     if request.path.startswith("/api/"):
         import time
 
         g.start_time = time.time()
+
+
+@app.before_request
+def update_last_active():
+    """
+    Update user's last_active timestamp on authenticated requests.
+
+    Uses 5-minute windowed updates to avoid database writes on every request.
+    Only updates if last_active is None or more than 5 minutes old.
+    """
+    if "user_id" in session:
+        user = User.query.get(session["user_id"])
+        if user:
+            now = datetime.now(timezone.utc)
+            if not user.last_active or (now - user.last_active).total_seconds() > 300:
+                user.last_active = now
+                db.session.commit()
 
 
 @app.after_request

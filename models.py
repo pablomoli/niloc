@@ -287,7 +287,7 @@ class User(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    last_login = db.Column(db.DateTime(timezone=True))
+    last_active = db.Column(db.DateTime(timezone=True))
     last_ip = db.Column(db.String(45))
 
     def to_dict(self):
@@ -297,7 +297,7 @@ class User(db.Model):
             "name": self.name,
             "role": self.role,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_login": self.last_login.isoformat() if self.last_login else None,
+            "last_active": self.last_active.isoformat() if self.last_active else None,
             "last_ip": self.last_ip,
         }
 
