@@ -1,5 +1,8 @@
 /* Admin SPA styles extracted from templates/admin_spa.html (Issue #26) */
 
+/* Hide elements until Alpine.js initializes */
+[x-cloak] { display: none !important; }
+
 /* Typography */
 body {
   font-family: "Montserrat", sans-serif !important;
