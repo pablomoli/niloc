@@ -113,7 +113,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                                 <p class="text-gray-900 font-medium cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 -mx-3 -my-2"
                                    onclick="SimpleModal.toggleEdit('client')"
                                    title="Click to edit">
-                                    <span id="client-view-text">${job.client || 'N/A'}</span>
+                                    <span id="client-view-text">${escapeHtml(job.client) || 'N/A'}</span>
                                 </p>
                                 <button class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-xs btn-ghost" onclick="SimpleModal.toggleEdit('client')" title="Edit client">
                                     <i class="bi bi-pencil-square text-gray-400"></i>
@@ -124,7 +124,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                             <input type="text"
                                    id="client-input"
                                    class="input input-bordered input-sm flex-1"
-                                   value="${job.client || ''}"
+                                   value="${escapeHtml(job.client) || ''}"
                                    onkeypress="if(event.key === 'Enter') SimpleModal.saveField('client')"
                                    onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('client')">
                             <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('client')">
@@ -176,10 +176,10 @@ SimpleModal.renderModal = function(job, femaLink) {
                                     <p id="address-view-text" class="text-gray-900 font-medium leading-relaxed cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-white -mx-3 -my-2"
                                        onclick="SimpleModal.toggleEdit('address')"
                                        title="Click to edit">
-                                        ${job.address || 'N/A'}
+                                        ${escapeHtml(job.address) || 'N/A'}
                                     </p>
                                     <div class="mt-2">
-                                        <span id="county-view-text" class="text-xs text-gray-500 font-medium">${job.county || 'N/A'} County</span>
+                                        <span id="county-view-text" class="text-xs text-gray-500 font-medium">${escapeHtml(job.county) || 'N/A'} County</span>
                                     </div>
                                 </div>
                                 ${job.address && job.address !== 'N/A' ? `
@@ -227,7 +227,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                                 <p class="text-gray-700 leading-relaxed cursor-pointer hover:text-primary transition-colors group"
                                    onclick="SimpleModal.toggleEdit('notes')"
                                    title="Click to edit">
-                                    <span id="notes-view-text">${job.notes || 'No notes'}</span>
+                                    <span id="notes-view-text">${escapeHtml(job.notes) || 'No notes'}</span>
                                     <i class="bi bi-pencil-square ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" style="font-size: 12px;"></i>
                                 </p>
                             </div>
@@ -237,7 +237,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                                    class="textarea textarea-bordered textarea-sm w-full"
                                    rows="4"
                                    placeholder="Add notes about this job..."
-                                   onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('notes')">${job.notes || ''}</textarea>
+                                   onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('notes')">${escapeHtml(job.notes) || ''}</textarea>
                             <div class="flex items-center gap-2">
                                 <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('notes')">
                                     <i class="bi bi-check-lg"></i> Save
