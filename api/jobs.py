@@ -309,7 +309,13 @@ def create_job():
         ), 400
 
     due_date_raw = (data.get("due_date") or "").strip()
-    due_date = date.fromisoformat(due_date_raw) if due_date_raw else None
+    due_date = None
+    if due_date_raw:
+        try:
+            due_date = date.fromisoformat(due_date_raw)
+        except ValueError:
+            return jsonify({"error": f"Invalid due_date format: {due_date_raw}. Expected YYYY-MM-DD"}), 400
+
     # Create job object
     job_data = {
         "job_number": job_number,
@@ -387,7 +393,12 @@ def update_job(job_number):
         if field in data:
             if field == "due_date":
                 raw_value = data[field].strip() if isinstance(data[field], str) else data[field]
-                value = date.fromisoformat(raw_value) if raw_value else None
+                value = None
+                if raw_value:
+                    try:
+                        value = date.fromisoformat(raw_value)
+                    except ValueError:
+                        return jsonify({"error": f"Invalid due_date format: {raw_value}. Expected YYYY-MM-DD"}), 400
             else:
                 value = data[field].strip() if isinstance(data[field], str) else data[field]
             # Validate status if being updated

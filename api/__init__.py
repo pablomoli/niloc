@@ -41,12 +41,6 @@ def validate_job_data(data):
         # For parcel jobs, latitude and longitude are required
         if data.get("latitude") in (None, "") or data.get("longitude") in (None, ""):
             errors.append("Latitude and longitude are required for parcel jobs")
-    due_date_raw = (data.get("due_date") or "").strip()
-    if due_date_raw:
-        try:
-            date.fromisoformat(due_date_raw)
-        except ValueError:
-            errors.append("Invalid due date format")
     # Business rules
     job_number = data.get("job_number", "").strip().upper()
     if job_number and len(job_number) < 3:
