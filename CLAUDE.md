@@ -218,24 +218,42 @@ Categorization system for jobs (currently unused but available).
 ```
 ├── app.py                     # Main Flask application entry point
 ├── models.py                  # SQLAlchemy database models
-├── api_routes.py             # REST API endpoints
+├── api/                       # Modular API endpoints
+│   ├── __init__.py           # Blueprint registration
+│   ├── jobs.py               # Job CRUD operations
+│   ├── search.py             # Search and autocomplete
+│   ├── fieldwork.py          # Time tracking
+│   ├── users.py              # User management
+│   ├── tags.py               # Tag management
+│   ├── pois.py               # Points of interest
+│   ├── geocoding.py          # Address/parcel geocoding
+│   └── routing.py            # Route optimization
 ├── admin/
-│   ├── __init__.py           # Admin blueprint initialization  
+│   ├── __init__.py           # Admin blueprint initialization
 │   └── routes.py             # Admin view routes
 ├── templates/
 │   ├── map.html              # Main map interface
 │   ├── admin_spa.html        # Admin dashboard SPA
 │   └── login.html            # Login page
-├── static/js/
-│   ├── map.js                # Core map functionality
-│   ├── simple-modal.js       # Job details modal with fieldwork
-│   ├── marker-utils.js       # Map marker utilities
+├── static/js/                 # See static/js/README.md for full architecture
+│   ├── map/                  # Map interface modules (8 modules)
+│   ├── modal/                # Job detail modal modules (7 modules)
+│   ├── route-planner/        # Route planning modules (6 modules)
+│   ├── admin/                # Admin dashboard modules (4 modules)
+│   ├── jobs/                 # Job-related utilities
+│   ├── map.js                # Map entry point
+│   ├── simple-modal.js       # Modal entry point
+│   ├── route-planner.js      # Route planner entry point
+│   ├── fab-menu.js           # Floating action button menu
 │   ├── create-job-modal.js   # Job creation modal
-│   └── fab-menu.js           # Floating action button menu
+│   ├── marker-utils.js       # Marker styling utilities
+│   └── cached-fetch.js       # API response caching
 ├── auth_utils.py             # Authentication utilities
 ├── db_utils.py              # Database utilities
 └── utils.py                 # General utilities
 ```
+
+**Frontend Architecture**: See `static/js/README.md` for detailed documentation on the modular JavaScript architecture, including module patterns, dependencies, and guidelines for adding new modules.
 
 ## Development Workflow
 
