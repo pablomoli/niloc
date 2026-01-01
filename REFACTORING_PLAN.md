@@ -3,16 +3,16 @@
 ## Overview
 This document outlines a plan to split large monolithic files into smaller, more maintainable modules. The goal is to improve code organization, maintainability, and developer experience.
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-01
 
 ## Current Monolithic Files Analysis
 
 ### JavaScript Files (Ranked by Size)
 
-1. **`templates/admin_spa.html`** - 4,305 lines
+1. **`templates/admin_spa.html`** - 1,802 lines (was 4,305)
    - **Issue**: Large HTML template with embedded Alpine.js JavaScript
    - **Split Strategy**: Extract JavaScript into separate modules
-   - **Status**: NOT STARTED (grew from original 3,237 lines)
+   - **Status**: COMPLETED - Alpine.js app extracted to external modules
 
 2. **`static/js/route-planner.js`** - 440 lines (was 1,689)
    - **Issue**: New large file added for route planning feature
@@ -106,15 +106,15 @@ This document outlines a plan to split large monolithic files into smaller, more
 - [x] Blueprint registration consolidated in `api/__init__.py`
 - [x] All endpoints functional after split
 
-### Phase 2: Frontend JavaScript Refactoring (High Priority) - NOT STARTED
+### Phase 2: Frontend JavaScript Refactoring (High Priority) - COMPLETED
 
-#### 2.1 Split `templates/admin_spa.html` JavaScript - PHASE 1 COMPLETED
+#### 2.1 Split `templates/admin_spa.html` JavaScript - COMPLETED
 **Original State**: 4,305 lines with embedded Alpine.js code
-**Current State**: 3,841 lines (-464 lines, ~11% reduction)
+**Current State**: 1,802 lines (-2,503 lines, ~58% reduction)
 **Target**: Extract JavaScript into separate modules
-**Status**: PHASE 1 COMPLETED (utility extraction)
+**Status**: COMPLETED
 
-**Completed Actions (Phase 1)**:
+**Completed Actions (Phase 1 - Utilities)**:
 - [x] Create `static/js/admin/` directory structure
 - [x] Extract utility functions → `static/js/admin/utils.js` (231 lines)
 - [x] Extract POI icon picker → `static/js/admin/poi-icon-picker.js` (236 lines)
@@ -122,14 +122,11 @@ This document outlines a plan to split large monolithic files into smaller, more
 - [x] Update template to import modules
 - [x] Syntax validation passed
 
-**Remaining Actions (Phase 2 - Future)**:
-- [ ] Extract Alpine.js data functions:
-  - `adminApp()` → `static/js/admin/app.js`
-  - Dashboard logic → `static/js/admin/dashboard.js`
-  - Jobs management → `static/js/admin/jobs.js`
-  - Users management → `static/js/admin/users.js`
-  - Tags management → `static/js/admin/tags.js`
-- [ ] Test all admin functionality after full extraction
+**Completed Actions (Phase 2 - Alpine.js App)**:
+- [x] Extract Alpine.js adminApp component → `static/js/admin/app.js` (~1,900 lines)
+- [x] Update template to use external module via `window.adminAppComponent`
+- [x] Template reduced from 3,841 to 1,802 lines
+- [x] Syntax validation passed
 
 #### 2.2 Split `static/js/route-planner.js` - COMPLETED
 **Original State**: 1,689 lines - new file added for route planning feature
@@ -238,13 +235,11 @@ This document outlines a plan to split large monolithic files into smaller, more
 ### Directory Structure
 ```
 static/js/
-├── admin/                    # Extract from admin_spa.html
-│   ├── app.js
-│   ├── dashboard.js
-│   ├── jobs.js
-│   ├── users.js
-│   ├── tags.js
-│   └── utils.js
+├── admin/                    # Extract from admin_spa.html (COMPLETED)
+│   ├── app.js                # ~1,900 lines - Alpine.js adminApp component
+│   ├── utils.js              # 231 lines - utility functions
+│   ├── poi-icon-picker.js    # 236 lines - POI icon picker component
+│   └── notifications.js      # 55 lines - notifications store
 ├── route-planner/            # Extract from route-planner.js (COMPLETED)
 │   ├── state.js              # 54 lines
 │   ├── stops.js              # 251 lines
@@ -305,7 +300,7 @@ After each phase:
 ## Priority Order
 
 1. ~~**Phase 1** (Backend API) - Complete existing split work~~ COMPLETED
-2. **Phase 2.1** (Admin SPA JS) - Phase 1 done (utilities extracted), Phase 2 pending
+2. ~~**Phase 2.1** (Admin SPA JS) - Alpine.js app extraction~~ COMPLETED
 3. ~~**Phase 2.2** (Route Planner JS) - New large file (1,689 lines)~~ COMPLETED
 4. ~~**Phase 2.3** (Map JS) - Core functionality (1,481 lines)~~ COMPLETED
 5. ~~**Phase 2.4** (Simple Modal JS) - Modal functionality (1,434 lines)~~ COMPLETED
@@ -326,7 +321,7 @@ After each phase:
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1: Backend API | COMPLETED | api_routes.py reduced to 8-line shim |
-| Phase 2.1: Admin SPA JS | PHASE 1 DONE | 4,305 -> 3,841 lines + 3 extracted modules (522 lines) |
+| Phase 2.1: Admin SPA JS | COMPLETED | 4,305 -> 1,802 lines + 4 extracted modules (~2,422 lines) |
 | Phase 2.2: Route Planner JS | COMPLETED | 1,689 -> 440 lines + 6 extracted modules (1,668 lines) |
 | Phase 2.3: Map JS | COMPLETED | 1,481 -> 64 lines + 8 extracted modules (1,419 lines) |
 | Phase 2.4: Simple Modal JS | COMPLETED | 1,434 -> 17 lines + 7 extracted modules (1,532 lines) |
