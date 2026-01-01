@@ -421,7 +421,24 @@
 <!-- Leaflet MarkerCluster (optional for clustering) -->
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="{{ url_for('static', filename='js/marker-utils.js') }}"></script>
-<script src="{{ url_for('static', filename='js/simple-modal.js') }}"></script>
+<!-- Map modules -->
+<script src="{{ url_for('static', filename='js/map/state.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/location.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/layers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/markers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/pois.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/selection.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/filters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<!-- Modal modules -->
+<script src="{{ url_for('static', filename='js/modal/state.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/field-editing.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/tags.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/fieldwork.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/promotion.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modal/render.js') }}"></script>
 <script src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}"></script>
 <script src="{{ url_for('static', filename='js/create-job-modal.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fab-menu.js') }}"></script>
@@ -433,7 +450,6 @@
 <script src="{{ url_for('static', filename='js/route-planner/visualization.js') }}"></script>
 <script src="{{ url_for('static', filename='js/route-planner/ui.js') }}"></script>
 <script src="{{ url_for('static', filename='js/route-planner.js') }}"></script>
-<script src="{{ url_for('static', filename='js/map.js') }}"></script>
 <script>
   document.addEventListener('alpine:init', () => {
     console.log('Alpine initialized');
