@@ -4,21 +4,39 @@
  */
 
 /**
+ * Get text color class based on background color brightness.
+ */
+SimpleModal.getTagTextColor = function(tagColor) {
+    if (!tagColor) return 'tag-text-dark';
+    const hex = tagColor.replace("#", "");
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
+};
+
+/**
  * Generate tags HTML (read-only chips).
  */
 SimpleModal.generateTagsHTML = function(job) {
     try {
         const tags = Array.isArray(job?.tags) ? job.tags : [];
-        if (!tags.length) return '<span class="text-gray-500">None</span>';
+        if (!tags.length) return '<span style="color: #9ca3af; font-size: 0.875rem; font-style: italic;">No tags assigned</span>';
         const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-        return tags.map(t => `
-            <span class="badge border-2" style="border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}">
-                ${esc(t.name)}
-                <button class="ml-1 text-xs" onclick="SimpleModal.removeTag(${t.id})" title="Remove">x</button>
-            </span>
-        `).join('');
+        return tags.map(t => {
+            const textClass = this.getTagTextColor(t.color);
+            return `
+                <span class="epic-tag-filled ${textClass}" style="background-color:${t.color||'#007bff'};">
+                    ${esc(t.name)}
+                    <button class="remove-btn" onclick="SimpleModal.removeTag(${t.id})" title="Remove tag">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </span>
+            `;
+        }).join('');
     } catch (_) {
-        return '<span class="text-gray-500">None</span>';
+        return '<span style="color: #9ca3af; font-size: 0.875rem; font-style: italic;">No tags assigned</span>';
     }
 };
 
@@ -135,11 +153,15 @@ SimpleModal.updateTagSuggestions = function() {
         panel.style.display = 'none';
         return;
     }
-    panel.innerHTML = matches.map(t => `
-        <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2" onclick="SimpleModal.addExistingTag(${t.id})">
-            <span class="badge badge-ghost" style="color:${t.color||'#007bff'}; border-color:${t.color||'#007bff'}">${(t.name||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</span>
-        </button>
-    `).join('');
+    panel.innerHTML = matches.map(t => {
+        const textClass = this.getTagTextColor(t.color);
+        const escapedName = (t.name||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        return `
+            <button class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors" onclick="SimpleModal.addExistingTag(${t.id})">
+                <span class="epic-tag-filled ${textClass}" style="background-color:${t.color||'#007bff'}; padding: 6px 12px; font-size: 0.75rem;">${escapedName}</span>
+            </button>
+        `;
+    }).join('');
     panel.style.display = 'block';
 };
 

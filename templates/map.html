@@ -103,312 +103,336 @@
         
         <!-- Enhanced Search Overlay -->
         <div x-show="searchOpen"
-             x-transition:enter.duration.300ms
-             x-transition:leave.duration.200ms
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
              @click.self="closeAdvancedSearch()"
-             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[2000]"
+             class="epic-modal-backdrop"
              x-cloak>
-            <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                        @click="closeAdvancedSearch()">✕</button>
-                        
-                <h3 class="font-bold text-lg mb-4 text-primary">Advanced Search</h3>
-                
-                <!-- Search Tabs -->
-                <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
-                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'address' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="searchTab = 'address'">
-                        <i class="bi bi-geo-alt mr-1"></i> Address
-                    </button>
-                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'parcel' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="searchTab = 'parcel'">
-                        <i class="bi bi-map mr-1"></i> Parcel
-                    </button>
-                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="searchTab === 'client' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="searchTab = 'client'">
-                        <i class="bi bi-person mr-1"></i> Client
+            <div class="epic-modal modal-lg"
+                 x-show="searchOpen"
+                 x-transition:enter="transition ease-out duration-300 delay-50"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-98"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2">
+                <div class="epic-modal-header">
+                    <div class="epic-modal-subtitle">Find Jobs</div>
+                    <h3 class="epic-modal-title">Advanced Search</h3>
+                    <button class="epic-modal-close" @click="closeAdvancedSearch()" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
-                
-                <!-- Address Search Tab -->
-                <div x-show="searchTab === 'address'" class="space-y-4">
-                    <div class="text-center">
-                        <label class="block text-gray-400 text-sm font-medium mb-2">
-                            Address
-                        </label>
-                        <input type="text" 
-                               class="input input-bordered w-full max-w-md mx-auto"
-                               placeholder="Enter address..."
-                               x-model="addressSearch"
-                               @keyup.enter="performAddressSearch()"
-                               x-ref="searchInput">
+
+                <div class="epic-modal-body">
+                    <!-- Search Tabs -->
+                    <div class="epic-form-section">
+                        <div class="epic-tabs">
+                            <button class="epic-tab" :class="{ 'active': searchTab === 'address' }" @click="searchTab = 'address'">
+                                <i class="bi bi-geo-alt"></i> Address
+                            </button>
+                            <button class="epic-tab" :class="{ 'active': searchTab === 'parcel' }" @click="searchTab = 'parcel'">
+                                <i class="bi bi-map"></i> Parcel
+                            </button>
+                            <button class="epic-tab" :class="{ 'active': searchTab === 'client' }" @click="searchTab = 'client'">
+                                <i class="bi bi-person"></i> Client
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="closeAdvancedSearch()">Cancel</button>
-                        <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" @click="performAddressSearch()">Search</button>
+
+                    <!-- Address Search Tab -->
+                    <div x-show="searchTab === 'address'">
+                        <div class="epic-form-section">
+                            <label class="epic-form-label">Address</label>
+                            <input type="text"
+                                   class="epic-input"
+                                   placeholder="Enter address..."
+                                   x-model="addressSearch"
+                                   @keyup.enter="performAddressSearch()"
+                                   x-ref="searchInput">
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Parcel Search Tab -->
-                <div x-show="searchTab === 'parcel'" class="space-y-4">
-                    <div class="text-center">
-                        <label class="block text-gray-400 text-sm font-medium mb-2">
-                            County
-                        </label>
-                        <select class="select select-bordered w-full max-w-md mx-auto" x-model="selectedCounty" @change="updateParcelFields()">
-                            <option value="">Select County</option>
-                            <option value="brevard">Brevard County</option>
-                            <option value="orange">Orange County</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Brevard County Fields -->
-                    <template x-if="selectedCounty === 'brevard'">
-                        <div class="space-y-4">
-                            <div class="text-center">
-                                <label class="block text-gray-400 text-sm font-medium mb-3">
-                                    Search By
-                                </label>
-                                <div class="flex justify-center space-x-6">
-                                    <label class="flex items-center cursor-pointer bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
-                                        <input type="radio" name="brevard-type" value="tax-account" x-model="brevardSearchType" class="sr-only" />
-                                        <div class="w-5 h-5 border-2 border-pink-400 rounded-full mr-3 flex items-center justify-center" :class="brevardSearchType === 'tax-account' ? 'bg-pink-500 border-pink-500' : 'bg-transparent'">
-                                            <div class="w-2.5 h-2.5 bg-white rounded-full" x-show="brevardSearchType === 'tax-account'"></div>
-                                        </div>
-                                        <span class="text-white font-medium text-sm">Tax Account</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
-                                        <input type="radio" name="brevard-type" value="parcel-id" x-model="brevardSearchType" class="sr-only" />
-                                        <div class="w-5 h-5 border-2 border-pink-400 rounded-full mr-3 flex items-center justify-center" :class="brevardSearchType === 'parcel-id' ? 'bg-pink-500 border-pink-500' : 'bg-transparent'">
-                                            <div class="w-2.5 h-2.5 bg-white rounded-full" x-show="brevardSearchType === 'parcel-id'"></div>
-                                        </div>
-                                        <span class="text-white font-medium text-sm">Parcel ID</span>
-                                    </label>
+
+                    <!-- Parcel Search Tab -->
+                    <div x-show="searchTab === 'parcel'">
+                        <div class="epic-form-section">
+                            <label class="epic-form-label">County</label>
+                            <select class="epic-input epic-select" x-model="selectedCounty" @change="updateParcelFields()">
+                                <option value="">Select County</option>
+                                <option value="brevard">Brevard County</option>
+                                <option value="orange">Orange County</option>
+                            </select>
+                        </div>
+
+                        <!-- Brevard County Fields -->
+                        <template x-if="selectedCounty === 'brevard'">
+                            <div>
+                                <div class="epic-form-section">
+                                    <label class="epic-form-label">Search By</label>
+                                    <div class="epic-tabs" style="margin-top: 8px;">
+                                        <button type="button" class="epic-tab" :class="{ 'active': brevardSearchType === 'tax-account' }" @click="brevardSearchType = 'tax-account'">
+                                            Tax Account
+                                        </button>
+                                        <button type="button" class="epic-tab" :class="{ 'active': brevardSearchType === 'parcel-id' }" @click="brevardSearchType = 'parcel-id'">
+                                            Parcel ID
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="epic-form-section">
+                                    <input type="text"
+                                           class="epic-input mono"
+                                           :placeholder="brevardSearchType === 'tax-account' ? 'Enter Tax Account Number...' : 'Enter Parcel ID...'"
+                                           x-model="parcelSearch">
                                 </div>
                             </div>
-                            <div class="text-center">
-                                <input type="text" 
-                                       class="input input-bordered w-full max-w-md mx-auto"
-                                       :placeholder="brevardSearchType === 'tax-account' ? 'Enter Tax Account Number...' : 'Enter Parcel ID...'"
+                        </template>
+
+                        <!-- Orange County Fields -->
+                        <template x-if="selectedCounty === 'orange'">
+                            <div class="epic-form-section">
+                                <label class="epic-form-label">Parcel ID</label>
+                                <input type="text"
+                                       class="epic-input mono"
+                                       placeholder="Enter Parcel ID..."
                                        x-model="parcelSearch">
                             </div>
-                        </div>
-                    </template>
-                    
-                    <!-- Orange County Fields -->
-                    <template x-if="selectedCounty === 'orange'">
-                        <div class="text-center">
-                            <label class="block text-gray-400 text-sm font-medium mb-2">
-                                Parcel ID
-                            </label>
-                            <input type="text" 
-                                   class="input input-bordered w-full max-w-md mx-auto"
-                                   placeholder="Enter Parcel ID..."
-                                   x-model="parcelSearch">
-                        </div>
-                    </template>
-                    
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="closeAdvancedSearch()">Cancel</button>
-                        <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" 
-                                @click="performParcelSearch()"
-                                :disabled="!selectedCounty || !parcelSearch"
-                                :class="{ 'opacity-50 cursor-not-allowed': !selectedCounty || !parcelSearch }">Search</button>
-                    </div>
-                </div>
-                
-                <!-- Client Search Tab -->
-                <div x-show="searchTab === 'client'" class="space-y-4">
-                    <div class="text-center">
-                        <label class="block text-gray-400 text-sm font-medium mb-2">
-                            Client Name
-                        </label>
-                        <input type="text" 
-                               class="input input-bordered w-full max-w-md mx-auto"
-                               placeholder="Enter client name..."
-                               x-model="clientSearch"
-                               @input="searchClients()"
-                               @keyup.enter="performClientSearch()">
-                    </div>
-                    
-                    <!-- Client Search Results -->
-                    <div x-show="clientSuggestions.length > 0" class="max-h-40 overflow-y-auto bg-white rounded-lg border border-gray-300">
-                        <template x-for="client in clientSuggestions" :key="client">
-                            <button class="w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors" 
-                                    @click="selectClient(client)" 
-                                    x-text="client"></button>
                         </template>
                     </div>
-                    
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="closeAdvancedSearch()">Cancel</button>
-                        <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" 
-                                @click="performClientSearch()"
-                                :disabled="!clientSearch"
-                                :class="{ 'opacity-50 cursor-not-allowed': !clientSearch }">Search</button>
+
+                    <!-- Client Search Tab -->
+                    <div x-show="searchTab === 'client'">
+                        <div class="epic-form-section">
+                            <label class="epic-form-label">Client Name</label>
+                            <input type="text"
+                                   class="epic-input"
+                                   placeholder="Enter client name..."
+                                   x-model="clientSearch"
+                                   @input="searchClients()"
+                                   @keyup.enter="performClientSearch()">
+                        </div>
+
+                        <!-- Client Search Results -->
+                        <div x-show="clientSuggestions.length > 0" class="epic-data-card" style="max-height: 160px; overflow-y: auto; padding: 0;">
+                            <template x-for="client in clientSuggestions" :key="client">
+                                <button class="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+                                        style="font-family: var(--font-display);"
+                                        @click="selectClient(client)"
+                                        x-text="client"></button>
+                            </template>
+                        </div>
                     </div>
+                </div>
+
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-ghost" @click="closeAdvancedSearch()">Cancel</button>
+                    <button class="epic-btn epic-btn-primary"
+                            x-show="searchTab === 'address'"
+                            @click="performAddressSearch()">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <button class="epic-btn epic-btn-primary"
+                            x-show="searchTab === 'parcel'"
+                            @click="performParcelSearch()"
+                            :disabled="!selectedCounty || !parcelSearch">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <button class="epic-btn epic-btn-primary"
+                            x-show="searchTab === 'client'"
+                            @click="performClientSearch()"
+                            :disabled="!clientSearch">
+                        <i class="bi bi-search"></i> Search
+                    </button>
                 </div>
             </div>
         </div>
         
         <!-- Status Selection Overlay -->
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]"
+        <div class="epic-modal-backdrop"
              x-show="statusOpen"
-             x-transition:enter.duration.300ms
-             x-transition:leave.duration.200ms
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
              @click.self="closeStatusFilter()"
-             style="z-index: 2000;"
              x-cloak>
-            <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                        @click="closeStatusFilter()">✕</button>
-                        
-                <h3 class="font-bold text-lg mb-4 text-primary">Filters</h3>
-                
-                <!-- Filter Tabs -->
-                <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
-                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="filterTab === 'status' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="filterTab = 'status'">
-                        <i class="bi bi-funnel mr-1"></i> Status
-                    </button>
-                    <button class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors" 
-                            :class="filterTab === 'tags' ? 'bg-pink-500 text-white' : 'text-gray-700 hover:bg-gray-200'"
-                            @click="switchToTags()">
-                        <i class="bi bi-tags mr-1"></i> Tags
+            <div class="epic-modal modal-lg"
+                 x-show="statusOpen"
+                 x-transition:enter="transition ease-out duration-300 delay-50"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-98"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2">
+                <div class="epic-modal-header">
+                    <div class="epic-modal-subtitle">View Options</div>
+                    <h3 class="epic-modal-title">Filters</h3>
+                    <button class="epic-modal-close" @click="closeStatusFilter()" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
-                
-                <!-- Status Filters Tab -->
-                <div x-show="filterTab === 'status'" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <!-- All option -->
-                        <button class="flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors"
-                                :class="isStatusActive('all') ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
-                                @click="toggleStatus('all')">
-                            <span class="w-3 h-3 rounded-full" style="background-color: #6c757d"></span>
-                            <span>All</span>
-                        </button>
-                        
-                        <!-- Individual status options -->
-                        <template x-for="status in availableStatuses" :key="status">
-                            <button class="flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors"
-                                    :class="isStatusActive(status) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
-                                    @click="toggleStatus(status)">
-                                <span class="w-3 h-3 rounded-full" 
-                                      :style="`background-color: ${getStatusColor(status)}`"></span>
-                                <span x-html="getStatusDisplayName(status)"></span>
+
+                <div class="epic-modal-body">
+                    <!-- Filter Tabs -->
+                    <div class="epic-form-section">
+                        <div class="epic-tabs">
+                            <button class="epic-tab" :class="{ 'active': filterTab === 'status' }" @click="filterTab = 'status'">
+                                <i class="bi bi-funnel"></i> Status
                             </button>
-                        </template>
+                            <button class="epic-tab" :class="{ 'active': filterTab === 'tags' }" @click="switchToTags()">
+                                <i class="bi bi-tags"></i> Tags
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status Filters Tab -->
+                    <div x-show="filterTab === 'status'">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <!-- All option -->
+                            <button class="status-filter-btn tag-text-light"
+                                    :class="{ 'active': isStatusActive('all') }"
+                                    style="background-color: #6c757d;"
+                                    @click="toggleStatus('all')">
+                                <span>All</span>
+                            </button>
+
+                            <!-- Individual status options -->
+                            <template x-for="status in availableStatuses" :key="status">
+                                <button class="status-filter-btn"
+                                        :class="[isStatusActive(status) ? 'active' : '', getStatusTextColor(status)]"
+                                        :style="`background-color: ${getStatusColor(status)}`"
+                                        @click="toggleStatus(status)">
+                                    <span x-html="getStatusDisplayName(status)"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Tag Filters Tab -->
+                    <div x-show="filterTab === 'tags'">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 280px; overflow-y: auto; padding: 4px;">
+                            <template x-for="tag in availableTags" :key="tag.id">
+                                <button class="epic-tag-filled"
+                                        :class="[isTagActive(tag.id) ? 'active' : '', getTagTextColor(tag.color)]"
+                                        :style="`background-color: ${tag.color || '#007bff'};`"
+                                        @click="toggleTag(tag.id)">
+                                    <span x-text="tag.name"></span>
+                                </button>
+                            </template>
+                            <template x-if="availableTags.length === 0">
+                                <div class="epic-empty-state" style="grid-column: span 2; padding: 24px 0;">
+                                    <i class="bi bi-tags"></i>
+                                    <p>No tags available</p>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Tag Filters Tab -->
-                <div x-show="filterTab === 'tags'" class="space-y-4">
-                    <div class="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto px-1">
-                        <template x-for="tag in availableTags" :key="tag.id">
-                            <button class="px-2 py-1.5 rounded-md text-xs font-medium transition-all hover:opacity-80"
-                                    :class="[isTagActive(tag.id) ? 'ring-2 ring-pink-500 ring-offset-1' : '', getTagTextColor(tag.color || '#007bff')]"
-                                    :style="`background-color: ${tag.color || '#007bff'}`"
-                                    @click="toggleTag(tag.id)">
-                                <span x-text="tag.name"></span>
-                            </button>
-                        </template>
-                        <template x-if="availableTags.length === 0">
-                            <div class="col-span-3 text-center text-gray-400 text-sm py-2">No tags available</div>
-                        </template>
-                    </div>
-                </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button class="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors" @click="clearAllStatuses(); clearAllTags()">Clear All</button>
-                    <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" @click="applyStatusFilter()">Apply</button>
+
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-ghost" @click="clearAllStatuses(); clearAllTags()">Clear All</button>
+                    <button class="epic-btn epic-btn-primary" @click="applyStatusFilter()">
+                        <i class="bi bi-check-lg"></i> Apply
+                    </button>
                 </div>
             </div>
         </div>
         
         <!-- Layer Control Overlay -->
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]"
+        <div class="epic-modal-backdrop"
              x-show="layerOpen"
-             x-transition:enter.duration.300ms
-             x-transition:leave.duration.200ms
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
              @click.self="closeLayerControl()"
-             style="z-index: 2000;"
              x-cloak>
-            <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                        @click="closeLayerControl()">✕</button>
-                        
-                <h3 class="font-bold text-lg mb-4 text-primary">Map Settings</h3>
-                
-                <div class="space-y-6">
+            <div class="epic-modal"
+                 x-show="layerOpen"
+                 x-transition:enter="transition ease-out duration-300 delay-50"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-98"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2">
+                <div class="epic-modal-header">
+                    <div class="epic-modal-subtitle">Configuration</div>
+                    <h3 class="epic-modal-title">Map Settings</h3>
+                    <button class="epic-modal-close" @click="closeLayerControl()" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                <div class="epic-modal-body">
                     <!-- Base Layers -->
-                    <div>
-                        <h4 class="text-gray-400 text-sm font-medium mb-3">Base Map</h4>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button class="flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors"
-                                    :class="currentBaseLayer === 'satellite' ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
-                                    @click="switchToBaseLayer('satellite')">
-                                <i class="bi bi-globe"></i>
-                                <span>Satellite</span>
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Base Map</label>
+                        <div class="epic-tabs" style="margin-top: 8px;">
+                            <button class="epic-tab" :class="{ 'active': currentBaseLayer === 'satellite' }" @click="switchToBaseLayer('satellite')">
+                                <i class="bi bi-globe"></i> Satellite
                             </button>
-                            <button class="flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-colors"
-                                    :class="currentBaseLayer === 'streets' ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
-                                    @click="switchToBaseLayer('streets')">
-                                <i class="bi bi-map"></i>
-                                <span>Street Map</span>
+                            <button class="epic-tab" :class="{ 'active': currentBaseLayer === 'streets' }" @click="switchToBaseLayer('streets')">
+                                <i class="bi bi-map"></i> Street Map
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Overlay Layers -->
-                    <div>
-                        <h4 class="text-gray-400 text-sm font-medium mb-3">Overlays</h4>
-                        <div class="space-y-2">
-                            <button class="flex items-center justify-between w-full px-3 py-2 rounded-lg border-2 transition-colors"
-                                    :class="countiesVisible ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Overlays</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <button class="epic-btn"
+                                    :class="countiesVisible ? 'epic-btn-primary' : 'epic-btn-secondary'"
+                                    style="justify-content: space-between; width: 100%;"
                                     @click="toggleCountiesLayer()">
-                                <div class="flex items-center space-x-2">
+                                <span style="display: flex; align-items: center; gap: 8px;">
                                     <i class="bi bi-boundaries"></i>
                                     <span>Florida Counties</span>
-                                </div>
+                                </span>
                                 <i class="bi" :class="countiesVisible ? 'bi-toggle-on' : 'bi-toggle-off'"></i>
                             </button>
-                            <button class="flex items-center justify-between w-full px-3 py-2 rounded-lg border-2 transition-colors"
-                                    :class="poisVisible ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
+                            <button class="epic-btn"
+                                    :class="poisVisible ? 'epic-btn-primary' : 'epic-btn-secondary'"
+                                    style="justify-content: space-between; width: 100%;"
                                     @click="togglePoisLayer()">
-                                <div class="flex items-center space-x-2">
+                                <span style="display: flex; align-items: center; gap: 8px;">
                                     <i class="bi bi-geo-alt"></i>
                                     <span>Points of Interest</span>
-                                </div>
+                                </span>
                                 <i class="bi" :class="poisVisible ? 'bi-toggle-on' : 'bi-toggle-off'"></i>
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Marker Display -->
-                    <div>
-                        <h4 class="text-gray-400 text-sm font-medium mb-3">Markers</h4>
-                        <button class="flex items-center justify-between w-full px-3 py-2 rounded-lg border-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                :class="useClustering ? 'bg-pink-500 border-pink-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'"
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Markers</label>
+                        <button class="epic-btn"
+                                :class="useClustering ? 'epic-btn-primary' : 'epic-btn-secondary'"
                                 :disabled="!clusteringSupported"
+                                style="justify-content: space-between; width: 100%; margin-top: 8px;"
                                 @click="toggleClusteringMode()">
-                            <div class="flex items-center space-x-2">
+                            <span style="display: flex; align-items: center; gap: 8px;">
                                 <i class="bi bi-diagram-3"></i>
                                 <span>Group Markers</span>
-                            </div>
+                            </span>
                             <template x-if="clusteringSupported">
                                 <i class="bi" :class="useClustering ? 'bi-toggle-on' : 'bi-toggle-off'"></i>
                             </template>
-                            <span x-show="!clusteringSupported" class="text-xs text-gray-400">Unavailable</span>
+                            <span x-show="!clusteringSupported" style="font-size: 0.75rem; color: #9ca3af;">Unavailable</span>
                         </button>
                     </div>
                 </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button class="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors" @click="closeLayerControl()">Done</button>
+
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-primary" @click="closeLayerControl()">Done</button>
                 </div>
             </div>
         </div>

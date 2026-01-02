@@ -460,12 +460,15 @@
                     </td>
                     <td>
                       <div class="flex items-center justify-between gap-2">
-                        <div class="flex flex-wrap gap-1 flex-1 min-w-0">
+                        <div class="flex flex-wrap gap-1.5 flex-1 min-w-0">
                           <template x-for="(t, idx) in (job.tags || []).slice(0,2)" :key="t.id">
-                            <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`" x-text="t.name"></span>
+                            <span class="epic-tag-sm"
+                                  :class="getTagTextColor(t.color)"
+                                  :style="`background-color:${t.color||'#007bff'};`"
+                                  x-text="t.name"></span>
                           </template>
                           <template x-if="(job.tags || []).length > 2">
-                            <span class="badge badge-ghost" x-text="'+' + ((job.tags||[]).length - 2)"></span>
+                            <span class="epic-tag-sm" style="background-color: #e5e7eb; color: #374151;">+<span x-text="(job.tags||[]).length - 2"></span></span>
                           </template>
                         </div>
                         <button class="btn btn-ghost btn-xs flex-shrink-0" title="Manage tags" @click.stop="openJobTags(job)">
@@ -1180,33 +1183,54 @@
     </div>
 
     <!-- Job Tags Modal -->
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]" id="jobTagsModal" @click.self="document.getElementById('jobTagsModal').classList.add('hidden')">
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="document.getElementById('jobTagsModal').classList.add('hidden')">✕</button>
-        <h3 class="font-bold text-lg mb-3 text-primary">Manage Tags for <span x-text="jobTagsModal.job?.job_number"></span></h3>
-        <div class="mb-3">
-          <div class="flex flex-wrap gap-2 mb-2">
-            <template x-for="t in (jobTagsModal.job?.tags || [])" :key="t.id">
-              <span class="badge border-2" :style="`border-color:${t.color||'#007bff'}; color:${t.color||'#007bff'}`">
-                <span x-text="t.name"></span>
-                <button class="ml-1 text-xs" title="Remove tag" @click.stop="removeTagFromJob(jobTagsModal.job, t)">✕</button>
-              </span>
-            </template>
-          </div>
-          <div class="relative">
-            <input class="input input-bordered w-full" placeholder="Type to search or create..." x-model="jobTagsModal.input" @input="filterTagSuggestions()" @keydown.enter.prevent="addTagFromInput()">
-            <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-52 overflow-auto" x-show="tagSuggestions.length > 0">
-              <template x-for="s in tagSuggestions" :key="s.id">
-                <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2" @click.prevent="addExistingTag(s)">
-                  <span class="badge badge-ghost" :style="`color:${s.color||'#007bff'}; border-color:${s.color||'#007bff'}`" x-text="s.name"></span>
-                </button>
+    <div class="epic-modal-backdrop hidden" id="jobTagsModal" @click.self="document.getElementById('jobTagsModal').classList.add('hidden')">
+      <div class="epic-modal">
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">Job Tags</div>
+          <h3 class="epic-modal-title font-mono">#<span x-text="jobTagsModal.job?.job_number"></span></h3>
+          <button class="epic-modal-close" onclick="document.getElementById('jobTagsModal').classList.add('hidden')" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="epic-modal-body">
+          <div class="epic-form-section">
+            <label class="epic-form-label">Current Tags</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px; margin-top: 10px;">
+              <template x-for="t in (jobTagsModal.job?.tags || [])" :key="t.id">
+                <span class="epic-tag-filled"
+                      :class="getTagTextColor(t.color)"
+                      :style="`background-color:${t.color||'#007bff'};`">
+                  <span x-text="t.name"></span>
+                  <button class="remove-btn" title="Remove tag" @click.stop="removeTagFromJob(jobTagsModal.job, t)">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </span>
+              </template>
+              <template x-if="!(jobTagsModal.job?.tags || []).length">
+                <span style="color: #9ca3af; font-size: 0.875rem; font-style: italic;">No tags assigned</span>
               </template>
             </div>
           </div>
-          <p class="text-xs text-gray-500 mt-2">Press Enter to create a new tag if no match.</p>
+          <div class="epic-form-section">
+            <label class="epic-form-label">Add Tag</label>
+            <div style="position: relative;">
+              <input class="epic-input" placeholder="Search or create new tag..." x-model="jobTagsModal.input" @input="filterTagSuggestions()" @keydown.enter.prevent="addTagFromInput()">
+              <div class="absolute z-20 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto" x-show="tagSuggestions.length > 0" style="font-family: var(--font-display);">
+                <template x-for="s in tagSuggestions" :key="s.id">
+                  <button class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors" @click.prevent="addExistingTag(s)">
+                    <span class="epic-tag-filled"
+                          :class="getTagTextColor(s.color)"
+                          :style="`background-color:${s.color||'#007bff'}; padding: 6px 12px; font-size: 0.75rem;`"
+                          x-text="s.name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+            <small style="font-size: 0.75rem; color: #6b7280; margin-top: 10px; display: block;">Press Enter to create a new tag if no match.</small>
+          </div>
         </div>
-        <div class="flex justify-end gap-2">
-          <button class="btn btn-ghost" @click="document.getElementById('jobTagsModal').classList.add('hidden')">Close</button>
+        <div class="epic-modal-footer">
+          <button class="epic-btn epic-btn-primary" @click="document.getElementById('jobTagsModal').classList.add('hidden')">Done</button>
         </div>
       </div>
     </div>
@@ -1233,74 +1257,62 @@
 
     <!-- Edit User Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
+      class="epic-modal-backdrop hidden"
       id="editUserModal"
       @click.self="document.getElementById('editUserModal').classList.add('hidden')"
       @keydown.escape="document.getElementById('editUserModal').classList.add('hidden')"
     >
-      <div class="bg-white rounded-lg shadow-xl border-2 border-primary p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-t-lg z-0"></div>
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10" 
-                onclick="document.getElementById('editUserModal').classList.add('hidden')"
-                title="Close (Esc)">✕</button>
-        
-        <h3 class="font-bold text-lg mb-4 text-primary flex items-center gap-2">
-          <i class="bi bi-person-gear text-primary"></i>
-          Edit User
-        </h3>
+      <div class="epic-modal">
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">User Management</div>
+          <h3 class="epic-modal-title">Edit User</h3>
+          <button class="epic-modal-close"
+                  onclick="document.getElementById('editUserModal').classList.add('hidden')"
+                  title="Close (Esc)" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
         <form @submit.prevent="updateUser()">
-          <div class="space-y-4">
-            <div class="form-control">
-              <label for="editUsername" class="label">
-                <span class="label-text text-gray-800 font-medium">Username (Email)</span>
-                <span class="label-text-alt text-error" x-show="editingUser.username && !isValidEmail(editingUser.username)">Invalid email format</span>
-              </label>
+          <div class="epic-modal-body">
+            <div class="epic-form-section">
+              <label for="editUsername" class="epic-form-label required">Username (Email)</label>
               <input
                 type="email"
-                class="input input-bordered w-full"
-                :class="{'input-error': editingUser.username && !isValidEmail(editingUser.username)}"
+                class="epic-input"
                 id="editUsername"
                 x-model="editingUser.username"
                 required
                 autofocus
               />
+              <small x-show="editingUser.username && !isValidEmail(editingUser.username)" style="color: var(--danger-color); font-size: 0.75rem; margin-top: 4px; display: block;">Invalid email format</small>
             </div>
-            <div class="form-control">
-              <label for="editName" class="label">
-                <span class="label-text text-gray-800 font-medium">Name</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="editName" class="epic-form-label required">Name</label>
               <input
                 type="text"
-                class="input input-bordered w-full"
+                class="epic-input"
                 id="editName"
                 x-model="editingUser.name"
                 required
               />
             </div>
-            <div class="form-control">
-              <label for="editPassword" class="label">
-                <span class="label-text text-gray-800 font-medium">Password</span>
-                <span class="label-text-alt text-error" x-show="editingUser.password && editingUser.password.length < 8">Minimum 8 characters</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="editPassword" class="epic-form-label">Password</label>
               <input
                 type="password"
-                class="input input-bordered w-full"
-                :class="{'input-error': editingUser.password && editingUser.password.length < 8}"
+                class="epic-input"
                 id="editPassword"
                 x-model="editingUser.password"
-                placeholder="Leave blank to keep current password"
+                placeholder="Leave blank to keep current"
                 minlength="8"
               />
-              <label class="label">
-                <span class="label-text-alt text-gray-500">Leave blank to keep current password</span>
-              </label>
+              <small x-show="editingUser.password && editingUser.password.length < 8" style="color: var(--danger-color); font-size: 0.75rem; margin-top: 4px; display: block;">Minimum 8 characters</small>
+              <small x-show="!editingUser.password || editingUser.password.length === 0" style="color: #9ca3af; font-size: 0.6875rem; margin-top: 4px; display: block;">Leave blank to keep current password</small>
             </div>
-            <div class="form-control">
-              <label for="editRole" class="label">
-                <span class="label-text text-gray-800 font-medium">Role</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="editRole" class="epic-form-label required">Role</label>
               <select
-                class="select select-bordered w-full"
+                class="epic-input epic-select"
                 id="editRole"
                 x-model="editingUser.role"
                 required
@@ -1310,20 +1322,20 @@
               </select>
             </div>
           </div>
-          <div class="flex justify-end space-x-3 mt-6">
+          <div class="epic-modal-footer">
             <button
               type="button"
-              class="btn btn-ghost"
+              class="epic-btn epic-btn-ghost"
               @click="document.getElementById('editUserModal').classList.add('hidden')"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              class="btn btn-primary !text-white"
+            <button
+              type="submit"
+              class="epic-btn epic-btn-primary"
               :disabled="!isValidEmail(editingUser.username) || hasInvalidPassword(editingUser.password)"
             >
-              Save Changes
+              <i class="bi bi-check-lg"></i> Save Changes
             </button>
           </div>
         </form>
@@ -1332,79 +1344,65 @@
 
     <!-- Add User Modal -->
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
+      class="epic-modal-backdrop hidden"
       id="addUserModal"
       @click.self="document.getElementById('addUserModal').classList.add('hidden')"
       @keydown.escape="document.getElementById('addUserModal').classList.add('hidden')"
     >
-      <div class="bg-white rounded-lg shadow-xl border-2 border-primary p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-t-lg"></div>
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                onclick="document.getElementById('addUserModal').classList.add('hidden')"
-                title="Close (Esc)">✕</button>
-        
-        <h3 class="font-bold text-lg mb-4 text-primary flex items-center gap-2">
-          <i class="bi bi-person-plus text-primary"></i>
-          Add New User
-        </h3>
+      <div class="epic-modal">
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">User Management</div>
+          <h3 class="epic-modal-title">Add New User</h3>
+          <button class="epic-modal-close"
+                  onclick="document.getElementById('addUserModal').classList.add('hidden')"
+                  title="Close (Esc)" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
         <form @submit.prevent="saveNewUser()">
-          <div class="space-y-4">
-            <div class="form-control">
-              <label for="newUsername" class="label">
-                <span class="label-text text-gray-800 font-medium">Username (Email)</span>
-                <span class="label-text-alt text-error" x-show="newUser.username && !isValidEmail(newUser.username)">Invalid email format</span>
-              </label>
+          <div class="epic-modal-body">
+            <div class="epic-form-section">
+              <label for="newUsername" class="epic-form-label required">Username (Email)</label>
               <input
                 type="email"
-                class="input input-bordered w-full"
-                :class="{'input-error': newUser.username && !isValidEmail(newUser.username)}"
+                class="epic-input"
                 id="newUsername"
                 x-model="newUser.username"
                 placeholder="user@example.com"
                 required
                 autofocus
               />
-              <label class="label">
-                <span class="label-text-alt text-gray-500">Must be a valid email address</span>
-              </label>
+              <small x-show="newUser.username && !isValidEmail(newUser.username)" style="color: var(--danger-color); font-size: 0.75rem; margin-top: 4px; display: block;">Invalid email format</small>
+              <small x-show="!newUser.username || isValidEmail(newUser.username)" style="color: #9ca3af; font-size: 0.6875rem; margin-top: 4px; display: block;">Must be a valid email address</small>
             </div>
-            <div class="form-control">
-              <label for="newName" class="label">
-                <span class="label-text text-gray-800 font-medium">Name</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="newName" class="epic-form-label required">Name</label>
               <input
                 type="text"
-                class="input input-bordered w-full"
+                class="epic-input"
                 id="newName"
                 x-model="newUser.name"
                 placeholder="John Doe"
                 required
               />
             </div>
-            <div class="form-control">
-              <label for="newPassword" class="label">
-                <span class="label-text text-gray-800 font-medium">Password</span>
-                <span class="label-text-alt text-error" x-show="newUser.password && newUser.password.length < 8">Minimum 8 characters</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="newPassword" class="epic-form-label required">Password</label>
               <input
                 type="password"
-                class="input input-bordered w-full"
-                :class="{'input-error': newUser.password && newUser.password.length < 8}"
+                class="epic-input"
                 id="newPassword"
                 x-model="newUser.password"
                 required
                 minlength="8"
               />
-              <label class="label">
-                <span class="label-text-alt text-gray-500">Minimum 8 characters recommended</span>
-              </label>
+              <small x-show="newUser.password && newUser.password.length < 8" style="color: var(--danger-color); font-size: 0.75rem; margin-top: 4px; display: block;">Minimum 8 characters</small>
+              <small x-show="!newUser.password || newUser.password.length >= 8" style="color: #9ca3af; font-size: 0.6875rem; margin-top: 4px; display: block;">Minimum 8 characters required</small>
             </div>
-            <div class="form-control">
-              <label for="newRole" class="label">
-                <span class="label-text text-gray-800 font-medium">Role</span>
-              </label>
+            <div class="epic-form-section">
+              <label for="newRole" class="epic-form-label required">Role</label>
               <select
-                class="select select-bordered w-full"
+                class="epic-input epic-select"
                 id="newRole"
                 x-model="newUser.role"
                 required
@@ -1414,20 +1412,20 @@
               </select>
             </div>
           </div>
-          <div class="flex justify-end space-x-3 mt-6">
+          <div class="epic-modal-footer">
             <button
               type="button"
-              class="btn btn-ghost"
+              class="epic-btn epic-btn-ghost"
               @click="document.getElementById('addUserModal').classList.add('hidden')"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              class="btn btn-primary !text-white"
+            <button
+              type="submit"
+              class="epic-btn epic-btn-success"
               :disabled="!isValidEmail(newUser.username) || !newUser.password || newUser.password.length < 8"
             >
-              Create User
+              <i class="bi bi-person-plus"></i> Create User
             </button>
           </div>
         </form>

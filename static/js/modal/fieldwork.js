@@ -27,36 +27,38 @@ SimpleModal.fetchFieldworkData = async function(jobNumber) {
 SimpleModal.generateFieldworkHTML = function() {
     if (!this.fieldworkLoaded) {
         return `
-            <div class="text-center py-4 text-gray-400">
-                <i class="bi bi-hourglass-split"></i> Loading fieldwork...
+            <div class="epic-empty-state" style="padding: 24px;">
+                <div class="epic-loading" style="justify-content: center; color: var(--epic-pink);">
+                    Loading entries...
+                </div>
             </div>
         `;
     }
     if (this.fieldworkData.length === 0) {
         return `
-            <div class="text-center py-4 text-gray-500">
-                <i class="bi bi-clock-history text-2xl mb-2"></i>
-                <p>No time entries recorded</p>
+            <div class="epic-empty-state">
+                <i class="bi bi-clock-history"></i>
+                <p>No time entries recorded yet</p>
             </div>
         `;
     }
 
     return this.fieldworkData.map((fw, index) => `
-        <div class="border border-gray-200 rounded-lg p-3 mb-2 hover:bg-gray-50 transition-colors">
-            <div class="flex justify-between items-center">
-                <div class="flex-1">
-                    <div class="font-medium text-gray-900">
-                        ${index + 1}. ${this.formatDate(fw.work_date)} - ${this.formatDuration(fw.total_time)}
-                    </div>
+        <div class="epic-fieldwork-entry">
+            <div class="entry-info">
+                <div class="entry-number">${index + 1}</div>
+                <div>
+                    <div class="entry-details">${this.formatDate(fw.work_date)}</div>
+                    <div class="entry-duration">${this.formatDuration(fw.total_time)}</div>
                 </div>
-                <div class="flex gap-1 ml-3">
-                    <button class="btn btn-sm btn-ghost" onclick="SimpleModal.editFieldwork(${fw.id})" title="Edit entry">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-ghost text-red-600 hover:bg-red-50" onclick="SimpleModal.deleteFieldwork(${fw.id})" title="Delete entry">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
+            </div>
+            <div class="entry-actions">
+                <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.editFieldwork(${fw.id})" title="Edit entry">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="epic-btn epic-btn-danger epic-btn-icon" onclick="SimpleModal.deleteFieldwork(${fw.id})" title="Delete entry">
+                    <i class="bi bi-trash"></i>
+                </button>
             </div>
         </div>
     `).join('');
@@ -69,45 +71,45 @@ SimpleModal.showAddFieldworkForm = function() {
     const today = new Date().toISOString().split('T')[0];
 
     const formHTML = `
-        <div id="fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h5 class="font-medium text-gray-800 mb-3">Add Time Entry</h5>
+        <div id="fieldwork-form" class="epic-data-card accent-pink" style="margin-top: 16px;">
+            <div class="epic-modal-subtitle" style="margin-bottom: 16px;">New Time Entry</div>
 
-            <div class="grid grid-cols-1 gap-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
-                        <input type="date" id="fw-work-date" class="input input-bordered input-md w-full" value="${today}" required>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label required">Work Date</label>
+                        <input type="date" id="fw-work-date" class="epic-input" value="${today}" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Time (Hours:Minutes)</label>
-                        <input type="text" id="fw-total-time" class="input input-bordered input-md w-full" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
-                        <p class="text-xs text-gray-500 mt-1">Format: H:MM (e.g., 2:30)</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
-                        <input type="text" id="fw-crew" class="input input-bordered input-md w-full" placeholder="Optional">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
-                        <input type="text" id="fw-drone-card" class="input input-bordered input-md w-full" placeholder="Optional">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label required">Duration</label>
+                        <input type="text" id="fw-total-time" class="epic-input mono" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
+                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">Format: H:MM</small>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea id="fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2"></textarea>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label">Crew</label>
+                        <input type="text" id="fw-crew" class="epic-input" placeholder="Optional">
+                    </div>
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label">Drone Card</label>
+                        <input type="text" id="fw-drone-card" class="epic-input" placeholder="Optional">
+                    </div>
                 </div>
 
-                <div class="flex gap-2 pt-2">
-                    <button id="fw-save-btn" class="btn btn-md btn-success flex-1" onclick="SimpleModal.saveFieldwork()">
-                        <i class="bi bi-check-lg mr-1"></i>
+                <div class="epic-form-section" style="margin: 0;">
+                    <label class="epic-form-label">Notes</label>
+                    <textarea id="fw-notes" class="epic-input epic-textarea" placeholder="Optional notes" rows="2"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 8px; padding-top: 8px;">
+                    <button id="fw-save-btn" class="epic-btn epic-btn-success" style="flex: 1;" onclick="SimpleModal.saveFieldwork()">
+                        <i class="bi bi-check-lg"></i>
                         Save Entry
                     </button>
-                    <button class="btn btn-md btn-ghost" onclick="SimpleModal.hideAddFieldworkForm()">
-                        <i class="bi bi-x-lg mr-1"></i>
+                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideAddFieldworkForm()">
+                        <i class="bi bi-x-lg"></i>
                         Cancel
                     </button>
                 </div>
@@ -229,45 +231,45 @@ SimpleModal.editFieldwork = function(fieldworkId) {
     const timeDisplay = this.formatTimeInput(fieldwork.total_time);
 
     const formHTML = `
-        <div id="edit-fieldwork-form" class="mt-4 p-4 border border-gray-200 rounded-lg bg-blue-50">
-            <h5 class="font-medium text-gray-800 mb-3">Edit Time Entry</h5>
+        <div id="edit-fieldwork-form" class="epic-data-card accent-blue" style="margin-top: 16px;">
+            <div class="epic-modal-subtitle" style="margin-bottom: 16px;">Edit Time Entry</div>
 
-            <div class="grid grid-cols-1 gap-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
-                        <input type="date" id="edit-fw-work-date" class="input input-bordered input-md w-full" value="${fieldwork.work_date}" required>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label required">Work Date</label>
+                        <input type="date" id="edit-fw-work-date" class="epic-input" value="${fieldwork.work_date}" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Time (Hours:Minutes)</label>
-                        <input type="text" id="edit-fw-total-time" class="input input-bordered input-md w-full" value="${timeDisplay}" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
-                        <p class="text-xs text-gray-500 mt-1">Format: H:MM (e.g., 2:30)</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
-                        <input type="text" id="edit-fw-crew" class="input input-bordered input-md w-full" value="${escapeHtml(fieldwork.crew)}" placeholder="Optional">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
-                        <input type="text" id="edit-fw-drone-card" class="input input-bordered input-md w-full" value="${escapeHtml(fieldwork.drone_card)}" placeholder="Optional">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label required">Duration</label>
+                        <input type="text" id="edit-fw-total-time" class="epic-input mono" value="${timeDisplay}" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
+                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">Format: H:MM</small>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea id="edit-fw-notes" class="textarea textarea-bordered w-full" placeholder="Optional notes" rows="2">${escapeHtml(fieldwork.notes)}</textarea>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label">Crew</label>
+                        <input type="text" id="edit-fw-crew" class="epic-input" value="${escapeHtml(fieldwork.crew)}" placeholder="Optional">
+                    </div>
+                    <div class="epic-form-section" style="margin: 0;">
+                        <label class="epic-form-label">Drone Card</label>
+                        <input type="text" id="edit-fw-drone-card" class="epic-input" value="${escapeHtml(fieldwork.drone_card)}" placeholder="Optional">
+                    </div>
                 </div>
 
-                <div class="flex gap-2 pt-2">
-                    <button id="edit-fw-save-btn" class="btn btn-md btn-success flex-1" onclick="SimpleModal.saveEditFieldwork(${fieldworkId})">
-                        <i class="bi bi-check-lg mr-1"></i>
+                <div class="epic-form-section" style="margin: 0;">
+                    <label class="epic-form-label">Notes</label>
+                    <textarea id="edit-fw-notes" class="epic-input epic-textarea" placeholder="Optional notes" rows="2">${escapeHtml(fieldwork.notes)}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 8px; padding-top: 8px;">
+                    <button id="edit-fw-save-btn" class="epic-btn epic-btn-primary" style="flex: 1;" onclick="SimpleModal.saveEditFieldwork(${fieldworkId})">
+                        <i class="bi bi-check-lg"></i>
                         Save Changes
                     </button>
-                    <button class="btn btn-md btn-ghost" onclick="SimpleModal.hideEditFieldworkForm()">
-                        <i class="bi bi-x-lg mr-1"></i>
+                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideEditFieldworkForm()">
+                        <i class="bi bi-x-lg"></i>
                         Cancel
                     </button>
                 </div>

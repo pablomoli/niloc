@@ -595,20 +595,32 @@ function fabMenu() {
         
         getTagTextColor(tagColor) {
             // Determine if text should be black or white based on background color brightness
-            if (!tagColor) return 'text-gray-900';
+            if (!tagColor) return 'tag-text-dark';
             const hex = tagColor.replace("#", "");
             const r = parseInt(hex.substr(0, 2), 16);
             const g = parseInt(hex.substr(2, 2), 16);
             const b = parseInt(hex.substr(4, 2), 16);
             // Calculate relative luminance
             const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-            return brightness > 155 ? 'text-gray-900' : 'text-white';
+            return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
         },
         
         getStatusColor(status) {
             return window.MarkerUtils?.EPIC_COLORS[status] || '#6c757d';
         },
-        
+
+        getStatusTextColor(status) {
+            // Get the status color and determine if text should be dark or light
+            const color = this.getStatusColor(status);
+            if (!color) return 'tag-text-light';
+            const hex = color.replace("#", "");
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
+        },
+
         getStatusName(status) {
             return window.MarkerUtils?.STATUS_NAMES[status] || status;
         },

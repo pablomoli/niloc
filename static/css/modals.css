@@ -1,0 +1,949 @@
+/**
+ * Epic Map - Modal System
+ * A refined, animated modal system with cartographic-inspired design
+ */
+
+/* ==========================================================================
+   BASE MODAL STRUCTURE
+   ========================================================================== */
+
+/* Ensure hidden class always works - highest priority */
+.hidden,
+[hidden],
+.epic-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.epic-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(var(--modal-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--modal-backdrop-blur));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: var(--space-md);
+}
+
+.epic-modal {
+  position: relative;
+  background: var(--modal-surface);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+}
+
+.epic-modal.modal-lg {
+  max-width: 640px;
+}
+
+.epic-modal.modal-xl {
+  max-width: 900px;
+}
+
+/* ==========================================================================
+   MODAL HEADER
+   ========================================================================== */
+
+.epic-modal-header {
+  position: relative;
+  padding: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--modal-border);
+  flex-shrink: 0;
+}
+
+.epic-modal-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.epic-modal-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--epic-pink);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-xs);
+}
+
+.epic-modal-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.epic-modal-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+  transform: scale(1.05);
+}
+
+.epic-modal-close:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   MODAL BODY
+   ========================================================================== */
+
+.epic-modal-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  flex: 1;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.epic-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.epic-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.epic-modal-body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.epic-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ==========================================================================
+   MODAL FOOTER
+   ========================================================================== */
+
+.epic-modal-footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--modal-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  background: var(--modal-surface-elevated);
+}
+
+/* ==========================================================================
+   STAGGERED CONTENT ANIMATION (disabled for stability)
+   ========================================================================== */
+
+/* Staggered animations removed to prevent visibility issues */
+
+/* ==========================================================================
+   FORM SECTIONS
+   ========================================================================== */
+
+.epic-form-section {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: white;
+  border-radius: var(--modal-radius-inner);
+  border: 1px solid #e2e8f0;
+}
+
+.epic-form-section:last-child {
+  margin-bottom: 0;
+}
+
+.epic-form-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1f2937;
+  margin-bottom: var(--space-sm);
+}
+
+.epic-form-label.required::after {
+  content: ' *';
+  color: var(--epic-pink);
+}
+
+/* ==========================================================================
+   ENHANCED INPUTS
+   ========================================================================== */
+
+.epic-input {
+  width: 100%;
+  padding: 16px 18px;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  color: #111827;
+  background: #ffffff;
+  border: 2px solid #d1d5db;
+  border-radius: var(--modal-radius-inner);
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.epic-input::placeholder {
+  color: #9ca3af;
+}
+
+.epic-input:hover {
+  border-color: #9ca3af;
+  background: #fafafa;
+}
+
+.epic-input:focus {
+  background: #ffffff;
+  border-color: var(--epic-pink);
+  box-shadow: 0 0 0 4px rgba(255, 19, 147, 0.1);
+}
+
+.epic-input.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
+}
+
+/* Select styling */
+.epic-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+/* Textarea */
+.epic-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   ENHANCED BUTTONS
+   ========================================================================== */
+
+.epic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 14px 24px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: var(--modal-radius-inner);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+  text-decoration: none;
+}
+
+.epic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.epic-btn-primary {
+  background: var(--epic-pink);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 19, 147, 0.3);
+}
+
+.epic-btn-primary:hover:not(:disabled) {
+  background: #e6117f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 19, 147, 0.4);
+}
+
+.epic-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.epic-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.epic-btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.epic-btn-ghost {
+  background: transparent;
+  color: #6b7280;
+}
+
+.epic-btn-ghost:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.epic-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.epic-btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.epic-btn-success {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.epic-btn-success:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.epic-btn-sm {
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+}
+
+.epic-btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+/* ==========================================================================
+   STATUS BADGE - ENHANCED
+   ========================================================================== */
+
+.epic-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+  position: relative;
+  overflow: hidden;
+}
+
+.epic-status-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.epic-status-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.epic-status-badge .edit-icon {
+  opacity: 0.7;
+  transition: opacity var(--duration-fast);
+}
+
+.epic-status-badge:hover .edit-icon {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   DATA DISPLAY CARDS
+   ========================================================================== */
+
+.epic-data-card {
+  background: var(--modal-surface-elevated);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--modal-radius-inner);
+  padding: var(--space-md);
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.epic-data-card:hover {
+  border-color: var(--modal-border-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.epic-data-card.interactive {
+  cursor: pointer;
+}
+
+.epic-data-card.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.epic-data-card.accent-blue {
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+  border-color: #bfdbfe;
+}
+
+.epic-data-card.accent-pink {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fefce8 100%);
+  border-color: var(--modal-border-accent);
+}
+
+/* ==========================================================================
+   TIME BADGE
+   ========================================================================== */
+
+.epic-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--epic-pink) 0%, #e6117f 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(255, 19, 147, 0.25);
+}
+
+.epic-time-badge i {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   TAG BADGES
+   ========================================================================== */
+
+/* Outline style tag - for displaying current tags with remove option */
+.epic-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 2px solid currentColor;
+  border-radius: 20px;
+  background: transparent;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+  white-space: nowrap;
+}
+
+.epic-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.epic-tag .remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  margin-right: -4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.epic-tag .remove-btn i {
+  font-size: 0.625rem;
+  color: white;
+}
+
+.epic-tag .remove-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Filled style tag - for filter buttons and selections */
+.epic-tag-filled {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 6px 12px !important;
+  font-family: var(--font-display) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+  white-space: nowrap !important;
+  text-align: center !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+  line-height: 1.2 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.epic-tag-filled::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.epic-tag-filled:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.epic-tag-filled:active {
+  transform: translateY(0);
+}
+
+.epic-tag-filled.active {
+  box-shadow: 0 0 0 3px #FF1393, 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03);
+}
+
+.epic-tag-filled.active::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  background: #FF1393;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Remove button for filled tags */
+.epic-tag-filled .remove-btn,
+.epic-tag-filled button.remove-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  margin-left: 4px !important;
+  border-radius: 50% !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.epic-tag-filled .remove-btn i,
+.epic-tag-filled button.remove-btn i {
+  font-size: 0.625rem !important;
+  line-height: 1 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.epic-tag-filled .remove-btn:hover,
+.epic-tag-filled button.remove-btn:hover {
+  background: rgba(0, 0, 0, 0.3) !important;
+  transform: scale(1.1);
+}
+
+.epic-tag-filled.tag-text-light .remove-btn,
+.epic-tag-filled.tag-text-light button.remove-btn {
+  color: white !important;
+}
+
+.epic-tag-filled.tag-text-dark .remove-btn,
+.epic-tag-filled.tag-text-dark button.remove-btn {
+  color: #1f2937 !important;
+}
+
+/* Small tag variant for tables and compact spaces */
+.epic-tag-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Text color utility classes for tags */
+.tag-text-light {
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.tag-text-dark {
+  color: #1f2937;
+  text-shadow: none;
+}
+
+/* ==========================================================================
+   TAB NAVIGATION
+   ========================================================================== */
+
+.epic-tabs {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: var(--modal-radius-inner);
+  padding: 4px;
+  gap: 4px;
+}
+
+.epic-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.epic-tab:hover:not(.active) {
+  color: #374151;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.epic-tab.active {
+  background: var(--epic-pink);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 19, 147, 0.25);
+}
+
+.epic-tab i {
+  font-size: 0.875rem;
+}
+
+/* ==========================================================================
+   FIELDWORK ENTRIES
+   ========================================================================== */
+
+.epic-fieldwork-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--modal-surface-elevated);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--modal-radius-inner);
+  transition: all var(--duration-fast) var(--ease-out-expo);
+}
+
+.epic-fieldwork-entry:hover {
+  border-color: var(--modal-border-accent);
+  transform: translateX(4px);
+}
+
+.epic-fieldwork-entry .entry-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.epic-fieldwork-entry .entry-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--epic-pink);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.epic-fieldwork-entry .entry-details {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.epic-fieldwork-entry .entry-duration {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--epic-pink);
+  font-weight: 600;
+}
+
+.epic-fieldwork-entry .entry-actions {
+  display: flex;
+  gap: var(--space-xs);
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+
+.epic-fieldwork-entry:hover .entry-actions {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   EDITABLE FIELD PATTERN
+   ========================================================================== */
+
+.epic-editable-field {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  margin: 0 calc(-1 * var(--space-md));
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.epic-editable-field:hover {
+  background: rgba(255, 19, 147, 0.04);
+}
+
+.epic-editable-field .field-value {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.epic-editable-field .field-value.placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.epic-editable-field .edit-indicator {
+  opacity: 0;
+  color: #9ca3af;
+  transition: opacity var(--duration-fast);
+}
+
+.epic-editable-field:hover .edit-indicator {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   CONFIRMATION MODAL VARIANT
+   ========================================================================== */
+
+.epic-modal.modal-danger .epic-modal-title {
+  color: var(--danger-color);
+}
+
+/* ==========================================================================
+   LOADING STATES
+   ========================================================================== */
+
+.epic-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.epic-loading::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   EMPTY STATE
+   ========================================================================== */
+
+.epic-empty-state {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+}
+
+.epic-empty-state i {
+  font-size: 3rem;
+  color: #d1d5db;
+  margin-bottom: var(--space-md);
+}
+
+.epic-empty-state p {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .epic-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .epic-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: var(--modal-radius) var(--modal-radius) 0 0;
+    animation: modalInMobile var(--duration-slow) var(--ease-out-expo) forwards;
+  }
+
+  @keyframes modalInMobile {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .epic-modal-backdrop.closing .epic-modal {
+    animation: modalOutMobile var(--duration-fast) var(--ease-in-out) forwards;
+  }
+
+  @keyframes modalOutMobile {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+/* ==========================================================================
+   STATUS FILTER BUTTONS (FAB Filters)
+   ========================================================================== */
+
+.status-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-expo);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-filter-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.status-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.status-filter-btn:active {
+  transform: translateY(0);
+}
+
+.status-filter-btn.active {
+  box-shadow: 0 0 0 3px #FF1393, 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: scale(1.02);
+}
+
+.status-filter-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  background: #FF1393;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+.font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }
+.text-epic-pink { color: var(--epic-pink); }
+.bg-epic-pink { background: var(--epic-pink); }

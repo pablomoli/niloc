@@ -1101,6 +1101,18 @@ window.adminAppComponent = function() {
       if (idx !== -1) this.jobs[idx].tags = tags;
     },
 
+    getTagTextColor(tagColor) {
+      // Determine if text should be black or white based on background color brightness
+      if (!tagColor) return 'tag-text-dark';
+      const hex = tagColor.replace("#", "");
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      // Calculate relative luminance
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
+    },
+
     filterTagSuggestions() {
       const q = (this.jobTagsModal.input || '').toLowerCase();
       if (!q) { this.tagSuggestions = []; return; }

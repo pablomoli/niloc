@@ -24,106 +24,116 @@ window.CreateJobModal = {
         
         // Create modal HTML
         const modalHTML = `
-            <div id="createJobModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 2000;">
-                <!-- Backdrop -->
-                <div class="absolute inset-0" onclick="CreateJobModal.hide()"></div>
-                
+            <div id="createJobModal" class="epic-modal-backdrop" onclick="if(event.target === this) CreateJobModal.hide()">
                 <!-- Modal Content -->
-                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="CreateJobModal.hide()">✕</button>
-                    
-                    <h3 class="font-bold text-lg mb-4 text-primary">Create New Job</h3>
-                    
-                    <!-- Tab Navigation -->
-                    <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
-                        <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white">
-                            <i class="bi bi-geo-alt mr-1"></i> Address
-                        </button>
-                        <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200">
-                            <i class="bi bi-map mr-1"></i> Parcel ID
+                <div class="epic-modal modal-lg">
+                    <!-- Header -->
+                    <div class="epic-modal-header">
+                        <div class="epic-modal-subtitle">New Entry</div>
+                        <h3 class="epic-modal-title">Create Job</h3>
+                        <button class="epic-modal-close" onclick="CreateJobModal.hide()" aria-label="Close modal">
+                            <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
-                    
-                    <form id="createJobForm" onsubmit="CreateJobModal.submit(event); return false;" class="space-y-4">
-                        <!-- Address Input Section -->
-                        <div id="addressSection">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
-                            <input type="text" id="job_address_input" value="${address || ''}" required class="input input-bordered w-full" placeholder="Enter job address">
+
+                    <!-- Body -->
+                    <div class="epic-modal-body">
+                        <!-- Tab Navigation -->
+                        <div class="epic-form-section">
+                            <div class="epic-tabs">
+                                <button type="button" id="addressTab" onclick="CreateJobModal.switchTab('address')" class="epic-tab active">
+                                    <i class="bi bi-geo-alt"></i> Address
+                                </button>
+                                <button type="button" id="parcelTab" onclick="CreateJobModal.switchTab('parcel')" class="epic-tab">
+                                    <i class="bi bi-map"></i> Parcel ID
+                                </button>
+                            </div>
                         </div>
-                        
-                        <!-- Parcel Input Section (hidden by default) -->
-                        <div id="parcelSection" style="display: none;">
-                            <div class="mb-4">
-                                <label class="block text-gray-600 text-sm font-medium mb-2">County *</label>
-                                <select id="parcel_county" class="select select-bordered w-full" onchange="CreateJobModal.updateParcelInputs()">
-                                    <option value="">Select County</option>
-                                    <option value="brevard">Brevard County</option>
-                                    <option value="orange">Orange County</option>
+
+                        <form id="createJobForm" onsubmit="CreateJobModal.submit(event); return false;">
+                            <!-- Address Input Section -->
+                            <div id="addressSection" class="epic-form-section">
+                                <label class="epic-form-label required">Address</label>
+                                <input type="text" id="job_address_input" value="${address || ''}" required class="epic-input" placeholder="Enter job address">
+                            </div>
+
+                            <!-- Parcel Input Section (hidden by default) -->
+                            <div id="parcelSection" style="display: none;">
+                                <div class="epic-form-section">
+                                    <label class="epic-form-label required">County</label>
+                                    <select id="parcel_county" class="epic-input epic-select" onchange="CreateJobModal.updateParcelInputs()">
+                                        <option value="">Select County</option>
+                                        <option value="brevard">Brevard County</option>
+                                        <option value="orange">Orange County</option>
+                                    </select>
+                                </div>
+
+                                <!-- Brevard County Inputs -->
+                                <div id="brevardInputs" style="display: none;">
+                                    <div class="epic-form-section">
+                                        <label class="epic-form-label required">Tax Account Number</label>
+                                        <input type="text" id="brevard_tax_account" class="epic-input mono" placeholder="Enter Tax Account Number">
+                                    </div>
+                                </div>
+
+                                <!-- Orange County Inputs -->
+                                <div id="orangeInputs" style="display: none;">
+                                    <div class="epic-form-section">
+                                        <label class="epic-form-label required">Parcel ID</label>
+                                        <input type="text" id="orange_parcel_id" class="epic-input mono" placeholder="XX-XX-XX-XXXX-XX-XXX">
+                                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">Example: 13-23-32-7600-00-070</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="epic-form-section">
+                                <label class="epic-form-label required">Job Number</label>
+                                <input type="text" id="job_number" required class="epic-input mono">
+                            </div>
+
+                            <div class="epic-form-section">
+                                <label class="epic-form-label required">Client Name</label>
+                                <input type="text" id="job_client" required class="epic-input">
+                            </div>
+
+                            <div class="epic-form-section">
+                                <label class="epic-form-label required">Status</label>
+                                <select id="job_status" required class="epic-input epic-select">
+                                    <option value="">Select Status</option>
+                                    ${statusOptions}
                                 </select>
                             </div>
-                            
-                            <!-- Brevard County Inputs -->
-                            <div id="brevardInputs" style="display: none;">
-                                <div class="mb-3">
-                                    <label class="block text-gray-600 text-sm font-medium mb-2">Tax Account Number *</label>
-                                    <input type="text" id="brevard_tax_account" class="input input-bordered w-full" placeholder="Enter Tax Account Number">
+
+                            <div class="epic-form-section">
+                                <label class="epic-form-label">Due Date</label>
+                                <input type="date" id="job_due_date" class="epic-input">
+                            </div>
+
+                            <div class="epic-form-section">
+                                <label class="epic-form-label">Notes</label>
+                                <textarea id="job_notes" rows="3" class="epic-input epic-textarea" placeholder="Optional notes..."></textarea>
+                            </div>
+
+                            <!-- Tags selection -->
+                            <div class="epic-form-section">
+                                <div class="epic-data-card">
+                                    <label class="epic-form-label">Tags</label>
+                                    <input id="job_tags_input" type="text" class="epic-input" style="margin-bottom: 8px;" placeholder="Search existing tags..." oninput="CreateJobModal.updateTagSuggestions()" />
+                                    <div id="job_tag_suggestions" class="bg-white border rounded-md shadow-sm divide-y max-h-40 overflow-auto hidden"></div>
+                                    <div id="job_selected_tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                                    <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 8px; display: block;">Only existing tags can be added here.</small>
                                 </div>
                             </div>
-                            
-                            <!-- Orange County Inputs -->
-                            <div id="orangeInputs" style="display: none;">
-                                <div class="mb-3">
-                                    <label class="block text-gray-600 text-sm font-medium mb-2">Parcel ID *</label>
-                                    <input type="text" id="orange_parcel_id" class="input input-bordered w-full" placeholder="Format: XX-XX-XX-XXXX-XX-XXX">
-                                    <small class="text-gray-400 text-xs block mt-1">Example: 13-23-32-7600-00-070</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Job Number *</label>
-                            <input type="text" id="job_number" required class="input input-bordered w-full">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Client Name *</label>
-                            <input type="text" id="job_client" required class="input input-bordered w-full">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Status *</label>
-                            <select id="job_status" required class="select select-bordered w-full">
-                                <option value="">Select Status</option>
-                                ${statusOptions}
-                            </select>
-                        </div>
+                        </form>
+                    </div>
 
-                        <div class="mb-4">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Due Date</label>
-                            <input type="date" id="job_due_date" class="input input-bordered w-full">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Notes</label>
-                            <textarea id="job_notes" rows="3" class="textarea textarea-bordered w-full"></textarea>
-                        </div>
-
-                        <!-- Tags selection -->
-                        <div class="mb-6">
-                            <label class="block text-gray-600 text-sm font-medium mb-2">Tags</label>
-                            <input id="job_tags_input" type="text" class="input input-bordered w-full mb-2" placeholder="Type to search existing tags" oninput="CreateJobModal.updateTagSuggestions()" />
-                            <div id="job_tag_suggestions" class="bg-white border rounded-md shadow-sm divide-y max-h-40 overflow-auto hidden"></div>
-                            <div id="job_selected_tags" class="flex flex-wrap gap-2 mt-2"></div>
-                            <small class="text-gray-400">Only existing tags can be added here.</small>
-                        </div>
-                        
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" class="btn btn-ghost" onclick="CreateJobModal.hide()">Cancel</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle mr-1"></i> Create Job
-                            </button>
-                        </div>
-                    </form>
+                    <!-- Footer -->
+                    <div class="epic-modal-footer">
+                        <button type="button" class="epic-btn epic-btn-ghost" onclick="CreateJobModal.hide()">Cancel</button>
+                        <button type="submit" form="createJobForm" class="epic-btn epic-btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Job
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -230,16 +240,16 @@ window.CreateJobModal = {
         const addressSection = document.getElementById('addressSection');
         const parcelSection = document.getElementById('parcelSection');
         const addressInput = document.getElementById('job_address_input');
-        
+
         if (tab === 'address') {
-            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white';
-            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
+            addressTab.classList.add('active');
+            parcelTab.classList.remove('active');
             addressSection.style.display = 'block';
             parcelSection.style.display = 'none';
             addressInput.required = true;
         } else {
-            addressTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
-            parcelTab.className = 'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-pink-500 text-white';
+            addressTab.classList.remove('active');
+            parcelTab.classList.add('active');
             addressSection.style.display = 'none';
             parcelSection.style.display = 'block';
             addressInput.required = false;

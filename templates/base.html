@@ -6,10 +6,11 @@
   <title>{% block title %}Epic Map{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='data/EMS-llc-4.png') }}" type="image/png">
 
-  <!-- Google Fonts - Montserrat -->
+  <!-- Google Fonts - Outfit (display) + JetBrains Mono (technical) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <!-- Compiled Tailwind + DaisyUI (production build) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/app.css') }}?v={{ static_version }}">
@@ -24,6 +25,7 @@
   <!-- Shared CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ static_version }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind-compat.css') }}?v={{ static_version }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modals.css') }}?v={{ static_version }}">
 
   {% block head_extra %}{% endblock %}
 </head>

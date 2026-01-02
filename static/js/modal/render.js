@@ -27,286 +27,290 @@ SimpleModal.show = function(job) {
  */
 SimpleModal.renderModal = function(job, femaLink) {
     const modalHTML = `
-        <div id="simpleJobModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 2000;">
-            <!-- Backdrop -->
-            <div class="absolute inset-0" onclick="SimpleModal.hide()"></div>
-
+        <div id="simpleJobModal" class="epic-modal-backdrop" onclick="if(event.target === this) SimpleModal.hide()">
             <!-- Modal Content -->
-            <div id="simpleJobModalContent" class="bg-white rounded-lg shadow-2xl p-6 w-11/12 max-w-lg relative max-h-[90vh] overflow-y-auto border border-gray-100">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 hover:bg-gray-100 transition-colors" onclick="SimpleModal.hide()" aria-label="Close modal">x</button>
-
-                <!-- Header Section -->
-                <div class="mb-6 pb-4 border-b border-gray-200">
-                    <h3 class="font-bold text-xl mb-3 text-gray-900">
-                        <span class="font-mono text-primary">Job #${job.job_number || 'N/A'}</span>
-                    </h3>
+            <div class="epic-modal modal-lg">
+                <!-- Header -->
+                <div class="epic-modal-header">
+                    <div class="epic-modal-subtitle">Job Details</div>
+                    <h3 class="epic-modal-title font-mono">#${job.job_number || 'N/A'}</h3>
                     ${job.is_parcel_job ? `
-                    <div class="mb-3">
-                        <button class="btn btn-sm btn-primary" onclick="SimpleModal.openPromotion('${job.job_number}')" title="Upgrade to address job">
-                            <i class="bi bi-arrow-up-right-square mr-1"></i>
-                            Upgrade
+                    <div style="margin-top: 12px;">
+                        <button class="epic-btn epic-btn-primary epic-btn-sm" onclick="SimpleModal.openPromotion('${job.job_number}')" title="Upgrade to address job">
+                            <i class="bi bi-arrow-up-right-square"></i>
+                            Upgrade to Address
                         </button>
-                        <p class="text-xs text-gray-500 mt-1">Requires an address to replace parcel location.</p>
                     </div>
                     ` : ''}
+                    <button class="epic-modal-close" onclick="SimpleModal.hide()" aria-label="Close modal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
 
-                    <!-- Status and Total Time -->
-                    <div class="flex justify-between items-center gap-4">
-                        <div class="flex-1">
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Status</label>
+                <!-- Body -->
+                <div class="epic-modal-body" id="simpleJobModalContent">
+                    <!-- Status and Total Time Row -->
+                    <div class="epic-form-section" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+                        <div style="flex: 1;">
+                            <label class="epic-form-label">Status</label>
                             <div id="status-view" style="display: block;">
-                                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition-all shadow-sm"
+                                <div class="epic-status-badge"
                                      id="status-badge"
                                      style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};"
                                      onclick="SimpleModal.toggleEdit('status')"
                                      title="Click to edit">
                                     <span id="status-view-text">${window.MarkerUtils?.STATUS_NAMES[job.status] || job.status || 'Unknown Status'}</span>
-                                    <i class="bi bi-pencil-square ml-1 text-xs opacity-75"></i>
+                                    <i class="bi bi-pencil-square edit-icon"></i>
                                 </div>
                             </div>
-                            <div id="status-edit" style="display: none;" class="flex items-center gap-2 mt-2">
-                                <select id="status-select" class="select select-bordered select-sm flex-1">
-                                    ${this.generateStatusOptions(job.status)}
-                                </select>
-                                <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('status')">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('status')">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
+                            <div id="status-edit" style="display: none; margin-top: 8px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="status-select" class="epic-input epic-select" style="flex: 1;">
+                                        ${this.generateStatusOptions(job.status)}
+                                    </select>
+                                    <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('status')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('status')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="text-right flex-shrink-0">
-                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Total Time</label>
-                            <div id="total-time-badge" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm"
-                                 style="background: linear-gradient(135deg, #FF1393 0%, #e0117f 100%);">
-                                <i class="bi bi-clock-history text-xs"></i>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <label class="epic-form-label">Total Time</label>
+                            <div id="total-time-badge" class="epic-time-badge">
+                                <i class="bi bi-clock-history"></i>
                                 <span>${this.formatDuration(this.getTotalFieldworkTime())}</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="space-y-5">
                     <!-- Tags Section -->
-                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Tags</label>
-                        <div id="modal-tags-container" class="flex flex-wrap gap-2 mb-3 min-h-[24px]">${this.generateTagsHTML(job)}</div>
-                        <div class="relative">
-                            <div class="flex gap-2 items-center">
-                                <input id="modal-tag-input" class="input input-bordered input-sm flex-1 bg-white" placeholder="Type to search tags..."
-                                       oninput="SimpleModal.updateTagSuggestions()" onfocus="SimpleModal.updateTagSuggestions()" onkeydown="if(event.key==='Enter') SimpleModal.addTag()">
-                                <button class="btn btn-sm btn-primary" onclick="SimpleModal.addTag()">
-                                    <i class="bi bi-plus-lg"></i>
-                                </button>
+                    <div class="epic-form-section">
+                        <div class="epic-data-card accent-pink">
+                            <label class="epic-form-label" style="margin-bottom: 12px;">Tags</label>
+                            <div id="modal-tags-container" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px; margin-bottom: 16px;">${this.generateTagsHTML(job)}</div>
+                            <div style="position: relative;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input id="modal-tag-input" class="epic-input" style="flex: 1;" placeholder="Search or add tags..."
+                                           oninput="SimpleModal.updateTagSuggestions()" onfocus="SimpleModal.updateTagSuggestions()" onkeydown="if(event.key==='Enter') SimpleModal.addTag()">
+                                    <button class="epic-btn epic-btn-primary epic-btn-icon" onclick="SimpleModal.addTag()">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                                <div id="modal-tag-suggestions" class="absolute z-20 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto" style="display:none;"></div>
                             </div>
-                            <div id="modal-tag-suggestions" class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg" style="display:none;"></div>
                         </div>
                     </div>
 
                     <!-- Client Section -->
-                    <div>
-                        <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Client</label>
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Client</label>
                         <div id="client-view" style="display: block;">
-                            <div class="flex items-center justify-between group">
-                                <p class="text-gray-900 font-medium cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 -mx-3 -my-2"
-                                   onclick="SimpleModal.toggleEdit('client')"
-                                   title="Click to edit">
-                                    <span id="client-view-text">${escapeHtml(job.client) || 'N/A'}</span>
-                                </p>
-                                <button class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-xs btn-ghost" onclick="SimpleModal.toggleEdit('client')" title="Edit client">
-                                    <i class="bi bi-pencil-square text-gray-400"></i>
-                                </button>
+                            <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('client')" title="Click to edit">
+                                <span id="client-view-text" class="field-value">${escapeHtml(job.client) || 'N/A'}</span>
+                                <i class="bi bi-pencil-square edit-indicator"></i>
                             </div>
                         </div>
-                        <div id="client-edit" style="display: none;" class="flex items-center gap-2 mt-2">
-                            <input type="text"
-                                   id="client-input"
-                                   class="input input-bordered input-sm flex-1"
-                                   value="${escapeHtml(job.client) || ''}"
-                                   onkeypress="if(event.key === 'Enter') SimpleModal.saveField('client')"
-                                   onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('client')">
-                            <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('client')">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                            <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('client')">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                        <div id="client-edit" style="display: none; margin-top: 8px;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text"
+                                       id="client-input"
+                                       class="epic-input"
+                                       value="${escapeHtml(job.client) || ''}"
+                                       onkeypress="if(event.key === 'Enter') SimpleModal.saveField('client')"
+                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('client')">
+                                <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('client')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('client')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Due Date Section -->
-                    <div>
-                        <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Due Date</label>
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Due Date</label>
                         <div id="due_date-view" style="display: block;">
-                            <div class="flex items-center justify-between group">
-                                <p class="text-gray-900 font-medium cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 -mx-3 -my-2"
-                                   onclick="SimpleModal.toggleEdit('due_date')"
-                                   title="Click to edit">
-                                    <span id="due_date-view-text">${job.due_date || 'None'}</span>
-                                </p>
-                                <button class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-xs btn-ghost" onclick="SimpleModal.toggleEdit('due_date')" title="Edit due date">
-                                    <i class="bi bi-pencil-square text-gray-400"></i>
-                                </button>
+                            <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('due_date')" title="Click to edit">
+                                <span id="due_date-view-text" class="field-value ${!job.due_date ? 'placeholder' : ''}">${job.due_date || 'Not set'}</span>
+                                <i class="bi bi-pencil-square edit-indicator"></i>
                             </div>
                         </div>
-                        <div id="due_date-edit" style="display: none;" class="flex items-center gap-2 mt-2">
-                            <input type="date"
-                                   id="due_date-input"
-                                   class="input input-bordered input-sm flex-1"
-                                   value="${job.due_date || ''}"
-                                   onkeypress="if(event.key === 'Enter') SimpleModal.saveField('due_date')"
-                                   onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('due_date')">
-                            <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('due_date')">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                            <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('due_date')">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                        <div id="due_date-edit" style="display: none; margin-top: 8px;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="date"
+                                       id="due_date-input"
+                                       class="epic-input"
+                                       value="${job.due_date || ''}"
+                                       onkeypress="if(event.key === 'Enter') SimpleModal.saveField('due_date')"
+                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('due_date')">
+                                <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('due_date')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('due_date')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Address Section -->
-                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                        <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Location</label>
-                        <div id="address-view" style="display: block;">
-                            <div class="flex items-start gap-3">
-                                <div class="flex-1">
-                                    <p id="address-view-text" class="text-gray-900 font-medium leading-relaxed cursor-pointer hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-white -mx-3 -my-2"
-                                       onclick="SimpleModal.toggleEdit('address')"
-                                       title="Click to edit">
-                                        ${escapeHtml(job.address) || 'N/A'}
-                                    </p>
-                                    <div class="mt-2">
-                                        <span id="county-view-text" class="text-xs text-gray-500 font-medium">${escapeHtml(job.county) || 'N/A'} County</span>
+                    <div class="epic-form-section">
+                        <div class="epic-data-card accent-blue">
+                            <label class="epic-form-label">Location</label>
+                            <div id="address-view" style="display: block;">
+                                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                    <div style="flex: 1;">
+                                        <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('address')" title="Click to edit" style="margin: 0;">
+                                            <span id="address-view-text" class="field-value" style="line-height: 1.5;">${escapeHtml(job.address) || 'N/A'}</span>
+                                            <i class="bi bi-pencil-square edit-indicator"></i>
+                                        </div>
+                                        <div style="margin-top: 8px;">
+                                            <span id="county-view-text" class="font-mono" style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">${escapeHtml(job.county) || 'N/A'} County</span>
+                                        </div>
                                     </div>
+                                    ${job.address && job.address !== 'N/A' ? `
+                                        <button
+                                            id="copyAddressBtn"
+                                            data-address="${escapeHtml(job.address)}"
+                                            onclick="SimpleModal.copyAddress(this.dataset.address)"
+                                            class="epic-btn epic-btn-primary epic-btn-sm"
+                                            style="flex-shrink: 0;"
+                                            title="Copy address to clipboard">
+                                            <i class="bi bi-clipboard"></i>
+                                            <span id="copyBtnText">Copy</span>
+                                        </button>
+                                    ` : ''}
                                 </div>
-                                ${job.address && job.address !== 'N/A' ? `
-                                    <button
-                                        id="copyAddressBtn"
-                                        data-address="${escapeHtml(job.address)}"
-                                        onclick="SimpleModal.copyAddress(this.dataset.address)"
-                                        class="btn btn-sm btn-primary flex-shrink-0"
-                                        title="Copy address to clipboard">
-                                        <i class="bi bi-clipboard mr-1"></i>
-                                        <span id="copyBtnText">Copy</span>
-                                    </button>
-                                ` : ''}
                             </div>
-                        </div>
-                        <div id="address-edit" style="display: none;" class="flex items-center gap-2 mt-2">
-                            <input type="text" id="address-input" class="input input-bordered input-sm flex-1" value="${escapeHtml(job.address)}" onkeypress="if(event.key==='Enter') SimpleModal.saveField('address')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('address')">
-                            <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('address')">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                            <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('address')">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                            <div id="address-edit" style="display: none; margin-top: 12px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text" id="address-input" class="epic-input" value="${escapeHtml(job.address)}" onkeypress="if(event.key==='Enter') SimpleModal.saveField('address')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('address')">
+                                    <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('address')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('address')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     ${femaLink ? `
-                    <div>
+                    <div class="epic-form-section">
                         <button
                             onclick="window.open('${femaLink}', '_blank')"
-                            class="btn btn-sm btn-outline-primary w-full justify-center"
+                            class="epic-btn epic-btn-secondary"
+                            style="width: 100%; justify-content: center;"
                             title="View FEMA Flood Zone">
-                            <i class="bi bi-water mr-2"></i>
+                            <i class="bi bi-water"></i>
                             <span>View FEMA Flood Zone Map</span>
-                            <i class="bi bi-box-arrow-up-right ml-2 text-xs"></i>
+                            <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; opacity: 0.7;"></i>
                         </button>
                     </div>
                     ` : ''}
 
                     <!-- Notes Section -->
-                    <div>
-                        <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Notes</label>
+                    <div class="epic-form-section">
+                        <label class="epic-form-label">Notes</label>
                         <div id="notes-view" style="display: ${job.notes ? 'block' : 'none'};">
-                            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                <p class="text-gray-700 leading-relaxed cursor-pointer hover:text-primary transition-colors group"
-                                   onclick="SimpleModal.toggleEdit('notes')"
-                                   title="Click to edit">
-                                    <span id="notes-view-text">${escapeHtml(job.notes) || 'No notes'}</span>
-                                    <i class="bi bi-pencil-square ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" style="font-size: 12px;"></i>
-                                </p>
+                            <div class="epic-data-card interactive" onclick="SimpleModal.toggleEdit('notes')" title="Click to edit">
+                                <p id="notes-view-text" style="margin: 0; color: #374151; line-height: 1.6; font-size: 0.9375rem;">${escapeHtml(job.notes) || 'No notes'}</p>
                             </div>
                         </div>
-                        <div id="notes-edit" style="display: none;" class="flex flex-col gap-2 mt-2">
+                        <div id="notes-edit" style="display: none; margin-top: 8px;">
                             <textarea id="notes-input"
-                                   class="textarea textarea-bordered textarea-sm w-full"
-                                   rows="4"
+                                   class="epic-input epic-textarea"
                                    placeholder="Add notes about this job..."
                                    onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('notes')">${escapeHtml(job.notes) || ''}</textarea>
-                            <div class="flex items-center gap-2">
-                                <button class="btn btn-sm btn-success" onclick="SimpleModal.saveField('notes')">
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="epic-btn epic-btn-success epic-btn-sm" onclick="SimpleModal.saveField('notes')">
                                     <i class="bi bi-check-lg"></i> Save
                                 </button>
-                                <button class="btn btn-sm btn-ghost" onclick="SimpleModal.toggleEdit('notes')">
+                                <button class="epic-btn epic-btn-ghost epic-btn-sm" onclick="SimpleModal.toggleEdit('notes')">
                                     <i class="bi bi-x-lg"></i> Cancel
                                 </button>
                             </div>
                         </div>
                         ${!job.notes ? `
-                        <button class="btn btn-sm btn-outline-primary w-full mt-2" onclick="SimpleModal.toggleEdit('notes')" title="Add notes">
-                            <i class="bi bi-plus-circle mr-1"></i> Add Notes
+                        <button class="epic-btn epic-btn-secondary epic-btn-sm" style="width: 100%; margin-top: 8px;" onclick="SimpleModal.toggleEdit('notes')" title="Add notes">
+                            <i class="bi bi-plus-circle"></i> Add Notes
                         </button>
                         ` : ''}
                     </div>
 
                     <!-- Time Tracking Section -->
-                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <div class="flex items-center justify-between mb-3">
-                            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Time Tracking</label>
-                            <button class="btn btn-sm btn-primary" onclick="SimpleModal.showAddFieldworkForm()" title="Add time entry">
-                                <i class="bi bi-plus-circle mr-1"></i>
-                                Add Entry
-                            </button>
-                        </div>
-                        <div id="fieldwork-list" class="space-y-2">
-                            ${this.generateFieldworkHTML()}
+                    <div class="epic-form-section">
+                        <div class="epic-data-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <label class="epic-form-label" style="margin: 0;">Time Tracking</label>
+                                <button class="epic-btn epic-btn-primary epic-btn-sm" onclick="SimpleModal.showAddFieldworkForm()" title="Add time entry">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Add Entry
+                                </button>
+                            </div>
+                            <div id="fieldwork-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                ${this.generateFieldworkHTML()}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end mt-8 pt-4 border-t border-gray-200">
-                    <button class="btn btn-primary px-8" onclick="SimpleModal.hide()">Close</button>
+                <!-- Footer -->
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-primary" onclick="SimpleModal.hide()">Done</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Confirmation Modal -->
-            <div id="fieldwork-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2001;">
-                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.hideConfirmModal()">x</button>
-
-                    <h3 id="confirm-title" class="font-bold text-lg mb-4 text-primary"></h3>
-
-                    <p id="confirm-message" class="mb-6"></p>
-
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" class="btn btn-ghost" onclick="SimpleModal.hideConfirmModal()">
-                            Cancel
-                        </button>
-                        <button type="button" class="btn btn-error" onclick="SimpleModal.confirmAction()">
-                            Delete
-                        </button>
-                    </div>
+        <!-- Confirmation Modal (sibling, not nested) -->
+        <div id="fieldwork-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2001;" onclick="if(event.target === this) SimpleModal.hideConfirmModal()">
+            <div class="epic-modal modal-danger" style="max-width: 400px;">
+                <div class="epic-modal-header">
+                    <h3 id="confirm-title" class="epic-modal-title"></h3>
+                    <button class="epic-modal-close" onclick="SimpleModal.hideConfirmModal()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="epic-modal-body">
+                    <p id="confirm-message" style="margin: 0; color: #374151; line-height: 1.6;"></p>
+                </div>
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideConfirmModal()">Cancel</button>
+                    <button class="epic-btn epic-btn-danger" onclick="SimpleModal.confirmAction()">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <!-- Promotion Modal (Upgrade) -->
-            <div id="promotion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2002;">
-                <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="SimpleModal.closePromotion()">x</button>
-                    <h3 class="font-bold text-lg mb-4 text-primary">Upgrade to Address Job</h3>
-                    <div class="mb-3">
-                        <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
-                        <input type="text" id="promotion-address-input" class="input input-bordered w-full" placeholder="Enter full address" />
+        <!-- Promotion Modal (sibling, not nested) -->
+        <div id="promotion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 2002;" onclick="if(event.target === this) SimpleModal.closePromotion()">
+            <div class="epic-modal" style="max-width: 420px;">
+                <div class="epic-modal-header">
+                    <div class="epic-modal-subtitle">Parcel Job</div>
+                    <h3 class="epic-modal-title">Upgrade to Address</h3>
+                    <button class="epic-modal-close" onclick="SimpleModal.closePromotion()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="epic-modal-body">
+                    <div class="epic-form-section">
+                        <label class="epic-form-label required">Address</label>
+                        <input type="text" id="promotion-address-input" class="epic-input" placeholder="Enter full street address" />
                     </div>
-                    <div class="flex justify-end space-x-3 mt-2">
-                        <button type="button" class="btn btn-ghost" onclick="SimpleModal.closePromotion()">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="SimpleModal.submitPromotion()">Upgrade</button>
-                    </div>
+                </div>
+                <div class="epic-modal-footer">
+                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.closePromotion()">Cancel</button>
+                    <button class="epic-btn epic-btn-success" onclick="SimpleModal.submitPromotion()">
+                        <i class="bi bi-arrow-up-right-square"></i> Upgrade
+                    </button>
                 </div>
             </div>
         </div>
@@ -358,6 +362,15 @@ SimpleModal.hide = function() {
     const modal = document.getElementById('simpleJobModal');
     if (modal) {
         modal.remove();
+    }
+    // Also remove sibling modals
+    const confirmModal = document.getElementById('fieldwork-confirm-modal');
+    if (confirmModal) {
+        confirmModal.remove();
+    }
+    const promotionModal = document.getElementById('promotion-modal');
+    if (promotionModal) {
+        promotionModal.remove();
     }
     document.body.style.overflow = '';
 };
