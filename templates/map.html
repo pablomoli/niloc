@@ -445,6 +445,19 @@
 <!-- Leaflet MarkerCluster (optional for clustering) -->
 <script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script defer src="{{ url_for('static', filename='js/marker-utils.js') }}?v={{ static_version }}"></script>
+<!-- Route Planner Loader (must load before map.js) -->
+<script>
+  window.ROUTE_PLANNER_SCRIPTS = [
+    "{{ url_for('static', filename='js/route-planner/state.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/stops.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/gps.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/calculation.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/visualization.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner/ui.js') }}?v={{ static_version }}",
+    "{{ url_for('static', filename='js/route-planner.js') }}?v={{ static_version }}"
+  ];
+</script>
+<script defer src="{{ url_for('static', filename='js/route-planner-loader.js') }}?v={{ static_version }}"></script>
 <!-- Map modules -->
 <script defer src="{{ url_for('static', filename='js/map/state.js') }}?v={{ static_version }}"></script>
 <script defer src="{{ url_for('static', filename='js/map/notifications.js') }}?v={{ static_version }}"></script>
@@ -466,19 +479,6 @@
 <script defer src="{{ url_for('static', filename='js/jobs/parcel-geocoding.js') }}?v={{ static_version }}"></script>
 <script defer src="{{ url_for('static', filename='js/create-job-modal.js') }}?v={{ static_version }}"></script>
 <script src="{{ url_for('static', filename='js/fab-menu.js') }}?v={{ static_version }}"></script>
-<!-- Route Planner (lazy-loaded) -->
-<script>
-  window.ROUTE_PLANNER_SCRIPTS = [
-    "{{ url_for('static', filename='js/route-planner/state.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner/stops.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner/gps.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner/calculation.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner/visualization.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner/ui.js') }}?v={{ static_version }}",
-    "{{ url_for('static', filename='js/route-planner.js') }}?v={{ static_version }}"
-  ];
-</script>
-<script defer src="{{ url_for('static', filename='js/route-planner-loader.js') }}?v={{ static_version }}"></script>
 <script>
   document.addEventListener('alpine:init', () => {
     console.log('Alpine initialized');

@@ -51,6 +51,18 @@ function initializeApplication() {
 
     // Load POIs from server
     loadPois();
+
+    // Load route planner immediately so the tab is always visible
+    if (window.RoutePlannerLoader && typeof window.RoutePlannerLoader.load === 'function') {
+        window.RoutePlannerLoader.load().then(() => {
+            // Explicitly initialize after scripts load
+            if (window.RoutePlanner && typeof window.RoutePlanner.init === 'function') {
+                window.RoutePlanner.init();
+            }
+        }).catch(err => {
+            console.warn('Route planner failed to load on init:', err);
+        });
+    }
 }
 
 // Run initialization when script loads

@@ -224,6 +224,47 @@ const AdminUtils = {
             "On Hold": "badge-on-hold",
         };
         return `${base} ${map[status] || 'badge-default'}`;
+    },
+
+    /**
+     * Get the background color hex code for a status.
+     * @param {string} status - The job status
+     * @returns {string} Hex color code
+     */
+    getStatusColor(status) {
+        const colors = {
+            "Completed/To be Filed": "#28a745",
+            "Needs Fieldwork": "#e09132",
+            "Set/Flag Pins": "#dc3545",
+            "To Be Printed": "#0066cc",
+            "Fieldwork Complete": "#6f42c1",
+            "Survey Complete/Invoice Sent": "#f5c842",
+            "Site Plan": "#e685b5",
+            "On Hold/Pending Estimate": "#a8a8a8",
+            // Backward compatibility
+            "Completed": "#28a745",
+            "Set Pins": "#dc3545",
+            "Needs Office Work": "#6f42c1",
+            "Invoice Sent": "#f5c842",
+            "Ongoing Site": "#e685b5",
+            "On Hold": "#a8a8a8",
+        };
+        return colors[status] || "#6c757d";
+    },
+
+    /**
+     * Determine if text should be dark or light based on background color.
+     * @param {string} hexColor - Hex color code
+     * @returns {string} CSS class for text color
+     */
+    getTextColorClass(hexColor) {
+        if (!hexColor) return 'tag-text-light';
+        const hex = hexColor.replace("#", "");
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
     }
 };
 

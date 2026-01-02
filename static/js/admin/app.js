@@ -1113,6 +1113,15 @@ window.adminAppComponent = function() {
       return brightness > 155 ? 'tag-text-dark' : 'tag-text-light';
     },
 
+    getStatusColor(status) {
+      return window.AdminUtils?.getStatusColor(status) || '#6c757d';
+    },
+
+    getStatusTextColor(status) {
+      const color = this.getStatusColor(status);
+      return window.AdminUtils?.getTextColorClass(color) || 'tag-text-light';
+    },
+
     filterTagSuggestions() {
       const q = (this.jobTagsModal.input || '').toLowerCase();
       if (!q) { this.tagSuggestions = []; return; }

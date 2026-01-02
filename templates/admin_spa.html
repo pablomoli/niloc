@@ -276,12 +276,16 @@
                 <button class="btn btn-ghost btn-xs" @click="selectAllStatuses()">Select All</button>
                 <button class="btn btn-ghost btn-xs" @click="clearAllStatuses()">Clear</button>
               </div>
-              <div class="py-1">
+              <div class="py-2 px-2 space-y-1">
                 <template x-for="s in statuses" :key="s">
-                  <label class="flex items-center px-3 py-2 cursor-pointer gap-2">
+                  <label class="flex items-center px-3 py-2.5 cursor-pointer gap-3 rounded-lg transition-all hover:bg-gray-50"
+                         :class="selectedStatuses.includes(s) ? 'bg-pink-50 ring-2 ring-pink-400' : ''">
                     <input type="checkbox" class="checkbox checkbox-sm" :checked="selectedStatuses.includes(s)"
                            @change="toggleStatusOption(s, $event.target.checked)" :title="s">
-                    <span x-text="s"></span>
+                    <span class="epic-tag-filled text-sm"
+                          :class="getStatusTextColor(s)"
+                          :style="`background-color: ${getStatusColor(s)};`"
+                          x-text="s"></span>
                   </label>
                 </template>
               </div>
@@ -309,12 +313,16 @@
                 <button class="btn btn-ghost btn-xs" @click="selectAllTags()">Select All</button>
                 <button class="btn btn-ghost btn-xs" @click="clearAllTags()">Clear</button>
               </div>
-              <div class="py-1">
+              <div class="py-2 px-2 space-y-1">
                 <template x-for="tag in tags" :key="tag.id">
-                  <label class="flex items-center px-3 py-2 cursor-pointer gap-2">
+                  <label class="flex items-center px-3 py-2.5 cursor-pointer gap-3 rounded-lg transition-all hover:bg-gray-50"
+                         :class="selectedTags.includes(tag.id) ? 'bg-pink-50 ring-2 ring-pink-400' : ''">
                     <input type="checkbox" class="checkbox checkbox-sm" :checked="selectedTags.includes(tag.id)"
                            @change="toggleTagOption(tag.id, $event.target.checked)" :title="tag.name">
-                    <span class="badge border-2" :style="`border-color:${tag.color||'#007bff'}; color:${tag.color||'#007bff'}`" x-text="tag.name"></span>
+                    <span class="epic-tag-filled text-sm"
+                          :class="getTagTextColor(tag.color)"
+                          :style="`background-color: ${tag.color||'#007bff'};`"
+                          x-text="tag.name"></span>
                   </label>
                 </template>
               </div>
