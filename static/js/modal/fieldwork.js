@@ -359,17 +359,21 @@ SimpleModal.showConfirm = function(title, message, callback) {
     this.confirmModal.message = message;
     this.confirmModal.callback = callback;
 
-    document.getElementById('confirm-title').textContent = title;
-    document.getElementById('confirm-message').textContent = message;
+    const titleEl = document.getElementById('confirm-title');
+    const messageEl = document.getElementById('confirm-message');
+    const modal = document.getElementById('fieldwork-confirm-modal');
 
-    document.getElementById('fieldwork-confirm-modal').classList.remove('hidden');
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    if (modal) modal.classList.remove('hidden');
 };
 
 /**
  * Hide confirmation modal.
  */
 SimpleModal.hideConfirmModal = function() {
-    document.getElementById('fieldwork-confirm-modal').classList.add('hidden');
+    const modal = document.getElementById('fieldwork-confirm-modal');
+    if (modal) modal.classList.add('hidden');
     this.confirmModal.callback = null;
 };
 

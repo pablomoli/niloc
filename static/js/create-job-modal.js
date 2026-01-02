@@ -283,15 +283,16 @@ window.CreateJobModal = {
     
     async submit(event) {
         event.preventDefault();
-        
+
         // Check which tab is active
         const addressSection = document.getElementById('addressSection');
         const isAddressMode = addressSection.style.display !== 'none';
-        
-        // Show loading state
-        const submitButton = event.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
-        submitButton.disabled = true;
+
+        // Show loading state - button is in modal footer, outside form
+        const modal = document.getElementById('createJobModal');
+        const submitButton = modal ? modal.querySelector('button[type="submit"]') : null;
+        const originalText = submitButton ? submitButton.innerHTML : '';
+        if (submitButton) submitButton.disabled = true;
         
         let geocodeData = null;
         let parcelData = null;
@@ -308,7 +309,7 @@ window.CreateJobModal = {
                     return;
                 }
                 
-                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Geocoding...';
+                if (submitButton) submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Geocoding...';
                 
                 // Geocode the address (append Florida for better accuracy)
                 const geocodeResponse = await fetch(`/api/geocode?address=${encodeURIComponent(addressInput + ', Florida')}`);
@@ -329,7 +330,7 @@ window.CreateJobModal = {
                     return;
                 }
 
-                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Looking up parcel...';
+                if (submitButton) submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Looking up parcel...';
 
                 let parcelResult;
 
@@ -368,8 +369,10 @@ window.CreateJobModal = {
                 };
 
                 // Show temporary marker and ask for confirmation
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
+                if (submitButton) {
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                }
 
                 // Hide the create job modal temporarily
                 const createModal = document.getElementById('createJobModal');
@@ -507,8 +510,10 @@ window.CreateJobModal = {
             }
         } finally {
             // Restore button state
-            submitButton.innerHTML = originalText;
-            submitButton.disabled = false;
+            if (submitButton) {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
         }
     }
 };
