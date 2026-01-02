@@ -122,6 +122,20 @@ window.adminAppComponent = function() {
       deletedJobs: 0,
     },
 
+    // Calendar state (due date calendar on dashboard)
+    calendarMonth: new Date().toISOString().slice(0, 7),
+    calendarCounts: {},
+    calendarLoading: false,
+
+    // Due date filter state
+    dueDateFilter: {
+      start: null,
+      end: null,
+      rangeValue: 7,
+      rangeUnit: 'days'
+    },
+    dueDateDropdownOpen: false,
+
     // User management
     editingUser: {
       id: null,
@@ -362,9 +376,9 @@ window.adminAppComponent = function() {
         let aVal = a[this.sortField];
         let bVal = b[this.sortField];
 
-        if (this.sortField === 'created_at') {
-          aVal = new Date(aVal);
-          bVal = new Date(bVal);
+        if (this.sortField === 'created_at' || this.sortField === 'due_date') {
+          aVal = aVal ? new Date(aVal) : new Date(0);
+          bVal = bVal ? new Date(bVal) : new Date(0);
         } else if (typeof aVal === 'string') {
           aVal = aVal.toLowerCase();
           bVal = bVal.toLowerCase();
@@ -914,6 +928,8 @@ window.adminAppComponent = function() {
           this.stats.deletedJobs = data.deleted_jobs || this.stats.deletedJobs || 0;
 
           this.dashboardLoaded = true;
+          // Load calendar data for current month
+          this.loadCalendarMonth(this.calendarMonth);
         } catch (error) {
           console.error("Failed to load stats:", error);
           this.dashboardLoaded = false;
@@ -924,6 +940,204 @@ window.adminAppComponent = function() {
         }
       })();
       return this._dashboardPromise;
+    },
+
+    // Calendar methods
+    async loadCalendarMonth(month) {
+      this.calendarLoading = true;
+      try {
+        const fetcher = window.cachedFetch || window.fetch;
+        const response = await fetcher(`/api/jobs/due-dates?month=${month}`, {}, { ttl: 60_000 });
+        const data = await response.json();
+        this.calendarCounts = data.counts || {};
+      } catch (error) {
+        console.error("Failed to load calendar counts:", error);
+        this.calendarCounts = {};
+      } finally {
+        this.calendarLoading = false;
+      }
+    },
+
+    prevCalendarMonth() {
+      const [year, month] = this.calendarMonth.split('-').map(Number);
+      let newYear = year;
+      let newMonth = month - 1;
+      if (newMonth < 1) {
+        newMonth = 12;
+        newYear--;
+      }
+      this.calendarMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+      this.loadCalendarMonth(this.calendarMonth);
+    },
+
+    nextCalendarMonth() {
+      const [year, month] = this.calendarMonth.split('-').map(Number);
+      let newYear = year;
+      let newMonth = month + 1;
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear++;
+      }
+      this.calendarMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+      this.loadCalendarMonth(this.calendarMonth);
+    },
+
+    goToCurrentMonth() {
+      this.calendarMonth = new Date().toISOString().slice(0, 7);
+      this.loadCalendarMonth(this.calendarMonth);
+    },
+
+    getCalendarMonthLabel() {
+      const [year, month] = this.calendarMonth.split('-').map(Number);
+      const date = new Date(year, month - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    },
+
+    getCalendarGrid() {
+      const [year, month] = this.calendarMonth.split('-').map(Number);
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const daysInMonth = lastDay.getDate();
+      const startDayOfWeek = firstDay.getDay();
+
+      const grid = [];
+      let week = [];
+
+      // Previous month's trailing days
+      const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+      for (let i = startDayOfWeek - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const prevMonth = month === 1 ? 12 : month - 1;
+        const prevYear = month === 1 ? year - 1 : year;
+        const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        week.push({
+          day,
+          date: dateStr,
+          isCurrentMonth: false,
+          count: this.calendarCounts[dateStr] || 0
+        });
+      }
+
+      // Current month's days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        week.push({
+          day,
+          date: dateStr,
+          isCurrentMonth: true,
+          isToday: dateStr === new Date().toISOString().slice(0, 10),
+          count: this.calendarCounts[dateStr] || 0
+        });
+
+        if (week.length === 7) {
+          grid.push(week);
+          week = [];
+        }
+      }
+
+      // Next month's leading days
+      if (week.length > 0) {
+        let nextDay = 1;
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextYear = month === 12 ? year + 1 : year;
+        while (week.length < 7) {
+          const dateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextDay).padStart(2, '0')}`;
+          week.push({
+            day: nextDay,
+            date: dateStr,
+            isCurrentMonth: false,
+            count: this.calendarCounts[dateStr] || 0
+          });
+          nextDay++;
+        }
+        grid.push(week);
+      }
+
+      return grid;
+    },
+
+    getCountBadgeColor(count) {
+      // Interpolate from yellow (1) -> orange (3) -> red (5+)
+      // Yellow: #f59e0b, Orange: #f97316, Red: #ef4444
+      if (count <= 0) return '#9ca3af'; // gray
+      if (count === 1) return '#f59e0b'; // yellow/amber
+      if (count === 2) return '#f97316'; // orange
+      if (count === 3) return '#ea580c'; // dark orange
+      if (count === 4) return '#dc2626'; // red-600
+      return '#b91c1c'; // red-700 for 5+
+    },
+
+    onCalendarDayClick(date) {
+      this.dueDateFilter.start = date;
+      this.dueDateFilter.end = date;
+      this.activeTab = 'jobs';
+      this.ensureTabData('jobs');
+      this.$nextTick(() => {
+        this.filterJobs();
+      });
+    },
+
+    // Due date filter methods
+    getDueDateFilterLabel() {
+      if (!this.dueDateFilter.start || !this.dueDateFilter.end) {
+        return 'All';
+      }
+      if (this.dueDateFilter.start === this.dueDateFilter.end) {
+        return this.formatDate(this.dueDateFilter.start);
+      }
+      return `${this.formatDate(this.dueDateFilter.start)} - ${this.formatDate(this.dueDateFilter.end)}`;
+    },
+
+    applyQuickDueDateFilter(type) {
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      let endDate;
+
+      if (type === 'day') {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        endDate = tomorrow.toISOString().slice(0, 10);
+      } else if (type === 'week') {
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        endDate = nextWeek.toISOString().slice(0, 10);
+      } else if (type === 'month') {
+        const nextMonth = new Date(today);
+        nextMonth.setDate(nextMonth.getDate() + 30);
+        endDate = nextMonth.toISOString().slice(0, 10);
+      }
+
+      this.dueDateFilter.start = todayStr;
+      this.dueDateFilter.end = endDate;
+      this.dueDateDropdownOpen = false;
+      this.filterJobs();
+    },
+
+    applyDueDateRange() {
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const endDate = new Date(today);
+
+      const value = this.dueDateFilter.rangeValue || 7;
+      if (this.dueDateFilter.rangeUnit === 'days') {
+        endDate.setDate(endDate.getDate() + value);
+      } else if (this.dueDateFilter.rangeUnit === 'weeks') {
+        endDate.setDate(endDate.getDate() + (value * 7));
+      } else if (this.dueDateFilter.rangeUnit === 'months') {
+        endDate.setMonth(endDate.getMonth() + value);
+      }
+
+      this.dueDateFilter.start = todayStr;
+      this.dueDateFilter.end = endDate.toISOString().slice(0, 10);
+      this.dueDateDropdownOpen = false;
+      this.filterJobs();
+    },
+
+    clearDueDateFilter() {
+      this.dueDateFilter.start = null;
+      this.dueDateFilter.end = null;
+      this.dueDateDropdownOpen = false;
+      this.filterJobs();
     },
 
     filterJobs() {
@@ -951,6 +1165,14 @@ window.adminAppComponent = function() {
         filtered = filtered.filter(job => {
           if (!Array.isArray(job.tags) || job.tags.length === 0) return false;
           return job.tags.some(tag => this.selectedTags.includes(tag.id));
+        });
+      }
+
+      // Due date range filter
+      if (this.dueDateFilter.start && this.dueDateFilter.end) {
+        filtered = filtered.filter(job => {
+          if (!job.due_date) return false;
+          return job.due_date >= this.dueDateFilter.start && job.due_date <= this.dueDateFilter.end;
         });
       }
 

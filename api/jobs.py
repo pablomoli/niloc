@@ -218,6 +218,70 @@ def get_jobs():
         return handle_db_error(e)
 
 
+@api_bp.route("/jobs/due-dates", methods=["GET"])
+@login_required
+@with_db_retry(max_retries=3, delay=0.5)
+def get_due_date_counts():
+    """
+    GET /api/jobs/due-dates?month=YYYY-MM - Get due date counts for a month.
+
+    Returns per-day counts of active jobs with due dates in the requested month.
+    Response: { "month": "YYYY-MM", "counts": { "YYYY-MM-DD": int, ... } }
+    """
+    try:
+        month_param = request.args.get("month", "").strip()
+
+        if not month_param:
+            # Default to current month
+            today = date.today()
+            month_param = today.strftime("%Y-%m")
+
+        # Parse month parameter
+        try:
+            year, month = map(int, month_param.split("-"))
+            first_day = date(year, month, 1)
+            # Calculate last day of month
+            if month == 12:
+                last_day = date(year + 1, 1, 1)
+            else:
+                last_day = date(year, month + 1, 1)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid month format. Use YYYY-MM"}), 400
+
+        # Query active jobs with due_date in the month range
+        # Use string comparison to avoid timezone issues with date columns
+        first_day_str = first_day.isoformat()
+        last_day_str = last_day.isoformat()
+
+        counts = (
+            db.session.query(
+                func.cast(Job.due_date, db.String),
+                func.count(Job.id)
+            )
+            .filter(Job.deleted_at.is_(None))
+            .filter(Job.due_date.isnot(None))
+            .filter(func.cast(Job.due_date, db.String) >= first_day_str)
+            .filter(func.cast(Job.due_date, db.String) < last_day_str)
+            .group_by(func.cast(Job.due_date, db.String))
+            .all()
+        )
+
+        # Build counts dictionary
+        counts_dict = {}
+        for due_date_str, count in counts:
+            if due_date_str:
+                counts_dict[due_date_str] = count
+
+        return jsonify({
+            "month": month_param,
+            "counts": counts_dict
+        })
+
+    except Exception as e:
+        logger.error(f"Due dates endpoint error: {e}", exc_info=True)
+        return handle_db_error(e)
+
+
 @api_bp.route("/jobs/<job_number>", methods=["GET"])
 @login_required
 @with_db_retry(max_retries=3, delay=0.5)
