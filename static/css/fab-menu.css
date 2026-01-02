@@ -1,81 +1,114 @@
 /**
  * FAB Menu Styles for Epic Map
  * Mobile-first floating action button with arc menu
+ * Refined design with depth, gradients, and smooth animations
  */
 
 /* FAB Container and Main Button */
 .fab-container {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 24px;
   z-index: 1000;
 }
 
 .fab-button,
 .fab-action-btn,
 .location-fab {
-  width: 58px !important;
-  height: 58px !important;
+  width: 60px !important;
+  height: 60px !important;
   border-radius: 50%;
   border: none !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
-  outline: 2px solid rgba(255, 255, 255, 0.35);
-  transition: box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.15),
+    0 0 0 3px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glossy overlay effect */
+.fab-button::before,
+.fab-action-btn::before,
+.location-fab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
 }
 
 .fab-button:hover,
 .fab-action-btn:hover,
 .location-fab:hover {
-  filter: brightness(1.05);
-  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.32);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 8px 12px rgba(0, 0, 0, 0.15),
+    0 16px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .fab-button:focus-visible,
 .fab-action-btn:focus-visible,
 .location-fab:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.85);
-  outline-offset: 0;
+  outline: none;
+  box-shadow:
+    0 8px 12px rgba(0, 0, 0, 0.15),
+    0 16px 32px rgba(0, 0, 0, 0.2),
+    0 0 0 4px #FF1393;
 }
 
 .fab-button i,
 .fab-action-btn i,
 .location-fab i {
-  font-size: 20px;
+  font-size: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 .fab-button {
-  background: #d8197f !important;
+  background: linear-gradient(135deg, #FF1393 0%, #d8197f 50%, #b91c6a 100%) !important;
   color: #ffffff !important;
   position: relative;
   z-index: 10;
-  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .fab-button:hover {
-  filter: brightness(1.08);
+  background: linear-gradient(135deg, #ff2da3 0%, #e91d8a 50%, #c92075 100%) !important;
 }
 
 .fab-button:active {
-  transform: scale(0.95);
-  filter: brightness(0.95);
+  transform: scale(0.95) !important;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 0 0 3px rgba(255, 255, 255, 0.2) !important;
 }
 
 .fab-button[aria-expanded="true"] {
-  background: #bb1b60 !important;
+  background: linear-gradient(135deg, #d8197f 0%, #b91c6a 50%, #9a1858 100%) !important;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.15),
+    0 0 0 3px #FF1393 !important;
 }
 
 .fab-button[aria-expanded="true"]:hover {
-  filter: brightness(1.03);
+  background: linear-gradient(135deg, #e91d8a 0%, #c92075 50%, #a91a62 100%) !important;
 }
 
 /* Arc Menu Actions */
@@ -92,23 +125,37 @@
 
 .fab-action-btn {
   position: absolute;
-  background: #d8197f;
+  width: 52px !important;
+  height: 52px !important;
   /* Start at the FAB button position */
-  bottom: 0;
-  right: 0;
+  bottom: 4px;
+  right: 4px;
   /* Hide by default */
   opacity: 0;
   transform: scale(0);
-  transition: all 0.3s ease-out;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   touch-action: manipulation;
 }
 
-.fab-action-btn:hover {
-  filter: brightness(1.08);
+/* Unique colors for each action button */
+.fab-action-btn.layers-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+}
+
+.fab-action-btn.status-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+}
+
+.fab-action-btn.search-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.fab-action-btn.create-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
 .fab-action-btn:active {
-  filter: brightness(0.92);
+  transform: scale(0.9) !important;
 }
 
 /* Arc positioning - 4 buttons in order: Map Settings, Filters, Search, Create */
@@ -206,14 +253,18 @@
 /* Standalone Location Button (bottom left) */
 .location-fab {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  background: #1f9341 !important;
+  bottom: 24px;
+  left: 24px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%) !important;
   color: #ffffff !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   z-index: 1000;
+}
+
+.location-fab:hover {
+  background: linear-gradient(135deg, #34d66e 0%, #22c55e 50%, #16a34a 100%) !important;
 }
 
 /* Fix Bootstrap Icon centering in location FAB */
@@ -228,9 +279,11 @@
 }
 
 .location-fab:active {
-  transform: scale(0.95);
-  filter: brightness(0.92);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+  transform: scale(0.95) !important;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 0 0 3px rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Buttons position handled by Alpine.js transitions */

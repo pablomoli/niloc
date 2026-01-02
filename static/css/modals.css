@@ -940,6 +940,224 @@
 }
 
 /* ==========================================================================
+   ADMIN DASHBOARD TABLES
+   ========================================================================== */
+
+/* Table container */
+.epic-table-container {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Override DaisyUI table styles */
+.epic-table,
+table.epic-table {
+  width: 100%;
+  font-family: var(--font-body);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.epic-table thead,
+table.table thead {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+}
+
+.epic-table thead tr th,
+table.table thead tr th {
+  font-family: var(--font-mono) !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #64748b !important;
+  padding: 14px 16px !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  background: transparent !important;
+  white-space: nowrap;
+}
+
+.epic-table thead tr th:first-child,
+table.table thead tr th:first-child {
+  padding-left: 20px !important;
+}
+
+.epic-table thead tr th:last-child,
+table.table thead tr th:last-child {
+  padding-right: 20px !important;
+}
+
+/* Sortable header styling */
+.epic-table thead tr th[class*="cursor-pointer"]:hover,
+table.table thead tr th[class*="cursor-pointer"]:hover {
+  background: rgba(255, 19, 147, 0.05) !important;
+  color: #FF1393 !important;
+}
+
+.epic-table tbody tr,
+table.table tbody tr {
+  transition: all 0.15s ease !important;
+}
+
+.epic-table tbody tr td,
+table.table tbody tr td {
+  padding: 14px 16px !important;
+  font-size: 0.9375rem !important;
+  color: #374151 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+}
+
+.epic-table tbody tr td:first-child,
+table.table tbody tr td:first-child {
+  padding-left: 20px !important;
+}
+
+.epic-table tbody tr td:last-child,
+table.table tbody tr td:last-child {
+  padding-right: 20px !important;
+}
+
+.epic-table tbody tr:last-child td,
+table.table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.epic-table tbody tr:hover,
+table.table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(255, 19, 147, 0.02) 0%, rgba(255, 19, 147, 0.05) 100%) !important;
+}
+
+/* Selected row state */
+.epic-table tbody tr.selected,
+table.table tbody tr[class*="bg-primary"] {
+  background: linear-gradient(90deg, rgba(255, 19, 147, 0.05) 0%, rgba(255, 19, 147, 0.08) 100%) !important;
+  border-left: 3px solid #FF1393;
+}
+
+/* Job number column - make it stand out */
+.epic-table tbody tr td .font-medium,
+table.table tbody tr td .font-medium {
+  font-family: var(--font-mono) !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+/* Status badge in tables */
+.epic-table .badge,
+table.table .badge {
+  font-family: var(--font-display) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+}
+
+/* Action buttons in tables */
+.epic-table .btn-ghost,
+.epic-table .btn-xs,
+table.table .btn-ghost,
+table.table .btn-xs {
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+}
+
+.epic-table .btn-ghost:hover,
+table.table .btn-ghost:hover {
+  background: rgba(255, 19, 147, 0.1) !important;
+  color: #FF1393 !important;
+}
+
+/* Checkbox styling */
+.epic-table input[type="checkbox"],
+table.table input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 5px !important;
+  border: 2px solid #d1d5db !important;
+  cursor: pointer;
+  transition: all 0.15s ease !important;
+}
+
+.epic-table input[type="checkbox"]:checked,
+table.table input[type="checkbox"]:checked {
+  background: #FF1393 !important;
+  border-color: #FF1393 !important;
+}
+
+.epic-table input[type="checkbox"]:hover,
+table.table input[type="checkbox"]:hover {
+  border-color: #FF1393 !important;
+}
+
+/* Empty state for tables */
+.epic-table-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: #9ca3af;
+}
+
+.epic-table-empty i {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.epic-table-empty p {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Loading skeleton for table rows */
+.epic-table-skeleton td {
+  padding: 16px !important;
+}
+
+.epic-table-skeleton .skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Pagination styling */
+.epic-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.epic-pagination .btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.epic-pagination .btn.active {
+  background: #FF1393 !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(255, 19, 147, 0.3);
+}
+
+/* ==========================================================================
    UTILITY CLASSES
    ========================================================================== */
 
