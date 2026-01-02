@@ -21,8 +21,7 @@
     cursor: pointer;
     box-shadow:
         0 4px 6px rgba(0, 0, 0, 0.1),
-        0 8px 16px rgba(216, 25, 127, 0.3),
-        0 0 0 3px rgba(255, 255, 255, 0.2);
+        0 8px 16px rgba(216, 25, 127, 0.3);
     z-index: 999;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
@@ -44,8 +43,7 @@
     transform: translateY(-3px) scale(1.08);
     box-shadow:
         0 8px 12px rgba(0, 0, 0, 0.15),
-        0 12px 24px rgba(216, 25, 127, 0.4),
-        0 0 0 3px rgba(255, 255, 255, 0.3);
+        0 12px 24px rgba(216, 25, 127, 0.4);
 }
 
 .route-fab:active {
@@ -78,34 +76,24 @@
     color: #ffffff !important;
     box-shadow:
         0 4px 6px rgba(0, 0, 0, 0.1),
-        0 10px 20px rgba(59, 130, 246, 0.3),
-        0 0 0 3px rgba(255, 255, 255, 0.2);
+        0 10px 20px rgba(37, 99, 235, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
-}
-
-.office-fab::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
-    border-radius: 50% 50% 0 0;
-    pointer-events: none;
+    position: relative;
 }
 
 .office-fab:hover {
     transform: translateY(-3px) scale(1.05);
     box-shadow:
         0 8px 12px rgba(0, 0, 0, 0.15),
-        0 16px 32px rgba(59, 130, 246, 0.4),
-        0 0 0 3px rgba(255, 255, 255, 0.3);
+        0 16px 32px rgba(37, 99, 235, 0.4);
 }
 
 .office-fab:active {
-    transform: scale(0.95);
+    transform: scale(0.95) !important;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        0 4px 8px rgba(37, 99, 235, 0.2) !important;
 }
 
 /* Side Panel Styles */

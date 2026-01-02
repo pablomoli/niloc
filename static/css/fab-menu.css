@@ -29,8 +29,7 @@
   padding: 0;
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.15),
-    0 0 0 3px rgba(255, 255, 255, 0.2);
+    0 10px 20px rgba(0, 0, 0, 0.15);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -59,8 +58,7 @@
   transform: translateY(-3px) scale(1.05);
   box-shadow:
     0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2),
-    0 0 0 3px rgba(255, 255, 255, 0.3);
+    0 16px 32px rgba(0, 0, 0, 0.2);
 }
 
 .fab-button:focus-visible,
@@ -95,16 +93,14 @@
   transform: scale(0.95) !important;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.15),
-    0 0 0 3px rgba(255, 255, 255, 0.2) !important;
+    0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 .fab-button[aria-expanded="true"] {
   background: linear-gradient(135deg, #d8197f 0%, #b91c6a 50%, #9a1858 100%) !important;
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.15),
-    0 0 0 3px #FF1393 !important;
+    0 10px 20px rgba(0, 0, 0, 0.15) !important;
 }
 
 .fab-button[aria-expanded="true"]:hover {
@@ -154,8 +150,21 @@
   background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
 }
 
-.fab-action-btn:active {
-  transform: scale(0.9) !important;
+/* Active states - preserve arc positions */
+.fab-actions.open .layers-btn:active {
+  transform: translate(-140px, 0px) scale(0.9);
+}
+
+.fab-actions.open .status-btn:active {
+  transform: translate(-121px, -70px) scale(0.9);
+}
+
+.fab-actions.open .search-btn:active {
+  transform: translate(-70px, -121px) scale(0.9);
+}
+
+.fab-actions.open .create-btn:active {
+  transform: translate(0px, -140px) scale(0.9);
 }
 
 /* Arc positioning - 4 buttons in order: Map Settings, Filters, Search, Create */
@@ -282,8 +291,7 @@
   transform: scale(0.95) !important;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.15),
-    0 0 0 3px rgba(255, 255, 255, 0.2) !important;
+    0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Buttons position handled by Alpine.js transitions */
