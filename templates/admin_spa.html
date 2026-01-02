@@ -446,7 +446,7 @@
                       </div>
                     </td>
                     <td>
-                      <div class="font-medium" x-text="job.job_number"></div>
+                      <div x-text="job.job_number"></div>
                       <template x-if="job.is_parcel_job">
                         <span
                           class="badge badge-info badge-sm mt-1"
@@ -683,7 +683,7 @@
                 <template x-for="user in filteredUsers" :key="user.id">
                   <tr class="hover:bg-base-200/50 transition-colors">
                     <td>
-                      <div class="font-medium" x-text="user.username"></div>
+                      <div x-text="user.username"></div>
                     </td>
                     <td x-text="user.name"></td>
                     <td>
@@ -1127,7 +1127,7 @@
                 <template x-for="job in filteredDeletedJobs" :key="job.id">
                   <tr class="hover:bg-base-200/50 transition-colors">
                     <td>
-                      <div class="font-medium" x-text="job.display_job_number || job.original_job_number"></div>
+                      <div x-text="job.display_job_number || job.original_job_number"></div>
                     </td>
                     <td x-text="job.client"></td>
                     <td>
