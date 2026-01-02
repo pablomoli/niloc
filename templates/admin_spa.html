@@ -191,6 +191,73 @@
             </div>
           </div>
         </div>
+
+        <!-- Due Date Calendar Section -->
+        <div class="mb-4">
+          <div class="card bg-white shadow-lg max-w-2xl mx-auto">
+            <div class="card-body p-4">
+              <!-- Calendar header with controls -->
+              <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Due Date Calendar</h3>
+                <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                  <button @click="prevCalendarMonth()" class="p-1.5 rounded hover:bg-gray-200 transition-colors" title="Previous month">
+                    <i class="bi bi-chevron-left text-gray-600"></i>
+                  </button>
+                  <span class="font-medium min-w-[120px] text-center text-sm text-gray-700" x-text="getCalendarMonthLabel()"></span>
+                  <button @click="nextCalendarMonth()" class="p-1.5 rounded hover:bg-gray-200 transition-colors" title="Next month">
+                    <i class="bi bi-chevron-right text-gray-600"></i>
+                  </button>
+                  <button @click="goToCurrentMonth()" class="ml-1 px-2 py-1 text-xs font-medium rounded bg-white border border-gray-300 hover:bg-gray-50 transition-colors" title="Go to today">
+                    Today
+                  </button>
+                </div>
+              </div>
+              <div class="relative" :class="calendarLoading ? 'opacity-50' : ''">
+                <!-- Loading indicator -->
+                <div x-show="calendarLoading" class="absolute inset-0 flex items-center justify-center z-10">
+                  <span class="loading loading-spinner loading-sm"></span>
+                </div>
+                <!-- Weekday headers -->
+                <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-semibold text-gray-500">
+                  <div>Sun</div>
+                  <div>Mon</div>
+                  <div>Tue</div>
+                  <div>Wed</div>
+                  <div>Thu</div>
+                  <div>Fri</div>
+                  <div>Sat</div>
+                </div>
+                <!-- Calendar grid -->
+                <template x-for="(week, weekIdx) in getCalendarGrid()" :key="weekIdx">
+                  <div class="grid grid-cols-7 gap-1 mb-1">
+                    <template x-for="day in week" :key="day.date">
+                      <button
+                        @click="onCalendarDayClick(day.date)"
+                        class="relative h-12 p-1 rounded-lg text-sm transition-colors hover:bg-gray-100 flex flex-col items-center justify-start pt-1"
+                        :class="{
+                          'text-gray-400': !day.isCurrentMonth,
+                          'bg-primary/10 ring-2 ring-primary': day.isToday,
+                          'cursor-pointer': day.count > 0 || day.isCurrentMonth
+                        }"
+                        :title="day.count > 0 ? day.count + ' job(s) due' : ''"
+                      >
+                        <span class="text-sm font-medium" x-text="day.day"></span>
+                        <template x-if="day.count > 0">
+                          <span
+                            class="mt-0.5 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white rounded-full flex items-center justify-center shadow-sm"
+                            :style="`background-color: ${getCountBadgeColor(day.count)}`"
+                            x-text="day.count"
+                          ></span>
+                        </template>
+                      </button>
+                    </template>
+                  </div>
+                </template>
+              </div>
+              <p class="text-xs text-gray-500 mt-3 text-center">Click a day to view jobs due on that date</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Jobs Tab -->
@@ -213,7 +280,7 @@
 
         <!-- Search and Filters Card -->
         <div class="bg-base-200 rounded-lg py-4 border border-base-300 px-4" style="overflow: visible;">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3" style="overflow: visible;">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3" style="overflow: visible;">
             <div class="relative" @keydown.escape="showJobSuggestions=false">
               <label class="label py-1 justify-center">
                 <span class="label-text text-sm font-medium">Search Jobs</span>
@@ -328,6 +395,49 @@
               </div>
             </div>
           </div>
+            <div class="relative">
+              <label class="label py-1 justify-center">
+                <span class="label-text text-sm font-medium">Filter by Due Date</span>
+              </label>
+              <button type="button" class="btn w-full border border-gray-300 bg-white hover:bg-gray-100"
+                      style="height: 2.75rem; padding: 0 !important; box-sizing: border-box; line-height: 1;"
+                      @click.stop="dueDateDropdownOpen = !dueDateDropdownOpen"
+                      :aria-expanded="dueDateDropdownOpen" title="Filter by Due Date">
+                <span class="px-4 flex items-center gap-2 w-full justify-center h-full" style="pointer-events: none; line-height: 1;">
+                  <i class="bi bi-calendar-event"></i>
+                  <span x-text="getDueDateFilterLabel()"></span>
+                </span>
+              </button>
+              <div class="absolute z-20 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-xl"
+                   x-show="dueDateDropdownOpen"
+                   x-transition
+                   @click.outside="dueDateDropdownOpen=false">
+                <div class="p-3 space-y-3">
+                  <div class="text-sm font-medium text-gray-700">Quick Filters</div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-200 text-gray-700 transition-colors" @click="applyQuickDueDateFilter('day')">Next Day</button>
+                    <button class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-200 text-gray-700 transition-colors" @click="applyQuickDueDateFilter('week')">Next Week</button>
+                    <button class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-200 text-gray-700 transition-colors" @click="applyQuickDueDateFilter('month')">Next Month</button>
+                  </div>
+                  <div class="divider my-2"></div>
+                  <div class="text-sm font-medium text-gray-700">Custom Range</div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm">Next</span>
+                    <input type="number" min="1" max="365" class="input input-bordered input-sm w-16"
+                           x-model.number="dueDateFilter.rangeValue" />
+                    <select class="select select-bordered select-sm" x-model="dueDateFilter.rangeUnit">
+                      <option value="days">Days</option>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                  <div class="flex justify-between pt-2">
+                    <button class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-200 text-gray-700 transition-colors" @click="clearDueDateFilter()">Clear</button>
+                    <button class="px-4 py-1.5 text-sm rounded-lg bg-primary hover:bg-primary/90 text-white font-medium transition-colors" @click="applyDueDateRange()">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
         </div>
         </div>
 
@@ -423,10 +533,10 @@
                     </div>
                   </th>
                   <th>Tags</th>
-                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('created_at')">
+                  <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortJobs('due_date')">
                     <div class="flex items-center gap-2">
-                      Created
-                      <i class="bi" :class="getSortIcon('created_at')"></i>
+                      Due Date
+                      <i class="bi" :class="getSortIcon('due_date')"></i>
                     </div>
                   </th>
                   <th class="actions-col text-right">Actions</th>
@@ -484,7 +594,7 @@
                         </button>
                       </div>
                     </td>
-                    <td x-text="formatDate(job.created_at)"></td>
+                    <td x-text="formatDate(job.due_date)"></td>
                     <td class="actions-col">
                       <div class="flex items-center justify-end gap-1 whitespace-nowrap">
                         <button

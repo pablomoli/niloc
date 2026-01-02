@@ -29,8 +29,27 @@ const AdminUtils = {
      */
     formatDate(dateString) {
         if (!dateString) return "Never";
+        // Check if it's a date-only string (YYYY-MM-DD) - don't apply timezone conversion
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return this.formatDateOnly(dateString);
+        }
         const date = this.parseDate(dateString);
         if (!date) return "Invalid date";
+        return date.toLocaleDateString();
+    },
+
+    /**
+     * Format a date-only string (YYYY-MM-DD) without timezone conversion.
+     * @param {string} dateString - The date string in YYYY-MM-DD format
+     * @returns {string} Formatted date string
+     */
+    formatDateOnly(dateString) {
+        if (!dateString) return "Never";
+        const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return "Invalid date";
+        const [, year, month, day] = match;
+        // Create date at noon local time to avoid any DST edge cases
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
         return date.toLocaleDateString();
     },
 
