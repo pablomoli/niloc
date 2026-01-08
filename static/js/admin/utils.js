@@ -185,27 +185,79 @@ const AdminUtils = {
 
     /**
      * Parse a time input string to decimal hours.
-     * Supports H:MM format (e.g., "2:30") or decimal hours (e.g., "2.5").
+     * Supports:
+     * - Duration: H:MM format (e.g., "2:30")
+     * - Time range: HH:MM-HH:MM (e.g., "9:00-10:30", "9:00am-10:30am")
+     * - Decimal hours (e.g., "2.5")
      * @param {string} timeStr - The time string to parse
      * @returns {number|null} Decimal hours or null if invalid
      */
     parseTimeInput(timeStr) {
         if (!timeStr) return null;
 
-        if (timeStr.includes(':')) {
-            const parts = timeStr.split(':');
-            if (parts.length === 2) {
-                const hours = parseInt(parts[0], 10);
-                const minutes = parseInt(parts[1], 10);
-                if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
-                    return null;
-                }
-                return hours + (minutes / 60.0);
+        timeStr = timeStr.trim();
+
+        // Check for time range format (supports am/pm or shorter a/p)
+        const rangeMatch = timeStr.match(/^(\d{1,2}:\d{2})\s*(a|am|p|pm)?\s*-\s*(\d{1,2}:\d{2})\s*(a|am|p|pm)?$/i);
+        if (rangeMatch) {
+            const startMinutes = this._parseTimeToMinutes(rangeMatch[1], rangeMatch[2]);
+            const endMinutes = this._parseTimeToMinutes(rangeMatch[3], rangeMatch[4]);
+
+            if (startMinutes === null || endMinutes === null) return null;
+
+            let durationMinutes;
+            if (endMinutes > startMinutes) {
+                durationMinutes = endMinutes - startMinutes;
+            } else if (endMinutes < startMinutes) {
+                durationMinutes = (24 * 60 - startMinutes) + endMinutes;
+            } else {
+                return null;
             }
+
+            return durationMinutes / 60.0;
+        }
+
+        // Simple duration format
+        const durationMatch = timeStr.match(/^(\d{1,3}):(\d{2})$/);
+        if (durationMatch) {
+            const hours = parseInt(durationMatch[1], 10);
+            const minutes = parseInt(durationMatch[2], 10);
+            if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
+                return null;
+            }
+            return hours + (minutes / 60.0);
         }
 
         const decimal = parseFloat(timeStr);
         return isNaN(decimal) ? null : decimal;
+    },
+
+    /**
+     * Parse a time string to minutes since midnight.
+     * Supports am/pm or shorter a/p format.
+     * @param {string} timeStr - Time in HH:MM format
+     * @param {string} ampm - Optional AM/PM indicator (a, am, p, pm)
+     * @returns {number|null} Minutes since midnight or null if invalid
+     */
+    _parseTimeToMinutes(timeStr, ampm) {
+        const parts = timeStr.split(':');
+        if (parts.length !== 2) return null;
+
+        let hours = parseInt(parts[0], 10);
+        const minutes = parseInt(parts[1], 10);
+
+        if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) return null;
+
+        if (ampm) {
+            ampm = ampm.toLowerCase();
+            if (hours < 1 || hours > 12) return null;
+            if ((ampm === 'pm' || ampm === 'p') && hours !== 12) hours += 12;
+            else if ((ampm === 'am' || ampm === 'a') && hours === 12) hours = 0;
+        } else {
+            if (hours < 0 || hours > 23) return null;
+        }
+
+        return hours * 60 + minutes;
     },
 
     /**

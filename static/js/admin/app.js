@@ -2117,7 +2117,7 @@ window.adminAppComponent = function() {
 
       const parsedTime = this.parseTimeInput(this.newFieldworkEntry.total_time);
       if (parsedTime === null || parsedTime <= 0) {
-        Alpine.store("notifications").add("Invalid time format. Use H:MM (e.g., 2:30)", "error");
+        Alpine.store("notifications").add("Invalid format. Use H:MM (e.g., 1:30) or range (e.g., 9:00a-10:30a)", "error");
         return;
       }
 

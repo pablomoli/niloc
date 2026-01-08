@@ -78,25 +78,78 @@ SimpleModal.getTotalFieldworkTime = function() {
 };
 
 /**
- * Parse time input (HH:MM format) and validate.
+ * Parse time input and validate.
+ * Supports:
+ * - Duration: "1:30" (1 hour 30 min)
+ * - Time range: "10:37-11:37", "10:30am-11:30am"
+ * - Decimal hours: "1.5"
  */
 SimpleModal.parseTimeInput = function(timeStr) {
     if (!timeStr) return null;
 
-    if (timeStr.includes(':')) {
-        const parts = timeStr.split(':');
-        if (parts.length === 2) {
-            const hours = parseInt(parts[0], 10);
-            const minutes = parseInt(parts[1], 10);
-            if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
-                return null;
-            }
-            return hours + (minutes / 60.0);
+    timeStr = timeStr.trim();
+
+    // Check for time range format (contains "-" between two times)
+    // Supports am/pm or shorter a/p format
+    const rangeMatch = timeStr.match(/^(\d{1,2}:\d{2})\s*(a|am|p|pm)?\s*-\s*(\d{1,2}:\d{2})\s*(a|am|p|pm)?$/i);
+    if (rangeMatch) {
+        const startMinutes = this._parseTimeToMinutes(rangeMatch[1], rangeMatch[2]);
+        const endMinutes = this._parseTimeToMinutes(rangeMatch[3], rangeMatch[4]);
+
+        if (startMinutes === null || endMinutes === null) return null;
+
+        let durationMinutes;
+        if (endMinutes > startMinutes) {
+            durationMinutes = endMinutes - startMinutes;
+        } else if (endMinutes < startMinutes) {
+            // Crossed midnight
+            durationMinutes = (24 * 60 - startMinutes) + endMinutes;
+        } else {
+            return null; // Same time
         }
+
+        return durationMinutes / 60.0;
     }
 
+    // Simple duration format "H:MM"
+    const durationMatch = timeStr.match(/^(\d{1,3}):(\d{2})$/);
+    if (durationMatch) {
+        const hours = parseInt(durationMatch[1], 10);
+        const minutes = parseInt(durationMatch[2], 10);
+        if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) {
+            return null;
+        }
+        return hours + (minutes / 60.0);
+    }
+
+    // Try decimal
     const decimal = parseFloat(timeStr);
     return isNaN(decimal) ? null : decimal;
+};
+
+/**
+ * Parse a time string to minutes since midnight.
+ * Supports am/pm or shorter a/p format.
+ */
+SimpleModal._parseTimeToMinutes = function(timeStr, ampm) {
+    const parts = timeStr.split(':');
+    if (parts.length !== 2) return null;
+
+    let hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+
+    if (isNaN(hours) || isNaN(minutes) || minutes < 0 || minutes >= 60) return null;
+
+    if (ampm) {
+        ampm = ampm.toLowerCase();
+        if (hours < 1 || hours > 12) return null;
+        if ((ampm === 'pm' || ampm === 'p') && hours !== 12) hours += 12;
+        else if ((ampm === 'am' || ampm === 'a') && hours === 12) hours = 0;
+    } else {
+        if (hours < 0 || hours > 23) return null;
+    }
+
+    return hours * 60 + minutes;
 };
 
 /**

@@ -82,8 +82,8 @@ SimpleModal.showAddFieldworkForm = function() {
                     </div>
                     <div class="epic-form-section" style="margin: 0;">
                         <label class="epic-form-label required">Duration</label>
-                        <input type="text" id="fw-total-time" class="epic-input mono" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
-                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">Format: H:MM</small>
+                        <input type="text" id="fw-total-time" class="epic-input mono" placeholder="1:30 or 9:00-10:30" required>
+                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">H:MM or start-end</small>
                     </div>
                 </div>
 
@@ -157,7 +157,7 @@ SimpleModal.saveFieldwork = async function() {
 
     const parsedTime = this.parseTimeInput(totalTime);
     if (parsedTime === null || parsedTime <= 0) {
-        this.showNotification('Invalid time format. Use H:MM (e.g., 2:30)', 'error');
+        this.showNotification('Invalid format. Use H:MM (e.g., 1:30) or range (e.g., 9:00-10:30)', 'error');
         return;
     }
 
@@ -242,8 +242,8 @@ SimpleModal.editFieldwork = function(fieldworkId) {
                     </div>
                     <div class="epic-form-section" style="margin: 0;">
                         <label class="epic-form-label required">Duration</label>
-                        <input type="text" id="edit-fw-total-time" class="epic-input mono" value="${timeDisplay}" placeholder="2:30" pattern="[0-9]+:[0-5][0-9]" required>
-                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">Format: H:MM</small>
+                        <input type="text" id="edit-fw-total-time" class="epic-input mono" value="${timeDisplay}" placeholder="1:30 or 9:00-10:30" required>
+                        <small style="font-size: 0.6875rem; color: #9ca3af; margin-top: 4px; display: block;">H:MM or start-end</small>
                     </div>
                 </div>
 
@@ -311,7 +311,7 @@ SimpleModal.saveEditFieldwork = async function(fieldworkId) {
 
     const parsedTime = this.parseTimeInput(totalTime);
     if (parsedTime === null || parsedTime <= 0) {
-        this.showNotification('Invalid time format. Use H:MM (e.g., 2:30)', 'error');
+        this.showNotification('Invalid format. Use H:MM (e.g., 1:30) or range (e.g., 9:00-10:30)', 'error');
         return;
     }
 

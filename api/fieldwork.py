@@ -1,6 +1,7 @@
 # Generated from api_routes.py split
 import logging
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timezone, timedelta
 
 from flask import jsonify, request, session
 from sqlalchemy import func, or_
@@ -12,6 +13,112 @@ from db_utils import with_db_retry, handle_db_error
 from utils import get_brevard_property_link
 
 logger = logging.getLogger(__name__)
+
+
+def parse_time_input(time_str):
+    """
+    Parse time input in various formats and return total hours as a float.
+
+    Supported formats:
+    - Duration: "1:30" (1 hour 30 min), "2:00" (2 hours)
+    - Time range 24hr: "10:37-11:37", "14:00-15:30"
+    - Time range 12hr: "10:37am-11:37am", "11:30 AM - 1:00 PM"
+
+    Returns:
+        float: Total hours, or None if parsing fails
+        str: Error message if parsing fails, or None on success
+    """
+    if not time_str or not isinstance(time_str, str):
+        return None, "Time input is required"
+
+    time_str = time_str.strip()
+
+    # Check if it's a time range (contains "-" but not at the start for negative numbers)
+    # Need to be careful: "1:30" has no dash, "10:30-11:30" has a dash between times
+    # Supports am/pm or shorter a/p format
+    range_match = re.match(
+        r'^(\d{1,2}:\d{2})\s*(a|am|p|pm)?\s*-\s*(\d{1,2}:\d{2})\s*(a|am|p|pm)?$',
+        time_str,
+        re.IGNORECASE
+    )
+
+    if range_match:
+        start_time_str = range_match.group(1)
+        start_ampm = range_match.group(2)
+        end_time_str = range_match.group(3)
+        end_ampm = range_match.group(4)
+
+        start_minutes = _parse_time_to_minutes(start_time_str, start_ampm)
+        end_minutes = _parse_time_to_minutes(end_time_str, end_ampm)
+
+        if start_minutes is None or end_minutes is None:
+            return None, "Invalid time format in range"
+
+        # Calculate duration
+        if end_minutes > start_minutes:
+            duration_minutes = end_minutes - start_minutes
+        elif end_minutes < start_minutes:
+            # Crossed midnight
+            duration_minutes = (24 * 60 - start_minutes) + end_minutes
+        else:
+            return None, "Start and end times are the same"
+
+        return duration_minutes / 60.0, None
+
+    # Try parsing as simple duration "H:MM"
+    duration_match = re.match(r'^(\d{1,3}):(\d{2})$', time_str)
+    if duration_match:
+        hours = int(duration_match.group(1))
+        minutes = int(duration_match.group(2))
+        if minutes < 0 or minutes >= 60:
+            return None, "Minutes must be between 0 and 59"
+        return hours + (minutes / 60.0), None
+
+    # Try parsing as plain float
+    try:
+        return float(time_str), None
+    except ValueError:
+        return None, "Invalid time format. Use H:MM (e.g., 2:30) or time range (e.g., 10:30-11:45)"
+
+
+def _parse_time_to_minutes(time_str, ampm=None):
+    """
+    Parse a time string like "10:37" to minutes since midnight.
+    Handles optional AM/PM suffix (supports "a", "am", "p", "pm").
+
+    Returns:
+        int: Minutes since midnight, or None if parsing fails
+    """
+    try:
+        parts = time_str.split(":")
+        if len(parts) != 2:
+            return None
+
+        hours = int(parts[0])
+        minutes = int(parts[1])
+
+        if minutes < 0 or minutes >= 60:
+            return None
+
+        # Handle 12-hour format (a/am/p/pm)
+        if ampm:
+            ampm = ampm.lower()
+            if hours < 1 or hours > 12:
+                return None
+            if ampm in ("pm", "p") and hours != 12:
+                hours += 12
+            elif ampm in ("am", "a") and hours == 12:
+                hours = 0
+        else:
+            # 24-hour format or ambiguous
+            # If hour > 12, definitely 24-hour
+            # If hour <= 12, assume as-is (could be AM or 24hr)
+            if hours < 0 or hours > 23:
+                return None
+
+        return hours * 60 + minutes
+    except (ValueError, AttributeError):
+        return None
 
 @api_bp.route("/jobs/<job_number>/fieldwork", methods=["GET"])
 @login_required
@@ -51,27 +158,12 @@ def add_fieldwork(job_number):
     try:
         # Parse work date
         work_date = datetime.strptime(data["work_date"], "%Y-%m-%d").date()
-        
-        # Parse total_time - can be a float (hours) or string in "HH:MM" format
-        total_time = data["total_time"]
-        if isinstance(total_time, str):
-            # Try parsing as "HH:MM" format
-            if ":" in total_time:
-                parts = total_time.split(":")
-                if len(parts) == 2:
-                    hours = int(parts[0])
-                    minutes = int(parts[1])
-                    if minutes < 0 or minutes >= 60:
-                        return jsonify({"error": "Minutes must be between 0 and 59"}), 400
-                    total_time = hours + (minutes / 60.0)
-                else:
-                    return jsonify({"error": "Invalid time format. Use HH:MM (e.g., 2:30)"}), 400
-            else:
-                # Try parsing as float string
-                total_time = float(total_time)
-        else:
-            total_time = float(total_time)
-        
+
+        # Parse total_time - supports duration (H:MM) or time range (HH:MM-HH:MM)
+        total_time, error = parse_time_input(data["total_time"])
+        if error:
+            return jsonify({"error": error}), 400
+
         if total_time <= 0:
             return jsonify({"error": "Total time must be greater than 0"}), 400
 
@@ -80,9 +172,9 @@ def add_fieldwork(job_number):
             job_id=job.id,
             work_date=work_date,
             total_time=round(total_time, 2),
-            crew=data.get("crew", "").strip() or None,
-            drone_card=data.get("drone_card", "").strip() or None,
-            notes=data.get("notes", "").strip() or None,
+            crew=(data.get("crew") or "").strip() or None,
+            drone_card=(data.get("drone_card") or "").strip() or None,
+            notes=(data.get("notes") or "").strip() or None,
         )
 
         db.session.add(fieldwork)
@@ -104,7 +196,8 @@ def add_fieldwork(job_number):
         return jsonify({"error": f"Invalid date/time format: {e}"}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Database error occurred"}), 500
+        logger.error(f"Fieldwork creation error: {e}", exc_info=True)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
 @api_bp.route("/fieldwork/<int:fieldwork_id>", methods=["PUT"])
@@ -129,38 +222,23 @@ def update_fieldwork(fieldwork_id):
                 data["work_date"], "%Y-%m-%d"
             ).date()
         
-        # Handle total_time update (new format)
+        # Handle total_time update - supports duration (H:MM) or time range (HH:MM-HH:MM)
         if "total_time" in data:
-            total_time = data["total_time"]
-            if isinstance(total_time, str):
-                # Try parsing as "HH:MM" format
-                if ":" in total_time:
-                    parts = total_time.split(":")
-                    if len(parts) == 2:
-                        hours = int(parts[0])
-                        minutes = int(parts[1])
-                        if minutes < 0 or minutes >= 60:
-                            return jsonify({"error": "Minutes must be between 0 and 59"}), 400
-                        total_time = hours + (minutes / 60.0)
-                    else:
-                        return jsonify({"error": "Invalid time format. Use HH:MM (e.g., 2:30)"}), 400
-                else:
-                    # Try parsing as float string
-                    total_time = float(total_time)
-            else:
-                total_time = float(total_time)
-            
+            total_time, error = parse_time_input(data["total_time"])
+            if error:
+                return jsonify({"error": error}), 400
+
             if total_time <= 0:
                 return jsonify({"error": "Total time must be greater than 0"}), 400
-            
+
             fieldwork.total_time = round(total_time, 2)
         
         if "crew" in data:
-            fieldwork.crew = data["crew"].strip() or None
+            fieldwork.crew = (data["crew"] or "").strip() or None
         if "drone_card" in data:
-            fieldwork.drone_card = data["drone_card"].strip() or None
+            fieldwork.drone_card = (data["drone_card"] or "").strip() or None
         if "notes" in data:
-            fieldwork.notes = data["notes"].strip() or None
+            fieldwork.notes = (data["notes"] or "").strip() or None
 
         # Update job aggregate time
         job = fieldwork.job
