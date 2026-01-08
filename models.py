@@ -47,6 +47,9 @@ class Job(db.Model):
     fema_link = db.Column(db.String(500))
     document_url = db.Column(db.String(500))
 
+    # Dynamic links - list of {url, display_name} objects
+    links = db.Column(db.JSON, default=list)
+
     # Tracking fields
     visited = db.Column(db.Integer, default=0)
     total_time_spent = db.Column(db.Float, default=0.0)
@@ -229,6 +232,7 @@ class Job(db.Model):
             "total_time_spent": self.total_time_spent,
             "is_parcel_job": self.is_parcel_job,
             "parcel_data": self.parcel_data,
+            "links": self.links or [],
             "created_at": created_at_iso,
             "deleted_at": deleted_at_iso,
             "due_date": due_date_iso,

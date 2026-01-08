@@ -883,3 +883,85 @@ def permanent_delete_job(job_number):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/links", methods=["POST"])
+@login_required
+def add_job_link(job_number):
+    """POST /api/jobs/JOB123/links - Add a link to job
+
+    Body: { "url": "https://...", "display_name": "..." }
+    """
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON data required"}), 400
+
+    url = (data.get("url") or "").strip()
+    display_name = (data.get("display_name") or "").strip()
+
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+    if not display_name:
+        return jsonify({"error": "Display name is required"}), 400
+
+    # Validate URL format (basic check)
+    if not url.startswith(("http://", "https://")):
+        return jsonify({"error": "URL must start with http:// or https://"}), 400
+
+    try:
+        # Initialize links array if None
+        current_links = job.links or []
+
+        # Add new link
+        new_link = {"url": url, "display_name": display_name}
+        current_links.append(new_link)
+        job.links = current_links
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Link added successfully",
+            "link": new_link,
+            "links": job.links
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Add link error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/links/<int:index>", methods=["DELETE"])
+@login_required
+def remove_job_link(job_number, index):
+    """DELETE /api/jobs/JOB123/links/0 - Remove a link by index"""
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    current_links = job.links or []
+
+    if index < 0 or index >= len(current_links):
+        return jsonify({"error": "Link index out of range"}), 404
+
+    try:
+        # Remove link at index
+        removed_link = current_links.pop(index)
+        job.links = current_links
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Link removed successfully",
+            "removed_link": removed_link,
+            "links": job.links
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Remove link error: {e}", exc_info=True)
+        return jsonify({"error": "Database error occurred"}), 500

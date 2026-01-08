@@ -9,6 +9,7 @@
  * - static/js/modal/tags.js
  * - static/js/modal/fieldwork.js
  * - static/js/modal/promotion.js
+ * - static/js/modal/links.js
  * - static/js/modal/render.js
  */
 

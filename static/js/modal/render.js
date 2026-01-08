@@ -33,7 +33,31 @@ SimpleModal.renderModal = function(job, femaLink) {
                 <!-- Header -->
                 <div class="epic-modal-header">
                     <div class="epic-modal-subtitle">Job Details</div>
-                    <h3 class="epic-modal-title font-mono">#${job.job_number || 'N/A'}</h3>
+                    <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;">
+                        <h3 class="epic-modal-title font-mono" style="margin: 0;">#${job.job_number || 'N/A'}</h3>
+                        <div id="client-header" style="flex: 1; min-width: 0;">
+                            <div id="client-view" style="display: block;">
+                                <span id="client-view-text" class="epic-modal-client" onclick="SimpleModal.toggleEdit('client')" title="Click to edit">${escapeHtml(job.client) || 'N/A'}</span>
+                            </div>
+                            <div id="client-edit" style="display: none;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text"
+                                           id="client-input"
+                                           class="epic-input"
+                                           style="font-size: 1rem;"
+                                           value="${escapeHtml(job.client) || ''}"
+                                           onkeypress="if(event.key === 'Enter') SimpleModal.saveField('client')"
+                                           onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('client')">
+                                    <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('client')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('client')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     ${job.is_parcel_job ? `
                     <div style="margin-top: 12px;">
                         <button class="epic-btn epic-btn-primary epic-btn-sm" onclick="SimpleModal.openPromotion('${job.job_number}')" title="Upgrade to address job">
@@ -49,9 +73,9 @@ SimpleModal.renderModal = function(job, femaLink) {
 
                 <!-- Body -->
                 <div class="epic-modal-body" id="simpleJobModalContent">
-                    <!-- Status and Total Time Row -->
+                    <!-- Status, Due Date, and Total Time Row -->
                     <div class="epic-form-section" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-                        <div style="flex: 1;">
+                        <div>
                             <label class="epic-form-label">Status</label>
                             <div id="status-view" style="display: block;">
                                 <div class="epic-status-badge"
@@ -64,14 +88,41 @@ SimpleModal.renderModal = function(job, femaLink) {
                                 </div>
                             </div>
                             <div id="status-edit" style="display: none; margin-top: 8px;">
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <select id="status-select" class="epic-input epic-select" style="flex: 1;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <select id="status-select" class="epic-input epic-select" style="width: auto; min-width: 180px;">
                                         ${this.generateStatusOptions(job.status)}
                                     </select>
-                                    <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('status')">
+                                    <button class="epic-btn epic-btn-success epic-btn-icon" style="padding: 8px;" onclick="SimpleModal.saveField('status')">
                                         <i class="bi bi-check-lg"></i>
                                     </button>
-                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('status')">
+                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" style="padding: 8px;" onclick="SimpleModal.toggleEdit('status')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <label class="epic-form-label">Due Date</label>
+                            <div id="due_date-view" style="display: block;">
+                                <div class="epic-due-date-badge ${!job.due_date ? 'not-set' : ''}" onclick="SimpleModal.toggleEdit('due_date')" title="Click to edit">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span id="due_date-view-text">${job.due_date || 'Not set'}</span>
+                                </div>
+                            </div>
+                            <div id="due_date-edit" style="display: none; margin-top: 8px;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <input type="date"
+                                           id="due_date-input"
+                                           class="epic-input"
+                                           style="width: auto;"
+                                           value="${job.due_date || ''}"
+                                           onkeypress="if(event.key === 'Enter') SimpleModal.saveField('due_date')"
+                                           onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('due_date')">
+                                    <button class="epic-btn epic-btn-success epic-btn-icon" style="padding: 8px;" onclick="SimpleModal.saveField('due_date')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button class="epic-btn epic-btn-ghost epic-btn-icon" style="padding: 8px;" onclick="SimpleModal.toggleEdit('due_date')">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
@@ -90,72 +141,20 @@ SimpleModal.renderModal = function(job, femaLink) {
                     <!-- Tags Section -->
                     <div class="epic-form-section">
                         <div class="epic-data-card accent-pink">
-                            <label class="epic-form-label" style="margin-bottom: 12px;">Tags</label>
-                            <div id="modal-tags-container" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px; margin-bottom: 16px;">${this.generateTagsHTML(job)}</div>
-                            <div style="position: relative;">
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <input id="modal-tag-input" class="epic-input" style="flex: 1;" placeholder="Search or add tags..."
-                                           oninput="SimpleModal.updateTagSuggestions()" onfocus="SimpleModal.updateTagSuggestions()" onkeydown="if(event.key==='Enter') SimpleModal.addTag()">
-                                    <button class="epic-btn epic-btn-primary epic-btn-icon" onclick="SimpleModal.addTag()">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </button>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+                                <label class="epic-form-label" style="margin: 0; flex-shrink: 0;">Tags</label>
+                                <div style="position: relative; flex: 1; max-width: 280px;">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <input id="modal-tag-input" class="epic-input" style="flex: 1; font-size: 0.875rem;" placeholder="Search or add..."
+                                               oninput="SimpleModal.updateTagSuggestions()" onfocus="SimpleModal.updateTagSuggestions()" onkeydown="if(event.key==='Enter') SimpleModal.addTag()">
+                                        <button class="epic-btn epic-btn-primary epic-btn-icon" style="padding: 8px;" onclick="SimpleModal.addTag()">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                    <div id="modal-tag-suggestions" class="absolute z-20 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto" style="display:none;"></div>
                                 </div>
-                                <div id="modal-tag-suggestions" class="absolute z-20 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto" style="display:none;"></div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Client Section -->
-                    <div class="epic-form-section">
-                        <label class="epic-form-label">Client</label>
-                        <div id="client-view" style="display: block;">
-                            <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('client')" title="Click to edit">
-                                <span id="client-view-text" class="field-value">${escapeHtml(job.client) || 'N/A'}</span>
-                                <i class="bi bi-pencil-square edit-indicator"></i>
-                            </div>
-                        </div>
-                        <div id="client-edit" style="display: none; margin-top: 8px;">
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="text"
-                                       id="client-input"
-                                       class="epic-input"
-                                       value="${escapeHtml(job.client) || ''}"
-                                       onkeypress="if(event.key === 'Enter') SimpleModal.saveField('client')"
-                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('client')">
-                                <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('client')">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('client')">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Due Date Section -->
-                    <div class="epic-form-section">
-                        <label class="epic-form-label">Due Date</label>
-                        <div id="due_date-view" style="display: block;">
-                            <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('due_date')" title="Click to edit">
-                                <span id="due_date-view-text" class="field-value ${!job.due_date ? 'placeholder' : ''}">${job.due_date || 'Not set'}</span>
-                                <i class="bi bi-pencil-square edit-indicator"></i>
-                            </div>
-                        </div>
-                        <div id="due_date-edit" style="display: none; margin-top: 8px;">
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="date"
-                                       id="due_date-input"
-                                       class="epic-input"
-                                       value="${job.due_date || ''}"
-                                       onkeypress="if(event.key === 'Enter') SimpleModal.saveField('due_date')"
-                                       onkeydown="if(event.key === 'Escape') SimpleModal.toggleEdit('due_date')">
-                                <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('due_date')">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('due_date')">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
+                            <div id="modal-tags-container" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 32px;">${this.generateTagsHTML(job)}</div>
                         </div>
                     </div>
 
@@ -243,6 +242,36 @@ SimpleModal.renderModal = function(job, femaLink) {
                             <i class="bi bi-plus-circle"></i> Add Notes
                         </button>
                         ` : ''}
+                    </div>
+
+                    <!-- Links Section -->
+                    <div class="epic-form-section">
+                        <div class="epic-data-card accent-purple">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <label class="epic-form-label" style="margin: 0;">Links</label>
+                                <button class="epic-btn epic-btn-primary epic-btn-sm" onclick="SimpleModal.showAddLinkForm()" title="Add link">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Add Link
+                                </button>
+                            </div>
+                            <div id="links-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                ${this.generateLinksHTML(job)}
+                            </div>
+                            <div id="add-link-form" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <input type="text" id="link-display-name-input" class="epic-input" placeholder="Display name (e.g., Property Appraiser)" />
+                                    <input type="url" id="link-url-input" class="epic-input" placeholder="https://..." />
+                                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                        <button class="epic-btn epic-btn-success epic-btn-sm" onclick="SimpleModal.addLink()">
+                                            <i class="bi bi-check-lg"></i> Add
+                                        </button>
+                                        <button class="epic-btn epic-btn-ghost epic-btn-sm" onclick="SimpleModal.hideAddLinkForm()">
+                                            <i class="bi bi-x-lg"></i> Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Time Tracking Section -->
