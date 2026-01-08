@@ -421,6 +421,18 @@ function fabMenu() {
         openStatusFilter() {
             // Refresh available statuses when opening the filter
             this.updateAvailableStatuses();
+
+            // Re-sync local state with global state to ensure UI reflects current filters
+            if (window.activeStatusFilters) {
+                this.selectedStatuses = new Set(window.activeStatusFilters);
+            }
+            if (window.activeTagFilters) {
+                this.selectedTags = new Set(window.activeTagFilters);
+            }
+
+            // Pre-load tags for the tags tab
+            this.ensureTagsLoaded();
+
             this.statusOpen = true;
             this.menuOpen = false;
         },

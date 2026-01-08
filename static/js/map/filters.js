@@ -25,13 +25,34 @@ let searchTerm = '';
 
 /**
  * Load jobs from the server.
+ * Fetches all pages if the dataset exceeds the per-page limit.
  */
 async function loadJobs(force = false) {
     try {
         const fetcher = window.cachedFetch || window.fetch;
-        const response = await fetcher('/api/jobs?include_tags=false', {}, { ttl: 30_000, force });
-        const data = await response.json();
-        AppState.allJobs = Array.isArray(data) ? data : data.jobs || [];
+        const perPage = 2000;
+        let allJobs = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+            const url = `/api/jobs?include_tags=false&per_page=${perPage}&page=${page}`;
+            const response = await fetcher(url, {}, { ttl: 30_000, force });
+            const data = await response.json();
+
+            const jobs = Array.isArray(data) ? data : data.jobs || [];
+            allJobs = allJobs.concat(jobs);
+
+            hasMore = data.has_next === true;
+            page++;
+
+            if (page > 100) {
+                console.warn('loadJobs: Stopping after 100 pages to prevent infinite loop');
+                break;
+            }
+        }
+
+        AppState.allJobs = allJobs;
         AppState.filteredJobs = [...AppState.allJobs];
 
         updateMapMarkers();
