@@ -31,7 +31,10 @@ build:
 
 # Run development server
 run: build
-	. venv/bin/activate && flask --app app run --reload
+	@HOST=$${FLASK_RUN_HOST:-$${FLASK_HOST:-127.0.0.1}}; \
+	 PORT=$${FLASK_RUN_PORT:-$${FLASK_PORT:-5000}}; \
+	 echo "Starting dev server at http://$${HOST}:$${PORT}"; \
+	 . venv/bin/activate && FLASK_RUN_HOST=$${HOST} FLASK_RUN_PORT=$${PORT} flask --app app run --reload
 
 # Run production server
 run-prod: build
