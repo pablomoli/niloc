@@ -114,6 +114,24 @@ function fabMenu() {
             document.addEventListener('jobsLoaded', () => {
                 self.updateAvailableStatuses();
             });
+
+            // Close modals on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (self.searchOpen) {
+                        self.closeAdvancedSearch();
+                    }
+                    if (self.statusOpen) {
+                        self.closeStatusFilter();
+                    }
+                    if (self.layerOpen) {
+                        self.closeLayerControl();
+                    }
+                    if (self.menuOpen) {
+                        self.menuOpen = false;
+                    }
+                }
+            });
         },
         
         async ensureTagsLoaded() {
@@ -171,7 +189,71 @@ function fabMenu() {
                 this.layerOpen = false;
             }
         },
-        
+
+        /**
+         * Zoom map to fit all currently visible (filtered) jobs.
+         * Similar to AutoCAD's zoom extents command.
+         */
+        zoomToExtents() {
+            const filteredJobs = window.AppState?.filteredJobs || [];
+
+            if (filteredJobs.length === 0) {
+                if (window.showNotification) {
+                    window.showNotification('No jobs to zoom to', 'warning');
+                }
+                return;
+            }
+
+            // Collect valid coordinates
+            const validCoords = filteredJobs
+                .map(job => {
+                    const lat = parseFloat(job.latitude || job.lat);
+                    const lng = parseFloat(job.longitude || job.long);
+                    return (lat && lng && !isNaN(lat) && !isNaN(lng)) ? [lat, lng] : null;
+                })
+                .filter(coord => coord !== null);
+
+            if (validCoords.length === 0) {
+                if (window.showNotification) {
+                    window.showNotification('No job locations available', 'warning');
+                }
+                return;
+            }
+
+            // Single job: zoom to it
+            if (validCoords.length === 1) {
+                window.AppState.map.setView(validCoords[0], 16);
+                if (window.showNotification) {
+                    window.showNotification('Centered on 1 job', 'info');
+                }
+                return;
+            }
+
+            // Multiple jobs: fit bounds
+            const bounds = L.latLngBounds(validCoords);
+
+            // Edge case: all jobs at same location
+            if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+                const center = bounds.getCenter();
+                window.AppState.map.setView(center, 16);
+                if (window.showNotification) {
+                    window.showNotification(`Centered on ${validCoords.length} jobs (same location)`, 'info');
+                }
+                return;
+            }
+
+            window.AppState.map.fitBounds(bounds, {
+                padding: [20, 20],
+                maxZoom: 18,
+                animate: true,
+                duration: 0.5
+            });
+
+            if (window.showNotification) {
+                window.showNotification(`Zoomed to ${validCoords.length} jobs`, 'success');
+            }
+        },
+
         // Enhanced Search Methods
         openAdvancedSearch() {
             this.searchOpen = true;

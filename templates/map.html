@@ -39,66 +39,75 @@
     <!-- Mobile-First Notification Container -->
     <div id="notification-container" class="notification-container"></div>
     
-    <!-- Office Center Button (bottom left, above location button) -->
-    <button class="btn btn-circle office-fab fixed bottom-[160px] left-[26px] w-14 h-14 z-[1000]"
-            type="button"
-            aria-label="Center map on office"
-            title="Center on Office"
-            onclick="centerOnOffice()">
-        <i class="bi bi-building text-lg" aria-hidden="true"></i>
-    </button>
+    <!-- Left Toolbar -->
+    <div class="left-toolbar" x-data="fabMenu()" :class="{ 'menu-open': menuOpen }">
+        <!-- Fixed buttons (always visible at top) -->
+        <div class="toolbar-fixed">
+            <!-- Office Center Button -->
+            <button class="btn btn-circle office-fab toolbar-btn w-14 h-14"
+                    type="button"
+                    aria-label="Center map on office"
+                    title="Center on Office"
+                    onclick="centerOnOffice()">
+                <i class="bi bi-building text-lg" aria-hidden="true"></i>
+            </button>
 
-    <!-- Standalone Location Button (bottom left) -->
-    <button class="btn btn-circle btn-success location-fab fixed bottom-5 left-5 w-14 h-14 z-[1000]"
-            type="button"
-            aria-label="Center map on your location"
-            title="Center on Location"
-            onclick="centerOnUserLocation()">
-        <i class="bi bi-crosshair text-lg" aria-hidden="true"></i>
-        <div class="tooltip tooltip-right" data-tip="Center on Location"></div>
-    </button>
+            <!-- Location Button -->
+            <button class="btn btn-circle btn-success location-fab toolbar-btn w-14 h-14"
+                    type="button"
+                    aria-label="Center map on your location"
+                    title="Center on Location"
+                    onclick="centerOnUserLocation()">
+                <i class="bi bi-crosshair text-lg" aria-hidden="true"></i>
+            </button>
 
-    <!-- FAB Button with Arc Menu -->
-    <div class="fab-container" x-data="fabMenu()">
-        <!-- Secondary Action Buttons (hidden by default) -->
-        <div class="fab-actions" :class="{ 'open': menuOpen }">
-            <!-- Map Settings Button (180°) -->
-            <button class="btn btn-circle btn-neutral fab-action-btn layers-btn tooltip tooltip-left w-12 h-12"
+            <!-- Zoom Extents Button -->
+            <button class="btn btn-circle toolbar-btn zoom-extents-btn w-14 h-14"
+                    type="button"
+                    aria-label="Zoom to fit all visible jobs"
+                    title="Zoom Extents"
+                    @click="zoomToExtents()">
+                <i class="bi bi-arrows-fullscreen text-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- Expandable actions (expand upward when + clicked) -->
+        <div class="toolbar-actions" :class="{ 'open': menuOpen }">
+            <!-- Map Settings Button -->
+            <button class="btn btn-circle toolbar-action-btn layers-btn w-12 h-12"
                     type="button"
                     aria-label="Open map settings"
-                    data-tip="Map Settings"
+                    title="Map Settings"
                     @click="openLayerControl()">
                 <i class="bi bi-layers" aria-hidden="true"></i>
             </button>
-            
-            <!-- Filters Button (150°) -->
-            <button class="btn btn-circle btn-info fab-action-btn status-btn tooltip tooltip-left w-12 h-12"
+
+            <!-- Filters Button -->
+            <button class="btn btn-circle toolbar-action-btn status-btn w-12 h-12"
                     type="button"
                     aria-label="Open job filters"
-                    data-tip="Filters"
+                    title="Filters"
                     @click="openStatusFilter()">
                 <i class="bi bi-funnel" aria-hidden="true"></i>
             </button>
-            
-            <!-- Enhanced Search Button (120°) -->
-            <button class="btn btn-circle btn-warning fab-action-btn search-btn tooltip tooltip-left w-12 h-12"
+
+            <!-- Advanced Search Button -->
+            <button class="btn btn-circle toolbar-action-btn search-btn w-12 h-12"
                     type="button"
                     aria-label="Open advanced search"
-                    data-tip="Advanced Search"
+                    title="Advanced Search"
                     @click="openAdvancedSearch()">
                 <i class="bi bi-search-heart" aria-hidden="true"></i>
             </button>
-
         </div>
-        
-        <!-- Main FAB Button -->
-        <button class="btn btn-circle btn-primary fab-button w-14 h-14 relative z-[10]" 
+
+        <!-- Main FAB Button (at bottom, opens menu upward) -->
+        <button class="btn btn-circle btn-primary fab-button w-14 h-14 relative z-[10]"
                 type="button"
                 aria-label="Toggle map quick actions"
                 :aria-expanded="menuOpen ? 'true' : 'false'"
-                @click="toggleMenu()"
-                :style="`transform: ${menuOpen ? 'rotate(45deg)' : 'rotate(0deg)'}`">
-            <i class="bi text-lg" :class="menuOpen ? 'bi-x' : 'bi-plus'" aria-hidden="true"></i>
+                @click="toggleMenu()">
+            <i class="bi text-lg" :class="menuOpen ? 'bi-dash' : 'bi-plus'" aria-hidden="true"></i>
         </button>
         
         <!-- Enhanced Search Overlay -->
