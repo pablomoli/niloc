@@ -174,6 +174,20 @@
   background: var(--modal-surface-elevated);
 }
 
+.advanced-search-footer {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.advanced-search-footer .epic-btn-ghost {
+  margin-right: auto;
+  flex: 0 0 auto;
+}
+
+.advanced-search-footer .epic-btn {
+  flex: 0 0 auto;
+}
+
 /* ==========================================================================
    STAGGERED CONTENT ANIMATION (disabled for stability)
    ========================================================================== */
@@ -687,6 +701,10 @@
 /* ==========================================================================
    TAB NAVIGATION
    ========================================================================== */
+
+.advanced-search-panel {
+  min-height: 220px;
+}
 
 .epic-tabs {
   display: flex;

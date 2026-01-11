@@ -3,6 +3,13 @@
  * Refined design with modern aesthetics
  */
 
+body.modal-open .route-fab,
+body.modal-open .route-panel,
+body.modal-open .route-panel-collapse-tab,
+body.modal-open .route-selection-badge {
+    display: none !important;
+}
+
 /* Standalone Route FAB Button */
 .route-fab {
     position: fixed;

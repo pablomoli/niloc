@@ -24,6 +24,7 @@ function fabMenu() {
         searchTab: 'address',
         addressSearch: '',
         parcelSearch: '',
+        jobNumberSearch: '',
         clientSearch: '',
         clientSearchTimer: null,
         selectedCounty: '',
@@ -142,6 +143,8 @@ function fabMenu() {
                     }
                 }
             });
+
+            this.setModalState();
         },
         
         async ensureTagsLoaded() {
@@ -280,8 +283,8 @@ function fabMenu() {
         // Enhanced Search Methods
         openAdvancedSearch() {
             this.searchOpen = true;
-            this.setMenuOpen(false);
             this.searchTab = 'address'; // Default to address tab
+            this.setModalState();
             this.$nextTick(() => {
                 this.$refs.searchInput?.focus();
             });
@@ -292,9 +295,11 @@ function fabMenu() {
             this.searchOpen = false;
             this.addressSearch = '';
             this.parcelSearch = '';
+            this.jobNumberSearch = '';
             this.clientSearch = '';
             this.selectedCounty = '';
             this.clientSuggestions = [];
+            this.setModalState();
         },
         
         clearClientFilter() {
@@ -452,7 +457,103 @@ function fabMenu() {
             this.clientSearch = client;
             this.clientSuggestions = [];
         },
-        
+
+        performAdvancedSearch() {
+            const jobTerm = this.jobNumberSearch.trim();
+            const parcelTerm = this.parcelSearch.trim();
+            const clientTerm = this.clientSearch.trim();
+            const addressTerm = this.addressSearch.trim();
+
+            if (jobTerm) {
+                this.performJobNumberSearch();
+                return;
+            }
+
+            if (this.selectedCounty && parcelTerm) {
+                this.performParcelSearch();
+                return;
+            }
+
+            if (clientTerm) {
+                this.performClientSearch();
+                return;
+            }
+
+            if (addressTerm) {
+                this.performAddressSearch();
+                return;
+            }
+
+            if (window.showNotification) {
+                window.showNotification('Enter a search term to continue', 'warning');
+            }
+        },
+
+        performJobNumberSearch() {
+            if (!this.jobNumberSearch.trim()) return;
+            const searchTerm = this.jobNumberSearch.trim();
+            const jobs = window.AppState?.allJobs || [];
+            const filteredJobs = window.AppState?.filteredJobs;
+
+            if (jobs.length === 0) {
+                if (window.showNotification) {
+                    window.showNotification('Jobs are still loading', 'warning');
+                }
+                return;
+            }
+
+            let matches = [];
+            let exactMatch = false;
+            if (window.SearchUtils && typeof window.SearchUtils.selectJobMatches === 'function') {
+                const result = window.SearchUtils.selectJobMatches(
+                    searchTerm,
+                    jobs,
+                    Array.isArray(filteredJobs) ? filteredJobs : null
+                );
+                matches = result.matches || [];
+                exactMatch = result.exactMatch === true;
+            } else {
+                const normalized = searchTerm.toLowerCase();
+                const source = Array.isArray(filteredJobs) ? filteredJobs : jobs;
+                matches = source.filter(job => {
+                    const displayNumber = job.display_job_number || job.job_number || job.original_job_number || '';
+                    return displayNumber.toLowerCase().includes(normalized);
+                });
+            }
+
+            if (matches.length > 0) {
+                if (window.applyJobFilter) {
+                    window.applyJobFilter(matches);
+                } else {
+                    if (window.clearAllMarkers) {
+                        window.clearAllMarkers();
+                    }
+
+                    if (window.addJobMarkers) {
+                        window.addJobMarkers(matches);
+                    } else if (window.loadJobMarkers) {
+                        window.loadJobMarkers(matches);
+                    }
+
+                    const firstJob = matches[0];
+                    const lat = firstJob.latitude || firstJob.lat;
+                    const lng = firstJob.longitude || firstJob.long;
+                    if (lat && lng && window.AppState?.map) {
+                        window.AppState.map.setView([lat, lng], 18);
+                    }
+                }
+
+                if (window.showNotification) {
+                    const matchLabel = exactMatch ? 'exact job number' : 'job number';
+                    window.showNotification(`Found ${matches.length} job(s) for ${matchLabel} ${searchTerm}`, 'success');
+                }
+            } else if (window.showNotification) {
+                window.showNotification(`No jobs found for ${searchTerm}`, 'warning');
+            }
+
+            this.closeAdvancedSearch();
+        },
+
         performClientSearch() {
             if (this.clientSearch.trim()) {
                 const searchTerm = this.clientSearch.trim();
@@ -518,7 +619,6 @@ function fabMenu() {
         },
         
         openCreateJob() {
-            this.setMenuOpen(false);
             // Open create job modal with empty address
             window.CreateJobModal.show(null, null, '');
         },
@@ -539,11 +639,12 @@ function fabMenu() {
             this.ensureTagsLoaded();
 
             this.statusOpen = true;
-            this.setMenuOpen(false);
+            this.setModalState();
         },
         
         closeStatusFilter() {
             this.statusOpen = false;
+            this.setModalState();
         },
         
         openLayerControl() {
@@ -558,11 +659,17 @@ function fabMenu() {
                 ? window.isMarkerClusteringSupported()
                 : (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function');
             this.layerOpen = true;
-            this.setMenuOpen(false);
+            this.setModalState();
         },
         
         closeLayerControl() {
             this.layerOpen = false;
+            this.setModalState();
+        },
+
+        setModalState() {
+            const modalOpen = this.searchOpen || this.statusOpen || this.layerOpen;
+            document.body.classList.toggle('modal-open', modalOpen);
         },
         
         switchToBaseLayer(layerName) {
