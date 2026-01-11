@@ -76,6 +76,11 @@ function renderPoiMarkers() {
  */
 function setPoisVisible(visible) {
     AppState.poisVisible = visible;
+    try {
+        localStorage.setItem('epicmap_pois_visible', String(visible));
+    } catch (e) {
+        console.warn('Failed to save POI visibility preference:', e);
+    }
     renderPoiMarkers();
 }
 

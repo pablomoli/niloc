@@ -214,6 +214,25 @@ window.adminAppComponent = function() {
       inProgress: false
     },
 
+    // Schedule Calendar state
+    schedules: [],
+    schedulesLoaded: false,
+    _loadingSchedules: false,
+    _savingSchedule: false,
+    _optimizingRoute: null,
+    currentWeekStart: null,
+    calendarDays: [],
+    calendarWeekLabel: '',
+    scheduleModal: {
+      show: false,
+      mode: 'create',
+      data: {},
+      jobSearch: '',
+      jobResults: [],
+      showJobResults: false
+    },
+    _draggedSchedule: null,
+
     init() {
       this.ensureTabData('dashboard');
       document.addEventListener('jobCreated', async () => {
@@ -223,6 +242,24 @@ window.adminAppComponent = function() {
         ]);
         Alpine.store('notifications').add('Job created', 'success');
       });
+      // Initialize jobs per page from localStorage
+      try {
+        const savedPerPage = parseInt(localStorage.getItem('admin_jobs_per_page') || '', 10);
+        if (Number.isFinite(savedPerPage) && savedPerPage > 0) {
+          this.jobsPerPage = savedPerPage;
+        }
+      } catch (_) {
+        // ignore localStorage errors
+      }
+      // Initialize due date calendar month from localStorage
+      try {
+        const savedMonth = localStorage.getItem('admin_due_date_month');
+        if (savedMonth && /^\d{4}-\d{2}$/.test(savedMonth)) {
+          this.calendarMonth = savedMonth;
+        }
+      } catch (_) {
+        // ignore localStorage errors
+      }
       // Initialize status filter (all selected by default or from localStorage)
       try {
         const saved = JSON.parse(localStorage.getItem('admin_status_filters') || '[]');
@@ -285,6 +322,10 @@ window.adminAppComponent = function() {
         if (!this.poisLoaded) {
           this.loadPois();
         }
+      }
+      if (tab === 'calendar') {
+        this.initCalendarWeek();
+        this.loadSchedules();
       }
     },
 
@@ -455,6 +496,7 @@ window.adminAppComponent = function() {
       if (!Number.isFinite(value) || value <= 0) {
         this.jobsPerPage = 10;
       }
+      localStorage.setItem('admin_jobs_per_page', String(this.jobsPerPage));
       if (this.jobsPerPage >= 999999 && !this.jobsLoadedAll) {
         try {
           await this.loadJobs(true, 999999);
@@ -970,6 +1012,7 @@ window.adminAppComponent = function() {
         newYear--;
       }
       this.calendarMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+      localStorage.setItem('admin_due_date_month', this.calendarMonth);
       this.loadCalendarMonth(this.calendarMonth);
     },
 
@@ -982,11 +1025,13 @@ window.adminAppComponent = function() {
         newYear++;
       }
       this.calendarMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+      localStorage.setItem('admin_due_date_month', this.calendarMonth);
       this.loadCalendarMonth(this.calendarMonth);
     },
 
     goToCurrentMonth() {
       this.calendarMonth = new Date().toISOString().slice(0, 7);
+      localStorage.setItem('admin_due_date_month', this.calendarMonth);
       this.loadCalendarMonth(this.calendarMonth);
     },
 
@@ -2177,6 +2222,276 @@ window.adminAppComponent = function() {
         },
         'Delete'
       );
+    },
+
+    // =========================================================================
+    // SCHEDULE CALENDAR METHODS
+    // =========================================================================
+
+    initCalendarWeek() {
+      let weekStart = null;
+      try {
+        const savedWeek = localStorage.getItem('admin_schedule_week_start');
+        if (savedWeek && /^\d{4}-\d{2}-\d{2}$/.test(savedWeek)) {
+          weekStart = savedWeek;
+        }
+      } catch (_) {
+        // ignore localStorage errors
+      }
+      if (!weekStart) {
+        const today = new Date();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - today.getDay() + 1); // Get Monday
+        if (today.getDay() === 0) monday.setDate(monday.getDate() - 7); // Sunday fix
+        weekStart = monday.toISOString().slice(0, 10);
+      }
+      this.currentWeekStart = weekStart;
+      localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
+      this.updateCalendarDays();
+    },
+
+    updateCalendarDays() {
+      const days = [];
+      const start = new Date(this.currentWeekStart);
+      const today = new Date().toISOString().slice(0, 10);
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const dateStr = d.toISOString().slice(0, 10);
+        days.push({
+          date: dateStr,
+          dayName: dayNames[i],
+          dayNum: d.getDate(),
+          monthName: monthNames[d.getMonth()],
+          isToday: dateStr === today
+        });
+      }
+      this.calendarDays = days;
+
+      // Update week label
+      const endDate = new Date(start);
+      endDate.setDate(start.getDate() + 6);
+      const startMonth = monthNames[start.getMonth()];
+      const endMonth = monthNames[endDate.getMonth()];
+      if (startMonth === endMonth) {
+        this.calendarWeekLabel = `${startMonth} ${start.getDate()} - ${endDate.getDate()}, ${start.getFullYear()}`;
+      } else {
+        this.calendarWeekLabel = `${startMonth} ${start.getDate()} - ${endMonth} ${endDate.getDate()}, ${start.getFullYear()}`;
+      }
+    },
+
+    calendarPrevWeek() {
+      const d = new Date(this.currentWeekStart);
+      d.setDate(d.getDate() - 7);
+      this.currentWeekStart = d.toISOString().slice(0, 10);
+      localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
+      this.updateCalendarDays();
+      this.loadSchedules();
+    },
+
+    calendarNextWeek() {
+      const d = new Date(this.currentWeekStart);
+      d.setDate(d.getDate() + 7);
+      this.currentWeekStart = d.toISOString().slice(0, 10);
+      localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
+      this.updateCalendarDays();
+      this.loadSchedules();
+    },
+
+    calendarToday() {
+      this.initCalendarWeek();
+      this.loadSchedules();
+    },
+
+    async loadSchedules() {
+      if (this._loadingSchedules) return;
+      this._loadingSchedules = true;
+      try {
+        const resp = await fetch(`/api/schedules/week/${this.currentWeekStart}`);
+        if (!resp.ok) throw new Error('Failed to load schedules');
+        const data = await resp.json();
+        // Flatten schedules from grouped format
+        this.schedules = [];
+        for (const dateKey in data.schedules) {
+          this.schedules.push(...data.schedules[dateKey]);
+        }
+        this.schedulesLoaded = true;
+      } catch (e) {
+        console.error('Load schedules error:', e);
+        Alpine.store('notifications').add('Failed to load schedules', 'error');
+      } finally {
+        this._loadingSchedules = false;
+      }
+    },
+
+    getSchedulesForDay(dateStr) {
+      return this.schedules
+        .filter(s => s.scheduled_date === dateStr)
+        .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+    },
+
+    formatScheduleTime(schedule) {
+      if (!schedule.start_time) return '';
+      const start = schedule.start_time.slice(0, 5);
+      if (schedule.end_time) {
+        return `${start} - ${schedule.end_time.slice(0, 5)}`;
+      }
+      return start;
+    },
+
+    openNewScheduleModal(dateStr) {
+      this.scheduleModal = {
+        show: true,
+        mode: 'create',
+        data: {
+          scheduled_date: dateStr,
+          job_id: null,
+          estimated_duration: '',
+          start_time: '',
+          end_time: '',
+          notes: ''
+        },
+        jobSearch: '',
+        jobResults: [],
+        showJobResults: false
+      };
+    },
+
+    openScheduleModal(schedule) {
+      this.scheduleModal = {
+        show: true,
+        mode: 'edit',
+        data: { ...schedule },
+        jobSearch: '',
+        jobResults: [],
+        showJobResults: false
+      };
+    },
+
+    async searchJobsForSchedule() {
+      const q = this.scheduleModal.jobSearch.trim();
+      if (q.length < 2) {
+        this.scheduleModal.jobResults = [];
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=10`);
+        if (resp.ok) {
+          this.scheduleModal.jobResults = await resp.json();
+          this.scheduleModal.showJobResults = true;
+        }
+      } catch (e) {
+        console.error('Job search error:', e);
+      }
+    },
+
+    selectJobForSchedule(job) {
+      this.scheduleModal.data.job_id = job.id;
+      this.scheduleModal.data.job_number = job.job_number;
+      this.scheduleModal.data.client = job.client;
+      this.scheduleModal.jobSearch = job.job_number;
+      this.scheduleModal.showJobResults = false;
+    },
+
+    async saveSchedule() {
+      if (this._savingSchedule) return;
+      this._savingSchedule = true;
+      try {
+        const data = this.scheduleModal.data;
+        const isEdit = this.scheduleModal.mode === 'edit';
+        const url = isEdit ? `/api/schedules/${data.id}` : '/api/schedules';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const payload = {
+          job_id: data.job_id,
+          scheduled_date: data.scheduled_date,
+          start_time: data.start_time || null,
+          end_time: data.end_time || null,
+          estimated_duration: data.estimated_duration ? parseFloat(data.estimated_duration) : null,
+          notes: data.notes || null
+        };
+
+        const resp = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || 'Save failed');
+        }
+
+        this.scheduleModal.show = false;
+        await this.loadSchedules();
+        Alpine.store('notifications').add(isEdit ? 'Schedule updated' : 'Schedule created', 'success');
+      } catch (e) {
+        console.error('Save schedule error:', e);
+        Alpine.store('notifications').add(e.message, 'error');
+      } finally {
+        this._savingSchedule = false;
+      }
+    },
+
+    async deleteSchedule(scheduleId) {
+      this.showConfirm('Delete Schedule', 'Are you sure you want to delete this schedule?', async () => {
+        try {
+          const resp = await fetch(`/api/schedules/${scheduleId}`, { method: 'DELETE' });
+          if (!resp.ok) throw new Error('Delete failed');
+          this.scheduleModal.show = false;
+          await this.loadSchedules();
+          Alpine.store('notifications').add('Schedule deleted', 'success');
+        } catch (e) {
+          console.error('Delete schedule error:', e);
+          Alpine.store('notifications').add(e.message, 'error');
+        }
+      }, 'Delete');
+    },
+
+    async optimizeDayRoute(dateStr) {
+      if (this._optimizingRoute) return;
+      this._optimizingRoute = dateStr;
+      try {
+        const resp = await fetch(`/api/schedules/optimize/${dateStr}`, { method: 'POST' });
+        if (!resp.ok) throw new Error('Optimization failed');
+        await this.loadSchedules();
+        Alpine.store('notifications').add('Route optimized', 'success');
+      } catch (e) {
+        console.error('Optimize route error:', e);
+        Alpine.store('notifications').add(e.message, 'error');
+      } finally {
+        this._optimizingRoute = null;
+      }
+    },
+
+    handleScheduleDragStart(event, schedule) {
+      this._draggedSchedule = schedule;
+      event.dataTransfer.effectAllowed = 'move';
+    },
+
+    async handleScheduleDrop(event, newDate) {
+      if (!this._draggedSchedule) return;
+      const schedule = this._draggedSchedule;
+      this._draggedSchedule = null;
+
+      if (schedule.scheduled_date === newDate) return;
+
+      try {
+        const resp = await fetch(`/api/schedules/${schedule.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduled_date: newDate })
+        });
+        if (!resp.ok) throw new Error('Move failed');
+        await this.loadSchedules();
+        Alpine.store('notifications').add('Schedule moved', 'success');
+      } catch (e) {
+        console.error('Move schedule error:', e);
+        Alpine.store('notifications').add(e.message, 'error');
+      }
     },
 
   };

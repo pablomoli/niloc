@@ -215,11 +215,19 @@
   top: 70px !important;
   left: 90px !important;
 }
-.leaflet-control-zoom { margin-top: 10px !important; }
+.leaflet-control-zoom {
+  margin-top: 10px !important;
+  margin-left: 0;
+  transform: translateX(-90px);
+}
 @media (max-width: 767px) {
   .leaflet-control-container .leaflet-top.leaflet-left {
     top: 45px;
     left: 80px !important;
+  }
+  .leaflet-control-zoom {
+    margin-left: 0;
+    transform: translateX(-80px);
   }
 }
 

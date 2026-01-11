@@ -178,94 +178,210 @@
 
         </div>
 
-        <!-- Business Metrics Section -->
-        <div class="mb-4">
-          <h3 class="mb-3">Business Metrics</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <div class="card text-center shadow-lg border-2 border-[#17a2b8] bg-white">
-                <div class="card-body py-3">
-                  <h6 class="text-sm font-semibold mb-2 text-gray-500">Unique Clients</h6>
-                  <h2 class="text-3xl font-bold mb-0 text-[#17a2b8]" x-text="stats.uniqueClients">-</h2>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div class="card text-center shadow-lg border-2 border-[#dc3545] bg-white">
-                <div class="card-body py-3">
-                  <h6 class="text-sm font-semibold mb-2 text-gray-500">Deleted Jobs</h6>
-                  <h2 class="text-3xl font-bold mb-0 text-[#dc3545]" x-text="stats.deletedJobs">-</h2>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Due Date Calendar Section -->
-        <div class="mb-4">
-          <div class="card bg-white shadow-lg max-w-2xl mx-auto">
-            <div class="card-body p-4">
-              <!-- Calendar header with controls -->
-              <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Due Date Calendar</h3>
-                <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                  <button @click="prevCalendarMonth()" class="p-1.5 rounded hover:bg-gray-200 transition-colors" title="Previous month">
-                    <i class="bi bi-chevron-left text-gray-600"></i>
+        <!-- Calendars Section - Side by Side -->
+        <div class="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-4 mb-4" x-init="initCalendarWeek(); loadSchedules();">
+          <!-- Due Date Calendar (Compact) -->
+          <div class="card bg-white shadow-lg">
+            <div class="card-body p-3">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-gray-800">Due Dates</h3>
+                <div class="flex items-center gap-1">
+                  <button @click="prevCalendarMonth()" class="p-1 rounded hover:bg-gray-200 transition-colors" title="Previous month">
+                    <i class="bi bi-chevron-left text-gray-600 text-xs"></i>
                   </button>
-                  <span class="font-medium min-w-[120px] text-center text-sm text-gray-700" x-text="getCalendarMonthLabel()"></span>
-                  <button @click="nextCalendarMonth()" class="p-1.5 rounded hover:bg-gray-200 transition-colors" title="Next month">
-                    <i class="bi bi-chevron-right text-gray-600"></i>
+                  <span class="font-medium min-w-[80px] text-center text-xs text-gray-700" x-text="getCalendarMonthLabel()"></span>
+                  <button @click="nextCalendarMonth()" class="p-1 rounded hover:bg-gray-200 transition-colors" title="Next month">
+                    <i class="bi bi-chevron-right text-gray-600 text-xs"></i>
                   </button>
-                  <button @click="goToCurrentMonth()" class="ml-1 px-2 py-1 text-xs font-medium rounded bg-white border border-gray-300 hover:bg-gray-50 transition-colors" title="Go to today">
+                  <button @click="goToCurrentMonth()" class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded bg-gray-100 hover:bg-gray-200 transition-colors">
                     Today
                   </button>
                 </div>
               </div>
               <div class="relative" :class="calendarLoading ? 'opacity-50' : ''">
-                <!-- Loading indicator -->
                 <div x-show="calendarLoading" class="absolute inset-0 flex items-center justify-center z-10">
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <span class="loading loading-spinner loading-xs"></span>
                 </div>
                 <!-- Weekday headers -->
-                <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-semibold text-gray-500">
-                  <div>Sun</div>
-                  <div>Mon</div>
-                  <div>Tue</div>
-                  <div>Wed</div>
-                  <div>Thu</div>
-                  <div>Fri</div>
-                  <div>Sat</div>
+                <div class="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-500 border-b border-gray-200 pb-1 mb-1">
+                  <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
                 </div>
-                <!-- Calendar grid -->
+                <!-- Calendar grid with borders -->
                 <template x-for="(week, weekIdx) in getCalendarGrid()" :key="weekIdx">
-                  <div class="grid grid-cols-7 gap-1 mb-1">
+                  <div class="grid grid-cols-7">
                     <template x-for="day in week" :key="day.date">
                       <button
                         @click="onCalendarDayClick(day.date)"
-                        class="relative h-12 p-1 rounded-lg text-sm transition-colors hover:bg-gray-100 flex flex-col items-center justify-start pt-1"
+                        class="relative h-8 text-xs transition-colors hover:bg-gray-100 flex flex-col items-center justify-center border-r border-b border-gray-100 last:border-r-0"
                         :class="{
-                          'text-gray-400': !day.isCurrentMonth,
-                          'bg-primary/10 ring-2 ring-primary': day.isToday,
+                          'text-gray-300': !day.isCurrentMonth,
+                          'bg-primary/10 font-bold text-primary': day.isToday,
                           'cursor-pointer': day.count > 0 || day.isCurrentMonth
                         }"
                         :title="day.count > 0 ? day.count + ' job(s) due' : ''"
                       >
-                        <span class="text-sm font-medium" x-text="day.day"></span>
+                        <span x-text="day.day"></span>
                         <template x-if="day.count > 0">
-                          <span
-                            class="mt-0.5 min-w-[20px] h-5 px-1.5 text-xs font-bold text-white rounded-full flex items-center justify-center shadow-sm"
-                            :style="`background-color: ${getCountBadgeColor(day.count)}`"
-                            x-text="day.count"
-                          ></span>
+                          <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 text-[8px] font-bold text-white rounded-full flex items-center justify-center"
+                                :style="`background-color: ${getCountBadgeColor(day.count)}`"
+                                x-text="day.count > 9 ? '9+' : day.count"></span>
                         </template>
                       </button>
                     </template>
                   </div>
                 </template>
               </div>
-              <p class="text-xs text-gray-500 mt-3 text-center">Click a day to view jobs due on that date</p>
             </div>
           </div>
+
+          <!-- Schedule Calendar (Week View) -->
+          <div class="card bg-white shadow-lg">
+            <div class="card-body p-3">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-gray-800">Schedule</h3>
+                <div class="flex items-center gap-1">
+                  <button class="p-1 rounded hover:bg-gray-200" @click="calendarPrevWeek()" title="Previous week">
+                    <i class="bi bi-chevron-left text-gray-600 text-xs"></i>
+                  </button>
+                  <span class="text-xs font-medium min-w-[100px] text-center" x-text="calendarWeekLabel"></span>
+                  <button class="p-1 rounded hover:bg-gray-200" @click="calendarNextWeek()" title="Next week">
+                    <i class="bi bi-chevron-right text-gray-600 text-xs"></i>
+                  </button>
+                  <button class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded bg-gray-100 hover:bg-gray-200" @click="calendarToday()">Today</button>
+                  <a :href="`/api/schedules/calendar.ics?days=90`" class="ml-1 p-1 rounded hover:bg-gray-200" title="Export .ics">
+                    <i class="bi bi-download text-gray-600 text-xs"></i>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div x-show="_loadingSchedules" class="flex items-center justify-center py-8">
+                <span class="loading loading-spinner loading-sm"></span>
+              </div>
+
+              <!-- Week View -->
+              <div x-show="!_loadingSchedules">
+                <!-- Day Headers -->
+                <div class="grid grid-cols-7 border-b border-gray-200 mb-1">
+                  <template x-for="day in calendarDays" :key="day.date">
+                    <div class="py-1 text-center border-r border-gray-100 last:border-r-0"
+                         :class="{'bg-primary/10': day.isToday}">
+                      <div class="text-[10px] text-gray-500 uppercase" x-text="day.dayName"></div>
+                      <div class="text-sm font-semibold" :class="{'text-primary': day.isToday}" x-text="day.dayNum"></div>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Day Columns with Schedules -->
+                <div class="grid grid-cols-7 min-h-[180px]">
+                  <template x-for="day in calendarDays" :key="day.date">
+                    <div class="p-1 border-r border-gray-100 last:border-r-0 flex flex-col gap-1"
+                         :class="{'bg-primary/5': day.isToday}"
+                         @dragover.prevent
+                         @drop="handleScheduleDrop($event, day.date)">
+
+                      <template x-for="schedule in getSchedulesForDay(day.date)" :key="schedule.id">
+                        <div class="bg-base-200 rounded p-1 text-[10px] border border-base-300 cursor-pointer hover:bg-base-300 transition-colors"
+                             draggable="true"
+                             @dragstart="handleScheduleDragStart($event, schedule)"
+                             @click="openScheduleModal(schedule)">
+                          <div class="font-semibold text-primary truncate" x-text="schedule.job_number"></div>
+                          <div class="text-gray-500 truncate" x-text="schedule.client"></div>
+                          <div class="text-gray-400" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
+                        </div>
+                      </template>
+
+                      <button class="btn btn-ghost btn-xs w-full opacity-40 hover:opacity-100 text-[10px] py-0 h-5 min-h-0"
+                              @click="openNewScheduleModal(day.date)">
+                        <i class="bi bi-plus text-xs"></i>
+                      </button>
+
+                      <button class="btn btn-ghost btn-xs w-full text-primary text-[10px] py-0 h-5 min-h-0"
+                              x-show="getSchedulesForDay(day.date).length >= 2"
+                              @click="optimizeDayRoute(day.date)"
+                              :disabled="_optimizingRoute === day.date">
+                        <span class="loading loading-spinner loading-xs" x-show="_optimizingRoute === day.date"></span>
+                        <i class="bi bi-signpost-2 text-xs" x-show="_optimizingRoute !== day.date"></i>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule Modal (moved here from calendar tab) -->
+        <div class="modal" :class="{'modal-open': scheduleModal.show}">
+          <div class="modal-box max-w-lg" @click.stop>
+            <h3 class="font-bold text-lg" x-text="scheduleModal.mode === 'create' ? 'Schedule Job' : 'Edit Schedule'"></h3>
+
+            <div class="form-control mt-4">
+              <label class="label"><span class="label-text">Job</span></label>
+              <template x-if="scheduleModal.mode === 'create'">
+                <div class="relative">
+                  <input type="text"
+                         class="input input-bordered w-full"
+                         placeholder="Search by job number..."
+                         x-model="scheduleModal.jobSearch"
+                         @input="searchJobsForSchedule()"
+                         @focus="scheduleModal.showJobResults = true">
+                  <div class="absolute z-10 w-full bg-base-100 border border-base-300 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto"
+                       x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0"
+                       @click.stop>
+                    <template x-for="job in scheduleModal.jobResults" :key="job.id">
+                      <div class="p-2 hover:bg-base-200 cursor-pointer"
+                           @click.stop="selectJobForSchedule(job)">
+                        <div class="font-medium" x-text="job.job_number"></div>
+                        <div class="text-xs text-gray-500" x-text="job.client"></div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template x-if="scheduleModal.mode === 'edit'">
+                <div class="font-medium" x-text="scheduleModal.data.job_number + ' - ' + scheduleModal.data.client"></div>
+              </template>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 mt-4">
+              <div class="form-control">
+                <label class="label"><span class="label-text">Date</span></label>
+                <input type="date" class="input input-bordered" x-model="scheduleModal.data.scheduled_date">
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Start Time</span></label>
+                <input type="time" class="input input-bordered" x-model="scheduleModal.data.start_time">
+              </div>
+              <div class="form-control">
+                <label class="label"><span class="label-text">Duration (hrs)</span></label>
+                <input type="number" step="0.5" min="0.5" class="input input-bordered"
+                       x-model="scheduleModal.data.estimated_duration" placeholder="2">
+              </div>
+            </div>
+
+            <div class="form-control mt-4">
+              <label class="label"><span class="label-text">Notes</span></label>
+              <textarea class="textarea textarea-bordered" rows="2" x-model="scheduleModal.data.notes" placeholder="Optional notes..."></textarea>
+            </div>
+
+            <div class="modal-action">
+              <button class="btn btn-error btn-outline"
+                      x-show="scheduleModal.mode === 'edit'"
+                      @click="deleteSchedule(scheduleModal.data.id)">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+              <div class="flex-1"></div>
+              <button class="btn" @click="scheduleModal.show = false">Cancel</button>
+              <button class="btn btn-primary !text-white"
+                      @click="saveSchedule()"
+                      :disabled="_savingSchedule || !scheduleModal.data.job_id">
+                <span class="loading loading-spinner loading-sm" x-show="_savingSchedule"></span>
+                <span x-text="scheduleModal.mode === 'create' ? 'Create' : 'Save'"></span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-backdrop" @click="scheduleModal.show = false"></div>
         </div>
       </div>
 
@@ -490,9 +606,9 @@
         </div>
 
         <!-- Jobs Table -->
-        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-x-auto">
           <div x-show="!_loadingJobs">
-            <table class="table w-full">
+            <table class="table w-full min-w-[1100px]">
               <thead class="bg-base-200">
                 <tr>
                   <th class="w-10 px-1">
@@ -766,9 +882,9 @@
         </div>
 
         <!-- Users Table -->
-        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
-          <div class="overflow-x-auto" x-show="!_loadingUsers">
-            <table class="table w-full">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-x-auto">
+          <div x-show="!_loadingUsers">
+            <table class="table w-full min-w-[1100px]">
               <thead class="bg-base-200">
                 <tr>
                   <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortUsers('username')">
@@ -919,9 +1035,9 @@
         </div>
 
         <!-- Tags Table -->
-        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="table w-full">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-x-auto">
+          <div>
+            <table class="table w-full min-w-[1100px]">
               <thead class="bg-base-200">
                 <tr>
                   <th class="w-1/3">Name</th>
@@ -1078,9 +1194,9 @@
         </div>
 
         <!-- POIs Table -->
-        <div class="bg-base-100 rounded-lg border border-base-300 overflow-visible">
-          <div class="overflow-x-auto overflow-y-visible">
-            <table class="table w-full">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-x-auto overflow-y-visible">
+          <div class="overflow-y-visible">
+            <table class="table w-full min-w-[1100px]">
               <thead class="bg-base-200">
                 <tr>
                   <th class="w-1/4">Name</th>
@@ -1214,9 +1330,9 @@
         </div>
 
         <!-- Deleted Jobs Table -->
-        <div class="bg-base-100 rounded-lg border border-base-300 overflow-hidden">
-          <div class="overflow-x-auto" x-show="!_loadingDeletedJobs">
-            <table class="table w-full">
+        <div class="bg-base-100 rounded-lg border border-base-300 overflow-x-auto">
+          <div x-show="!_loadingDeletedJobs">
+            <table class="table w-full min-w-[1100px]">
               <thead class="bg-base-200">
                 <tr>
                   <th class="cursor-pointer hover:bg-base-300 transition-colors" @click="sortDeletedJobs('job_number')">

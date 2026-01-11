@@ -102,6 +102,16 @@ function fabMenu() {
                 console.warn('Failed to load POI visibility preference:', e);
             }
 
+            // Load FAB menu open preference from localStorage
+            try {
+                const storedMenuOpen = localStorage.getItem('epicmap_fab_menu_open');
+                if (storedMenuOpen !== null) {
+                    this.menuOpen = storedMenuOpen === 'true';
+                }
+            } catch (e) {
+                console.warn('Failed to load FAB menu preference:', e);
+            }
+
             // Apply initial POI visibility state
             if (window.setPoisVisible) {
                 window.setPoisVisible(this.poisVisible);
@@ -128,7 +138,7 @@ function fabMenu() {
                         self.closeLayerControl();
                     }
                     if (self.menuOpen) {
-                        self.menuOpen = false;
+                        self.setMenuOpen(false);
                     }
                 }
             });
@@ -184,9 +194,18 @@ function fabMenu() {
             // Force Alpine reactivity by replacing the array
             this.availableStatuses.splice(0, this.availableStatuses.length, ...mergedStatuses);
         },
+
+        setMenuOpen(value) {
+            this.menuOpen = value;
+            try {
+                localStorage.setItem('epicmap_fab_menu_open', this.menuOpen.toString());
+            } catch (e) {
+                console.warn('Failed to save FAB menu preference:', e);
+            }
+        },
         
         toggleMenu() {
-            this.menuOpen = !this.menuOpen;
+            this.setMenuOpen(!this.menuOpen);
             if (!this.menuOpen) {
                 this.searchOpen = false;
                 this.statusOpen = false;
@@ -261,7 +280,7 @@ function fabMenu() {
         // Enhanced Search Methods
         openAdvancedSearch() {
             this.searchOpen = true;
-            this.menuOpen = false;
+            this.setMenuOpen(false);
             this.searchTab = 'address'; // Default to address tab
             this.$nextTick(() => {
                 this.$refs.searchInput?.focus();
@@ -499,7 +518,7 @@ function fabMenu() {
         },
         
         openCreateJob() {
-            this.menuOpen = false;
+            this.setMenuOpen(false);
             // Open create job modal with empty address
             window.CreateJobModal.show(null, null, '');
         },
@@ -520,7 +539,7 @@ function fabMenu() {
             this.ensureTagsLoaded();
 
             this.statusOpen = true;
-            this.menuOpen = false;
+            this.setMenuOpen(false);
         },
         
         closeStatusFilter() {
@@ -539,7 +558,7 @@ function fabMenu() {
                 ? window.isMarkerClusteringSupported()
                 : (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function');
             this.layerOpen = true;
-            this.menuOpen = false;
+            this.setMenuOpen(false);
         },
         
         closeLayerControl() {
@@ -750,7 +769,7 @@ function fabMenu() {
         },
 
         openRoutePlanner() {
-            this.menuOpen = false;
+            this.setMenuOpen(false);
             this.ensureRoutePlannerLoaded()
                 .then(() => {
                     if (window.RoutePlanner && typeof window.RoutePlanner.show === 'function') {
