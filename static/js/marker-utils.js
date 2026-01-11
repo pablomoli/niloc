@@ -7,6 +7,7 @@
 // This is the single source of truth for status colors in the frontend
 const EPIC_COLORS = {
   "On Hold/Pending Estimate": "#C0C0C0", // Grey
+  "Cancelled/Declined": "#1f2933", // Dark charcoal
   "Needs Fieldwork": "#FFA500",          // Orange
   "Fieldwork Complete": "#8A2BE2",     // Purple
   "To Be Printed": "#1E90FF",           // Blue
@@ -19,6 +20,7 @@ const EPIC_COLORS = {
 // Status Display Names (for UI display)
 const STATUS_NAMES = {
   "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+  "Cancelled/Declined": "Cancelled/Declined",
   "Needs Fieldwork": "Needs Fieldwork",
   "Fieldwork Complete": "Fieldwork Complete",
   "To Be Printed": "To Be Printed",

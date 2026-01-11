@@ -92,13 +92,22 @@
           <h3 class="mb-3">Job Status Overview</h3>
 
           <!-- Combined Row: All Status Cards -->
-          <div class="grid !grid-cols-2 sm:!grid-cols-8 gap-3 mb-3 items-stretch">
+          <div class="grid !grid-cols-2 sm:!grid-cols-9 gap-3 mb-3 items-stretch">
             <div class="h-full">
               <div class="card text-center shadow-lg bg-[#a8a8a8] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('On Hold/Pending Estimate')">
                 <div class="card-body py-3 flex flex-col justify-between">
                   <i class="bi bi-hourglass-split text-2xl mb-2 opacity-90"></i>
                   <h6 class="text-sm font-semibold mb-2 opacity-90">On Hold/Pending Estimate</h6>
                   <h2 class="text-3xl font-bold mb-0" x-text="stats.onHoldPending">-</h2>
+                </div>
+              </div>
+            </div>
+            <div class="h-full">
+              <div class="card text-center shadow-lg bg-[#1f2933] text-white h-full cursor-pointer hover:opacity-90 transition-opacity" @click="filterJobsByStatus('Cancelled/Declined')">
+                <div class="card-body py-3 flex flex-col justify-between">
+                  <i class="bi bi-x-circle text-2xl mb-2 opacity-90"></i>
+                  <h6 class="text-sm font-semibold mb-2 opacity-90">Cancelled/Declined</h6>
+                  <h2 class="text-3xl font-bold mb-0" x-text="stats.cancelledDeclined">-</h2>
                 </div>
               </div>
             </div>

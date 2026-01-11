@@ -286,6 +286,7 @@ const AdminUtils = {
             "Survey Complete/Invoice Sent": "badge-invoice-sent",
             "Site Plan": "badge-ongoing-plan",
             "On Hold/Pending Estimate": "badge-on-hold",
+            "Cancelled/Declined": "badge-cancelled-declined",
             // Backward compatibility
             "Completed": "badge-completed",
             "Set Pins": "badge-set-flag",
@@ -312,6 +313,7 @@ const AdminUtils = {
             "Survey Complete/Invoice Sent": "#f5c842",
             "Site Plan": "#e685b5",
             "On Hold/Pending Estimate": "#a8a8a8",
+            "Cancelled/Declined": "#1f2933",
             // Backward compatibility
             "Completed": "#28a745",
             "Set Pins": "#dc3545",

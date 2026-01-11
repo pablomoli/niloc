@@ -171,14 +171,18 @@ function fabMenu() {
         },
         
         updateAvailableStatuses() {
-            if (window.AppState && window.AppState.allJobs && window.AppState.allJobs.length > 0) {
-                const newStatuses = [...new Set(window.AppState.allJobs
-                    .map(job => job.status)
-                    .filter(Boolean))];
-                
-                // Force Alpine reactivity by replacing the array
-                this.availableStatuses.splice(0, this.availableStatuses.length, ...newStatuses);
-            }
+            const statusCatalog = window.MarkerUtils?.EPIC_COLORS
+                ? Object.keys(window.MarkerUtils.EPIC_COLORS)
+                : [];
+            const jobStatuses = (window.AppState?.allJobs || [])
+                .map(job => job.status)
+                .filter(Boolean);
+            const mergedStatuses = statusCatalog.length > 0
+                ? [...statusCatalog, ...jobStatuses.filter(status => !statusCatalog.includes(status))]
+                : [...new Set(jobStatuses)];
+
+            // Force Alpine reactivity by replacing the array
+            this.availableStatuses.splice(0, this.availableStatuses.length, ...mergedStatuses);
         },
         
         toggleMenu() {

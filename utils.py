@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # Valid job status values (stored in database)
 VALID_JOB_STATUSES = [
     "On Hold/Pending Estimate",
+    "Cancelled/Declined",
     "Needs Fieldwork",
     "Fieldwork Complete",
     "To Be Printed",
@@ -27,6 +28,7 @@ VALID_JOB_STATUSES = [
 # Status display names (shorter versions for UI)
 STATUS_DISPLAY_NAMES = {
     "On Hold/Pending Estimate": "On Hold/Pending Estimate",
+    "Cancelled/Declined": "Cancelled/Declined",
     "Needs Fieldwork": "Needs Fieldwork",
     "Fieldwork Complete": "Fieldwork Complete",
     "To Be Printed": "To Be Printed",

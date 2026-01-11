@@ -77,6 +77,7 @@ window.adminAppComponent = function() {
     // Multi-status filter
     statuses: [
       "On Hold/Pending Estimate",
+      "Cancelled/Declined",
       "Needs Fieldwork",
       "Fieldwork Complete",
       "To Be Printed",
@@ -109,6 +110,7 @@ window.adminAppComponent = function() {
     stats: {
       // Jobs by EPIC status
       onHoldPending: 0,
+      cancelledDeclined: 0,
       needsFieldwork: 0,
       fieldworkComplete: 0,
       toBePrinted: 0,
@@ -923,6 +925,7 @@ window.adminAppComponent = function() {
           this.stats.invoiceSent = (sc["Survey Complete/Invoice Sent"] || 0) + (sc["Invoice Sent"] || 0);
           this.stats.ongoingSitePlan = (sc["Site Plan"] || 0) + (sc["Ongoing Site"] || 0);
           this.stats.onHoldPending = (sc["On Hold/Pending Estimate"] || 0) + (sc["On Hold"] || 0);
+          this.stats.cancelledDeclined = (sc["Cancelled/Declined"] || 0);
 
           this.stats.uniqueClients = data.unique_clients || 0;
           this.stats.deletedJobs = data.deleted_jobs || this.stats.deletedJobs || 0;

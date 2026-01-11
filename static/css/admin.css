@@ -334,6 +334,7 @@ a,
 .admin-spa .badge-invoice-sent { background-color: #f5c842; color: #2d3748; border-color: #d4a91a; }
 .admin-spa .badge-ongoing-plan { background-color: #e685b5; color: #ffffff; border-color: #d961a3; }
 .admin-spa .badge-on-hold { background-color: #a8a8a8; color: #ffffff; border-color: #868686; }
+.admin-spa .badge-cancelled-declined { background-color: #1f2933; color: #ffffff; border-color: #111827; }
 .admin-spa .badge-estimate { background-color: #17a2b8; color: #ffffff; border-color: #138496; }
 
 /* Table header: use base-content (#1D232A) and stronger weight */
