@@ -41,73 +41,67 @@
     
     <!-- Left Toolbar -->
     <div class="left-toolbar" x-data="fabMenu()" :class="{ 'menu-open': menuOpen }">
-        <!-- Fixed buttons (always visible at top) -->
-        <div class="toolbar-fixed">
-            <!-- Office Center Button -->
-            <button class="btn btn-circle office-fab toolbar-btn w-14 h-14"
-                    type="button"
-                    aria-label="Center map on office"
-                    title="Center on Office"
-                    onclick="centerOnOffice()">
-                <i class="bi bi-building text-lg" aria-hidden="true"></i>
-            </button>
+        <!-- Office Button -->
+        <button class="toolbar-btn office-btn static-btn"
+                type="button"
+                aria-label="Center map on office"
+                title="Center on Office"
+                onclick="centerOnOffice()">
+            <i class="bi bi-building" aria-hidden="true"></i>
+        </button>
 
-            <!-- Location Button -->
-            <button class="btn btn-circle btn-success location-fab toolbar-btn w-14 h-14"
-                    type="button"
-                    aria-label="Center map on your location"
-                    title="Center on Location"
-                    onclick="centerOnUserLocation()">
-                <i class="bi bi-crosshair text-lg" aria-hidden="true"></i>
-            </button>
+        <!-- Location Button -->
+        <button class="toolbar-btn location-btn static-btn"
+                type="button"
+                aria-label="Center map on your location"
+                title="Center on Location"
+                onclick="centerOnUserLocation()">
+            <i class="bi bi-crosshair" aria-hidden="true"></i>
+        </button>
 
-            <!-- Zoom Extents Button -->
-            <button class="btn btn-circle toolbar-btn zoom-extents-btn w-14 h-14"
-                    type="button"
-                    aria-label="Zoom to fit all visible jobs"
-                    title="Zoom Extents"
-                    @click="zoomToExtents()">
-                <i class="bi bi-arrows-fullscreen text-lg" aria-hidden="true"></i>
-            </button>
-        </div>
+        <!-- Zoom Extents Button -->
+        <button class="toolbar-btn zoom-btn static-btn"
+                type="button"
+                aria-label="Zoom to fit all visible jobs"
+                title="Zoom Extents"
+                @click="zoomToExtents()">
+            <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+        </button>
 
-        <!-- Expandable actions (expand upward when + clicked) -->
-        <div class="toolbar-actions" :class="{ 'open': menuOpen }">
-            <!-- Map Settings Button -->
-            <button class="btn btn-circle toolbar-action-btn layers-btn w-12 h-12"
-                    type="button"
-                    aria-label="Open map settings"
-                    title="Map Settings"
-                    @click="openLayerControl()">
-                <i class="bi bi-layers" aria-hidden="true"></i>
-            </button>
+        <!-- Map Settings Button (expandable) -->
+        <button class="toolbar-btn layers-btn expandable-btn"
+                type="button"
+                aria-label="Open map settings"
+                title="Map Settings"
+                @click="openLayerControl()">
+            <i class="bi bi-layers" aria-hidden="true"></i>
+        </button>
 
-            <!-- Filters Button -->
-            <button class="btn btn-circle toolbar-action-btn status-btn w-12 h-12"
-                    type="button"
-                    aria-label="Open job filters"
-                    title="Filters"
-                    @click="openStatusFilter()">
-                <i class="bi bi-funnel" aria-hidden="true"></i>
-            </button>
+        <!-- Filters Button (expandable) -->
+        <button class="toolbar-btn filters-btn expandable-btn"
+                type="button"
+                aria-label="Open job filters"
+                title="Filters"
+                @click="openStatusFilter()">
+            <i class="bi bi-funnel" aria-hidden="true"></i>
+        </button>
 
-            <!-- Advanced Search Button -->
-            <button class="btn btn-circle toolbar-action-btn search-btn w-12 h-12"
-                    type="button"
-                    aria-label="Open advanced search"
-                    title="Advanced Search"
-                    @click="openAdvancedSearch()">
-                <i class="bi bi-search-heart" aria-hidden="true"></i>
-            </button>
-        </div>
+        <!-- Advanced Search Button (expandable) -->
+        <button class="toolbar-btn search-btn expandable-btn"
+                type="button"
+                aria-label="Open advanced search"
+                title="Advanced Search"
+                @click="openAdvancedSearch()">
+            <i class="bi bi-search-heart" aria-hidden="true"></i>
+        </button>
 
-        <!-- Main FAB Button (at bottom, opens menu upward) -->
-        <button class="btn btn-circle btn-primary fab-button w-14 h-14 relative z-[10]"
+        <!-- Main FAB Button -->
+        <button class="toolbar-btn fab-btn"
                 type="button"
                 aria-label="Toggle map quick actions"
                 :aria-expanded="menuOpen ? 'true' : 'false'"
                 @click="toggleMenu()">
-            <i class="bi text-lg" :class="menuOpen ? 'bi-dash' : 'bi-plus'" aria-hidden="true"></i>
+            <i class="bi" :class="menuOpen ? 'bi-dash' : 'bi-plus'" aria-hidden="true"></i>
         </button>
         
         <!-- Enhanced Search Overlay -->

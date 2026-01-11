@@ -1,10 +1,12 @@
 /**
  * FAB Menu Styles for Epic Map
- * Left-side vertical toolbar with expandable actions
- * Refined design with depth, gradients, and smooth animations
+ * Left-side vertical toolbar with flat button structure
+ * All buttons are direct children for consistent alignment
  */
 
-/* Left Toolbar Container */
+/* ============================================
+   TOOLBAR CONTAINER
+   ============================================ */
 .left-toolbar {
   position: fixed;
   bottom: 24px;
@@ -14,162 +16,31 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  overflow: visible; /* Prevent clipping of hover effects */
 }
 
-/* Force white icons in all toolbar buttons - override DaisyUI defaults */
-.left-toolbar button i.bi,
-.left-toolbar button i[class*="bi-"],
-.left-toolbar .btn i,
-.left-toolbar .btn-circle i {
-  color: #ffffff !important;
-  font-size: 22px !important;
-}
-
-/* Ensure button text/content is white */
-.left-toolbar .btn,
-.left-toolbar .btn-circle {
-  color: #ffffff !important;
-}
-
-/* Fixed buttons container (always visible at top) */
-.toolbar-fixed {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 6px; /* Allow space for hover scale effect */
-  transform: translateY(210px); /* Start near FAB button when closed */
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Slide fixed buttons up to normal position when menu is open */
-.left-toolbar.menu-open .toolbar-fixed {
-  transform: translateY(0);
-}
-
-/* Toolbar button base styles */
+/* ============================================
+   BASE BUTTON STYLES (shared by all buttons)
+   ============================================ */
 .toolbar-btn {
-  position: relative !important;
-  bottom: auto !important;
-  left: auto !important;
-}
-
-/* Expandable actions container (expands upward) */
-.toolbar-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-  padding: 6px; /* Allow space for hover scale effect */
-}
-
-.toolbar-actions.open {
-  pointer-events: auto;
-}
-
-/* Staggered animation for action buttons */
-.toolbar-actions .toolbar-action-btn {
-  opacity: 0;
-  transform: scale(0.8) translateY(10px);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.toolbar-actions.open .toolbar-action-btn {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-}
-
-.toolbar-actions.open .toolbar-action-btn:nth-child(1) { transition-delay: 0ms; }
-.toolbar-actions.open .toolbar-action-btn:nth-child(2) { transition-delay: 50ms; }
-.toolbar-actions.open .toolbar-action-btn:nth-child(3) { transition-delay: 100ms; }
-
-/* Zoom Extents button - teal gradient */
-.zoom-extents-btn {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
-  color: #ffffff !important;
-}
-
-.zoom-extents-btn i {
-  color: #ffffff !important;
-}
-
-.zoom-extents-btn:hover {
-  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%) !important;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-/* Office button - blue gradient */
-.office-fab {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  color: #ffffff !important;
-}
-
-.office-fab i {
-  color: #ffffff !important;
-}
-
-.office-fab:hover {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-/* Ensure all toolbar button icons are white and bold */
-.left-toolbar .toolbar-btn i,
-.left-toolbar .toolbar-action-btn i,
-.left-toolbar .fab-button i,
-.left-toolbar .office-fab i,
-.left-toolbar .location-fab i,
-.left-toolbar .zoom-extents-btn i {
-  color: #ffffff !important;
-  font-weight: bold !important;
-  -webkit-text-stroke: 0.5px #ffffff;
-}
-
-/* Icon styling for all toolbar buttons */
-.toolbar-btn i,
-.toolbar-action-btn i {
-  font-size: 22px !important;
-  color: #ffffff !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-.fab-button,
-.fab-action-btn,
-.location-fab {
-  width: 60px !important;
-  height: 60px !important;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  border: none !important;
-  display: inline-flex;
+  border: none;
+  display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-size: 22px;
-  line-height: 1;
   cursor: pointer;
-  padding: 0;
+  color: #ffffff;
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.1),
     0 10px 20px rgba(0, 0, 0, 0.15);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow: hidden;
 }
 
 /* Glossy overlay effect */
-.fab-button::before,
-.fab-action-btn::before,
-.location-fab::before {
+.toolbar-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -181,250 +52,164 @@
   pointer-events: none;
 }
 
-.fab-button:hover,
-.fab-action-btn:hover,
-.location-fab:hover {
+/* Icon styles */
+.toolbar-btn i {
+  font-size: 22px;
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Hover state (shared) */
+.toolbar-btn:hover {
   transform: translateY(-3px) scale(1.05);
   box-shadow:
     0 8px 12px rgba(0, 0, 0, 0.15),
     0 16px 32px rgba(0, 0, 0, 0.2);
 }
 
-.fab-button:focus-visible,
-.fab-action-btn:focus-visible,
-.location-fab:focus-visible {
+/* Active state (shared) */
+.toolbar-btn:active {
+  transform: scale(0.95);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Focus state */
+.toolbar-btn:focus-visible {
   outline: none;
   box-shadow:
     0 8px 12px rgba(0, 0, 0, 0.15),
     0 16px 32px rgba(0, 0, 0, 0.2),
-    0 0 0 4px #FF1393;
+    0 0 0 4px rgba(255, 19, 147, 0.5);
 }
 
-.fab-button i,
-.fab-action-btn i,
-.toolbar-action-btn i,
-.toolbar-btn i,
-.location-fab i,
-.office-fab i,
-.zoom-extents-btn i {
-  font-size: 22px;
-  color: #ffffff !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+/* ============================================
+   BUTTON COLORS
+   ============================================ */
+
+/* Office - Blue */
+.toolbar-btn.office-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+.toolbar-btn.office-btn:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
 }
 
-.fab-button {
-  background: linear-gradient(135deg, #FF1393 0%, #d8197f 50%, #b91c6a 100%) !important;
-  color: #ffffff !important;
-  position: relative;
-  z-index: 10;
+/* Location - Green */
+.toolbar-btn.location-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+.toolbar-btn.location-btn:hover {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
 }
 
-.fab-button:hover {
-  background: linear-gradient(135deg, #ff2da3 0%, #e91d8a 50%, #c92075 100%) !important;
+/* Zoom Extents - Teal */
+.toolbar-btn.zoom-btn {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+}
+.toolbar-btn.zoom-btn:hover {
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
 }
 
-.fab-button:active {
-  transform: scale(0.95) !important;
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.15) !important;
+/* Map Settings/Layers - Indigo */
+.toolbar-btn.layers-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+.toolbar-btn.layers-btn:hover {
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
 }
 
-.fab-button[aria-expanded="true"] {
-  background: linear-gradient(135deg, #d8197f 0%, #b91c6a 50%, #9a1858 100%) !important;
-  box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.1),
-    0 10px 20px rgba(0, 0, 0, 0.15) !important;
+/* Filters - Cyan */
+.toolbar-btn.filters-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.toolbar-btn.filters-btn:hover {
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
 }
 
-.fab-button[aria-expanded="true"]:hover {
-  background: linear-gradient(135deg, #e91d8a 0%, #c92075 50%, #a91a62 100%) !important;
+/* Search - Amber */
+.toolbar-btn.search-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.toolbar-btn.search-btn:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
 }
 
-/* Toolbar Action Buttons */
-.toolbar-action-btn {
-  width: 52px !important;
-  height: 52px !important;
+/* FAB Toggle - Pink */
+.toolbar-btn.fab-btn {
+  background: linear-gradient(135deg, #FF1393 0%, #d8197f 100%);
+}
+.toolbar-btn.fab-btn:hover {
+  background: linear-gradient(135deg, #ff2da3 0%, #FF1393 100%);
+}
+
+/* ============================================
+   STATIC BUTTONS (slide animation)
+   ============================================ */
+.toolbar-btn.static-btn {
+  transform: translateY(200px);
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  touch-action: manipulation;
 }
 
-/* Unique colors for each action button */
-.toolbar-action-btn.layers-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-  color: #ffffff !important;
+.left-toolbar.menu-open .toolbar-btn.static-btn {
+  transform: translateY(0);
 }
 
-.toolbar-action-btn.layers-btn i {
-  color: #ffffff !important;
+/* Staggered animation for static buttons */
+.left-toolbar.menu-open .toolbar-btn.static-btn:nth-child(1) {
+  transition-delay: 0ms;
+}
+.left-toolbar.menu-open .toolbar-btn.static-btn:nth-child(2) {
+  transition-delay: 30ms;
+}
+.left-toolbar.menu-open .toolbar-btn.static-btn:nth-child(3) {
+  transition-delay: 60ms;
 }
 
-.toolbar-action-btn.status-btn {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
-  color: #ffffff !important;
+/* Hover override for static buttons when closed (still allow hover effect) */
+.toolbar-btn.static-btn:hover {
+  transform: translateY(200px) scale(1.05);
 }
-
-.toolbar-action-btn.status-btn i {
-  color: #ffffff !important;
-}
-
-.toolbar-action-btn.search-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  color: #ffffff !important;
-}
-
-.toolbar-action-btn.search-btn i {
-  color: #ffffff !important;
-}
-
-.toolbar-action-btn.create-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  color: #ffffff !important;
-}
-
-.toolbar-action-btn.create-btn i {
-  color: #ffffff !important;
-}
-
-/* Hover states - subtle lift effect like location buttons */
-.toolbar-action-btn.layers-btn:hover {
-  background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%) !important;
+.left-toolbar.menu-open .toolbar-btn.static-btn:hover {
   transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
 }
 
-.toolbar-action-btn.status-btn:hover {
-  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%) !important;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-.toolbar-action-btn.search-btn:hover {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-.toolbar-action-btn.create-btn:hover {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-/* Active states */
-.toolbar-action-btn:active {
-  transform: scale(0.95) !important;
-}
-
-/* FAB Labels (appear on hover) */
-.fab-label {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
+/* ============================================
+   EXPANDABLE BUTTONS (show/hide animation)
+   ============================================ */
+.toolbar-btn.expandable-btn {
   opacity: 0;
+  transform: scale(0.5);
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 1001;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Position labels based on button position */
-.layers-btn .fab-label {
-  right: 70px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.status-btn .fab-label {
-  right: 45px;
-  top: -10px;
-}
-
-.search-btn .fab-label {
-  right: -10px;
-  top: -45px;
-}
-
-.create-btn .fab-label {
-  left: 50%;
-  top: -45px;
-  transform: translateX(-50%);
-}
-
-/* Location button label */
-.location-label {
-  left: 70px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Show labels on hover */
-.fab-action-btn:hover .fab-label,
-.location-fab:hover .fab-label {
+.left-toolbar.menu-open .toolbar-btn.expandable-btn {
   opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
-/* Location Button (in left toolbar) */
-.location-fab {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%) !important;
-  color: #ffffff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+/* Staggered animation for expandable buttons */
+.left-toolbar.menu-open .toolbar-btn.expandable-btn:nth-child(4) {
+  transition-delay: 50ms;
+}
+.left-toolbar.menu-open .toolbar-btn.expandable-btn:nth-child(5) {
+  transition-delay: 100ms;
+}
+.left-toolbar.menu-open .toolbar-btn.expandable-btn:nth-child(6) {
+  transition-delay: 150ms;
 }
 
-.location-fab i {
-  color: #ffffff !important;
+/* Hover override for expandable buttons */
+.left-toolbar.menu-open .toolbar-btn.expandable-btn:hover {
+  transform: translateY(-3px) scale(1.05);
 }
 
-/* Override fixed positioning when inside toolbar */
-.left-toolbar .location-fab,
-.left-toolbar .office-fab {
-  position: relative !important;
-  bottom: auto !important;
-  left: auto !important;
-}
-
-.location-fab:hover {
-  background: linear-gradient(135deg, #34d66e 0%, #22c55e 50%, #16a34a 100%) !important;
-}
-
-/* Fix Bootstrap Icon centering and color in FAB buttons */
-.location-fab .bi,
-.office-fab .bi,
-.zoom-extents-btn .bi,
-.fab-button .bi,
-.toolbar-action-btn .bi {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  line-height: 1 !important;
-  vertical-align: baseline !important;
-  color: #ffffff !important;
-}
-
-.location-fab:active {
-  transform: scale(0.95) !important;
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Buttons position handled by Alpine.js transitions */
+/* ============================================
+   MODAL OVERLAYS
+   ============================================ */
 
 /* Search Overlay */
 .search-overlay {
@@ -558,14 +343,9 @@
   justify-content: space-between;
 }
 
-/* Hide the old control sheet on mobile */
-@media (max-width: 767px) {
-  .control-sheet {
-    display: none !important;
-  }
-}
-
-/* Left toolbar mobile responsiveness */
+/* ============================================
+   MOBILE RESPONSIVENESS
+   ============================================ */
 @media (max-width: 640px) {
   .left-toolbar {
     bottom: 16px;
@@ -573,40 +353,51 @@
     gap: 10px;
   }
 
-  .toolbar-fixed {
-    gap: 10px;
+  .toolbar-btn {
+    width: 52px;
+    height: 52px;
   }
 
-  .toolbar-actions {
-    gap: 8px;
+  .toolbar-btn i {
+    font-size: 20px;
   }
 
-  .toolbar-action-btn {
-    width: 48px !important;
-    height: 48px !important;
+  /* Adjust slide distance for smaller screens */
+  .toolbar-btn.static-btn {
+    transform: translateY(180px);
   }
-
-  .left-toolbar .office-fab,
-  .left-toolbar .location-fab,
-  .left-toolbar .zoom-extents-btn,
-  .left-toolbar .fab-button {
-    width: 52px !important;
-    height: 52px !important;
+  .toolbar-btn.static-btn:hover {
+    transform: translateY(180px) scale(1.05);
   }
 }
 
-/* Short screens - reduce gaps to prevent toolbar overflow */
+/* Short screens */
 @media (max-height: 600px) {
   .left-toolbar {
     bottom: 12px;
     gap: 8px;
   }
 
-  .toolbar-fixed {
-    gap: 8px;
+  .toolbar-btn {
+    width: 48px;
+    height: 48px;
   }
 
-  .toolbar-actions {
-    gap: 6px;
+  .toolbar-btn i {
+    font-size: 18px;
+  }
+
+  .toolbar-btn.static-btn {
+    transform: translateY(150px);
+  }
+  .toolbar-btn.static-btn:hover {
+    transform: translateY(150px) scale(1.05);
+  }
+}
+
+/* Hide old control sheet on mobile */
+@media (max-width: 767px) {
+  .control-sheet {
+    display: none !important;
   }
 }
