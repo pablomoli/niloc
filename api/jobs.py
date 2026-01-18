@@ -692,15 +692,17 @@ def get_parcel_geometry(job_number):
                     geometry = result["geometry"]
         else:
             # For address jobs, try address-based lookup first, then fall back to coordinates
-            if job.address and county:
+            # Orange County: try address lookup first (reliable)
+            # Brevard County: use coordinate lookup directly (address field doesn't match)
+            if county == "orange" and job.address:
                 logger.info(f"Querying parcel by address for job: address={job.address}, county={county}")
                 geometry = _query_parcel_by_address(job.address, county)
 
-            # Fall back to coordinate query if address lookup failed
+            # Coordinate query for Brevard or as fallback for Orange
             if not geometry and job.lat and job.long:
                 lat = float(job.lat)
                 lng = float(job.long)
-                logger.info(f"Falling back to coordinate query: lat={lat}, lng={lng}, county={county}")
+                logger.info(f"Querying parcel by coordinates: lat={lat}, lng={lng}, county={county}")
                 geometry = _query_parcel_by_coordinates(lat, lng, county)
 
             if not geometry:
