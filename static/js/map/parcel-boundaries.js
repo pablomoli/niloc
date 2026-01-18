@@ -21,6 +21,9 @@ const ParcelBoundaries = {
      * @param {L.Map} map - Leaflet map instance
      */
     init(map) {
+        if (this.boundaryLayer) {
+            return;
+        }
         this.boundaryLayer = L.featureGroup().addTo(map);
 
         // Listen for zoom changes
@@ -148,6 +151,9 @@ const ParcelBoundaries = {
      * @returns {Promise<Object|null>} Geometry object or null
      */
     async fetchBoundary(jobNumber, map) {
+        if (!this.boundaryLayer && typeof this.init === 'function') {
+            this.init(map);
+        }
         if (this.loadingJobs.has(jobNumber)) {
             return null; // Already loading
         }
@@ -181,7 +187,7 @@ const ParcelBoundaries = {
             }
 
             // Ensure boundary layer is on map
-            if (!map.hasLayer(this.boundaryLayer)) {
+            if (this.boundaryLayer && !map.hasLayer(this.boundaryLayer)) {
                 this.boundaryLayer.addTo(map);
                 console.log('fetchBoundary: Added boundaryLayer to map');
             }

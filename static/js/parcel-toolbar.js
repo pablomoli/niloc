@@ -57,7 +57,10 @@ const ParcelToolbar = {
         if (!map) return;
 
         // Ensure boundary layer is visible
-        if (!map.hasLayer(window.ParcelBoundaries.boundaryLayer)) {
+        if (!window.ParcelBoundaries.boundaryLayer && typeof window.ParcelBoundaries.init === 'function') {
+            window.ParcelBoundaries.init(map);
+        }
+        if (window.ParcelBoundaries.boundaryLayer && !map.hasLayer(window.ParcelBoundaries.boundaryLayer)) {
             window.ParcelBoundaries.boundaryLayer.addTo(map);
         }
 
