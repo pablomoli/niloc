@@ -442,6 +442,7 @@
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Leaflet MarkerCluster (optional for clustering) -->
 <script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script defer src="{{ url_for('static', filename='js/admin/utils.js') }}?v={{ static_version }}"></script>
 <script defer src="{{ url_for('static', filename='js/marker-utils.js') }}?v={{ static_version }}"></script>
 <!-- Route Planner Loader (must load before map.js) -->
 <script>

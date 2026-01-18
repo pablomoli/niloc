@@ -153,9 +153,13 @@ SimpleModal.saveField = async function(field) {
                 const statusBadge = document.getElementById('status-badge');
                 const statusText = document.getElementById('status-view-text');
                 if (statusBadge) {
-                    const color = window.MarkerUtils?.EPIC_COLORS[newValue] || '#6c757d';
+                    const color = window.AdminUtils?.getStatusColor(newValue)
+                        || window.MarkerUtils?.EPIC_COLORS[newValue]
+                        || '#6c757d';
+                    const textClass = window.AdminUtils?.getTextColorClass(color) || 'tag-text-light';
                     statusBadge.style.background = color;
-                    statusBadge.textContent = newValue;
+                    statusBadge.classList.remove('tag-text-dark', 'tag-text-light');
+                    statusBadge.classList.add(textClass);
                 }
                 if (statusText) {
                     statusText.textContent = newValue;
@@ -230,4 +234,3 @@ SimpleModal.saveField = async function(field) {
         }
     }
 };
-

@@ -26,6 +26,11 @@ SimpleModal.show = function(job) {
  * Render the modal HTML.
  */
 SimpleModal.renderModal = function(job, femaLink) {
+    const statusColor = window.AdminUtils?.getStatusColor(job.status)
+        || window.MarkerUtils?.EPIC_COLORS[job.status]
+        || '#6c757d';
+    const statusTextClass = window.AdminUtils?.getTextColorClass(statusColor) || 'tag-text-light';
+    const statusDisplayName = window.MarkerUtils?.STATUS_NAMES[job.status] || job.status || 'Unknown Status';
     const modalHTML = `
         <div id="simpleJobModal" class="epic-modal-backdrop" onclick="if(event.target === this) SimpleModal.hide()">
             <!-- Modal Content -->
@@ -78,12 +83,12 @@ SimpleModal.renderModal = function(job, femaLink) {
                         <div>
                             <label class="epic-form-label">Status</label>
                             <div id="status-view" style="display: block;">
-                                <div class="epic-status-badge"
+                                <div class="epic-status-badge ${statusTextClass}"
                                      id="status-badge"
-                                     style="background: ${window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d'};"
+                                     style="background: ${statusColor};"
                                      onclick="SimpleModal.toggleEdit('status')"
                                      title="Click to edit">
-                                    <span id="status-view-text">${window.MarkerUtils?.STATUS_NAMES[job.status] || job.status || 'Unknown Status'}</span>
+                                    <span id="status-view-text">${statusDisplayName}</span>
                                     <i class="bi bi-pencil-square edit-icon"></i>
                                 </div>
                             </div>
@@ -407,4 +412,3 @@ SimpleModal.hide = function() {
 // Global exports for backward compatibility
 window.openJobModal = SimpleModal.show.bind(SimpleModal);
 window.closeJobModal = SimpleModal.hide.bind(SimpleModal);
-
