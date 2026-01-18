@@ -133,7 +133,7 @@
    ========================================================================== */
 
 .epic-modal-body {
-  padding: var(--space-lg);
+  padding: var(--space-md);
   overflow-y: auto;
   flex: 1;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
@@ -199,7 +199,7 @@
    ========================================================================== */
 
 .epic-form-section {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
   padding: var(--space-md);
   background: white;
   border-radius: var(--modal-radius-inner);
@@ -401,7 +401,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -593,7 +593,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -882,7 +882,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==========================================================================
@@ -929,6 +931,7 @@
       opacity: 0;
       transform: translateY(100%);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -944,6 +947,7 @@
       opacity: 1;
       transform: translateY(0);
     }
+
     to {
       opacity: 0;
       transform: translateY(100%);
@@ -982,7 +986,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -1218,8 +1222,13 @@ table.table input[type="checkbox"]:hover {
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Pagination styling */
@@ -1253,7 +1262,18 @@ table.table input[type="checkbox"]:hover {
    UTILITY CLASSES
    ========================================================================== */
 
-.font-mono { font-family: var(--font-mono); }
-.font-display { font-family: var(--font-display); }
-.text-epic-pink { color: var(--epic-pink); }
-.bg-epic-pink { background: var(--epic-pink); }
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-epic-pink {
+  color: var(--epic-pink);
+}
+
+.bg-epic-pink {
+  background: var(--epic-pink);
+}

@@ -52,6 +52,11 @@ function initializeApplication() {
     // Load POIs from server
     loadPois();
 
+    // Initialize parcel boundaries layer (shows at high zoom)
+    if (window.ParcelBoundaries) {
+        ParcelBoundaries.init(AppState.map);
+    }
+
     // Load route planner immediately so the tab is always visible
     if (window.RoutePlannerLoader && typeof window.RoutePlannerLoader.load === 'function') {
         window.RoutePlannerLoader.load().then(() => {

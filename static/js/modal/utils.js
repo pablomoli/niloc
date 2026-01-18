@@ -199,7 +199,7 @@ SimpleModal.showNotification = function(message, type = 'info') {
             notification.remove();
             style.remove();
         }, 300);
-    }, 3000);
+    }, 5000);
 };
 
 /**
@@ -251,3 +251,70 @@ SimpleModal.copyAddress = async function(address) {
     }
 };
 
+/**
+ * Show parcel boundary on the map.
+ * Fetches parcel geometry from API and displays it via ParcelBoundaries module.
+ */
+SimpleModal.showParcelBoundary = async function(jobNumber) {
+    const btn = document.getElementById('show-parcel-btn');
+    const btnText = document.getElementById('show-parcel-btn-text');
+
+    if (!window.ParcelBoundaries) {
+        SimpleModal.showNotification('Parcel boundaries module not available', 'error');
+        return;
+    }
+
+    if (!window.AppState?.map) {
+        SimpleModal.showNotification('Map not available', 'error');
+        return;
+    }
+
+    // Update button to show loading state
+    if (btn && btnText) {
+        btn.disabled = true;
+        btnText.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Loading...';
+    }
+
+    try {
+        const geometry = await window.ParcelBoundaries.fetchBoundary(jobNumber, window.AppState.map);
+
+        if (geometry) {
+            // Update button to show success
+            if (btn && btnText) {
+                btnText.textContent = 'Parcel Loaded';
+                btn.classList.remove('epic-btn-secondary');
+                btn.classList.add('epic-btn-success');
+            }
+
+            // Update currentJob with new geometry
+            if (this.currentJob && this.currentJob.job_number === jobNumber) {
+                this.currentJob.parcel_geometry = geometry;
+            }
+
+            // Zoom to parcel if not already at high zoom
+            const map = window.AppState.map;
+            if (map.getZoom() < window.ParcelBoundaries.MIN_ZOOM) {
+                const job = window.AppState.jobs?.find(j => j.job_number === jobNumber);
+                if (job && job.lat && job.long) {
+                    map.setView([parseFloat(job.lat), parseFloat(job.long)], window.ParcelBoundaries.MIN_ZOOM);
+                }
+            }
+
+            SimpleModal.showNotification('Parcel boundary loaded', 'success');
+        } else {
+            throw new Error('No geometry returned');
+        }
+
+    } catch (error) {
+        console.error('Failed to fetch parcel boundary:', error);
+
+        // Reset button state
+        if (btn && btnText) {
+            btn.disabled = false;
+            btnText.textContent = 'Show Parcel Boundary';
+        }
+
+        const errorMessage = error.message || 'Failed to fetch parcel boundary';
+        SimpleModal.showNotification(errorMessage, 'error');
+    }
+};

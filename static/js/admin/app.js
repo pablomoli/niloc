@@ -165,7 +165,14 @@ window.adminAppComponent = function() {
       status: "",
       due_date: "",
       notes: "",
+      links: [],
     },
+    // Link form state for edit modal
+    newLink: {
+      display_name: "",
+      url: "",
+    },
+    showLinkForm: false,
     newJob: {
       job_number: "",
       client: "",
@@ -1312,10 +1319,14 @@ window.adminAppComponent = function() {
     },
 
     // Tag helpers
-    openJobTags(job) {
+    async openJobTags(job) {
       this.jobTagsModal.job = job;
       this.jobTagsModal.input = '';
       this.tagSuggestions = [];
+      // Ensure all tags are loaded for autocomplete
+      if (!this.tagsLoaded || this.tags.length === 0) {
+        await this.loadTags(false);
+      }
       fetch(`/api/jobs/${job.job_number}/tags`).then(r => r.json()).then(ts => { this.jobTagsModal.job.tags = ts; this.syncJobRowTags(job, ts); });
       document.getElementById('jobTagsModal').classList.remove('hidden');
     },
@@ -1478,8 +1489,73 @@ window.adminAppComponent = function() {
         due_date: job.due_date || "",
         notes: job.notes || "",
         is_parcel_job: !!job.is_parcel_job,
+        links: Array.isArray(job.links) ? [...job.links] : [],
       };
+      this.newLink = { display_name: "", url: "" };
+      this.showLinkForm = false;
       document.getElementById("editJobModal").classList.remove("hidden");
+    },
+
+    async addJobLink() {
+      const displayName = (this.newLink.display_name || "").trim();
+      const url = (this.newLink.url || "").trim();
+
+      if (!displayName) {
+        Alpine.store("notifications").add("Display name is required", "error");
+        return;
+      }
+      if (!url) {
+        Alpine.store("notifications").add("URL is required", "error");
+        return;
+      }
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        Alpine.store("notifications").add("URL must start with http:// or https://", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/jobs/${this.editingJob.job_number}/links`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, display_name: displayName }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to add link");
+
+        this.editingJob.links = data.links || [];
+        this.newLink = { display_name: "", url: "" };
+        this.showLinkForm = false;
+
+        if (window.ApiCache && typeof window.ApiCache.invalidateMatching === "function") {
+          window.ApiCache.invalidateMatching("/api/jobs");
+        }
+
+        Alpine.store("notifications").add("Link added", "success");
+      } catch (error) {
+        console.error("Add link error:", error);
+        Alpine.store("notifications").add(error.message || "Failed to add link", "error");
+      }
+    },
+
+    async removeJobLink(index) {
+      try {
+        const response = await fetch(`/api/jobs/${this.editingJob.job_number}/links/${index}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to remove link");
+
+        this.editingJob.links = data.links || [];
+
+        if (window.ApiCache && typeof window.ApiCache.invalidateMatching === "function") {
+          window.ApiCache.invalidateMatching("/api/jobs");
+        }
+
+        Alpine.store("notifications").add("Link removed", "success");
+      } catch (error) {
+        console.error("Remove link error:", error);
+        Alpine.store("notifications").add(error.message || "Failed to remove link", "error");
+      }
     },
 
     async deleteJob(job) {

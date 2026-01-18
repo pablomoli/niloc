@@ -94,4 +94,4 @@ def geocode_address(address):
 # Import all route modules to register them with the blueprint
 # Note: Import order matters - search must be imported before jobs since jobs uses search utilities
 from api import search  # Must be first - provides utilities used by jobs
-from api import jobs, tags, fieldwork, users, geocoding, routing, pois
+from api import jobs, tags, fieldwork, users, geocoding, routing, pois, schedules

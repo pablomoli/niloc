@@ -1,0 +1,429 @@
+{% extends 'base.html' %}
+{% block title %}Daily Agenda - Epic Map{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ static_version }}">
+<style>
+  .agenda-card {
+    transition: all 0.2s ease;
+  }
+  .agenda-card:active {
+    transform: scale(0.98);
+  }
+  .fieldwork-form {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+  .fieldwork-form.open {
+    max-height: 500px;
+  }
+</style>
+{% endblock %}
+
+{% block body_attrs %}x-data="agendaApp()" data-theme="epicmap" class="bg-base-100 min-h-screen"{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<header class="app-header shadow-sm sticky top-0 z-50 bg-base-100">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
+      <img src="{{ url_for('static', filename='data/EMS-llc-4.png') }}" alt="EMS Logo" class="w-10 h-10 flex-shrink-0">
+      <div class="flex flex-col">
+        <span class="font-sans font-bold text-[20px] text-epic-pink tracking-[-0.5px] leading-tight">EMS</span>
+        <span class="font-sans font-normal text-[10px] text-epic-gray tracking-[0.5px] uppercase leading-tight">Daily Agenda</span>
+      </div>
+    </div>
+  </div>
+  <nav class="app-nav">
+    <a href="/" class="app-nav-link">
+      <i class="bi bi-map"></i>
+      <span>Map</span>
+    </a>
+    <a href="/admin/" class="app-nav-link">
+      <i class="bi bi-speedometer2"></i>
+      <span>Admin</span>
+    </a>
+  </nav>
+</header>
+
+<main class="container mx-auto px-4 py-4 max-w-2xl">
+  <!-- Date Selector -->
+  <div class="flex items-center justify-between mb-4">
+    <button class="btn btn-ghost btn-sm" @click="prevDay()">
+      <i class="bi bi-chevron-left text-lg"></i>
+    </button>
+    <div class="flex items-center gap-2">
+      <input type="date" class="input input-bordered input-sm" x-model="selectedDate" @change="loadAgenda()">
+      <button class="btn btn-outline btn-sm" @click="goToToday()">Today</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" @click="nextDay()">
+      <i class="bi bi-chevron-right text-lg"></i>
+    </button>
+  </div>
+
+  <!-- Day Label -->
+  <div class="text-center mb-4">
+    <h2 class="text-xl font-semibold" x-text="dayLabel"></h2>
+    <p class="text-sm text-gray-500">
+      <span x-text="schedules.length"></span> job<span x-text="schedules.length !== 1 ? 's' : ''"></span> scheduled
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div x-show="loading" class="flex justify-center py-8">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+
+  <!-- No Schedules -->
+  <div x-show="!loading && schedules.length === 0" class="text-center py-12 text-gray-500">
+    <i class="bi bi-calendar-x text-5xl mb-4 block"></i>
+    <p>No jobs scheduled for this day</p>
+  </div>
+
+  <!-- Schedule List -->
+  <div x-show="!loading && schedules.length > 0" class="space-y-4">
+    <template x-for="schedule in schedules" :key="schedule.id">
+      <div class="agenda-card bg-base-200 rounded-lg border border-base-300 overflow-hidden">
+        <!-- Job Header -->
+        <div class="p-4 cursor-pointer" @click="toggleForm(schedule.id)">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="badge badge-primary badge-sm" x-show="schedule.route_order">
+                  #<span x-text="schedule.route_order"></span>
+                </span>
+                <span class="font-bold text-lg text-primary" x-text="schedule.job_number"></span>
+              </div>
+              <div class="text-sm text-gray-600 mt-1" x-text="schedule.client"></div>
+              <div class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <i class="bi bi-geo-alt"></i>
+                <span x-text="schedule.address || 'No address'"></span>
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <div class="text-sm text-gray-500" x-show="schedule.start_time">
+                <i class="bi bi-clock"></i>
+                <span x-text="formatTime(schedule.start_time)"></span>
+              </div>
+              <div class="text-sm text-gray-500" x-show="schedule.estimated_duration">
+                <i class="bi bi-hourglass-split"></i>
+                <span x-text="schedule.estimated_duration + 'h'"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2 mt-3">
+            <a :href="getGoogleMapsUrl(schedule)"
+               target="_blank"
+               class="btn btn-sm btn-outline flex-1"
+               @click.stop>
+              <i class="bi bi-signpost"></i> Navigate
+            </a>
+            <button class="btn btn-sm btn-primary !text-white flex-1"
+                    @click.stop="toggleForm(schedule.id)">
+              <i class="bi bi-clock-history"></i> Log Time
+            </button>
+          </div>
+        </div>
+
+        <!-- Fieldwork Form (Expandable) -->
+        <div class="fieldwork-form border-t border-base-300 bg-base-100"
+             :class="{'open': openForms[schedule.id]}">
+          <div class="p-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text text-sm">Work Date</span>
+                </label>
+                <input type="date" class="input input-bordered input-sm"
+                       x-model="formData[schedule.id].work_date">
+              </div>
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text text-sm">Time (H:MM or range)</span>
+                </label>
+                <input type="text" class="input input-bordered input-sm"
+                       :placeholder="schedule.estimated_duration ? schedule.estimated_duration + ':00' : '2:00'"
+                       x-model="formData[schedule.id].total_time">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text text-sm">Crew</span>
+                </label>
+                <input type="text" class="input input-bordered input-sm"
+                       placeholder="Crew name"
+                       x-model="formData[schedule.id].crew">
+              </div>
+              <div class="form-control">
+                <label class="label py-1">
+                  <span class="label-text text-sm">Drone Card</span>
+                </label>
+                <input type="text" class="input input-bordered input-sm"
+                       placeholder="Optional"
+                       x-model="formData[schedule.id].drone_card">
+              </div>
+            </div>
+            <div class="form-control mt-3">
+              <label class="label py-1">
+                <span class="label-text text-sm">Notes</span>
+              </label>
+              <textarea class="textarea textarea-bordered textarea-sm" rows="2"
+                        placeholder="Work notes..."
+                        x-model="formData[schedule.id].notes"></textarea>
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+              <button class="btn btn-sm btn-ghost" @click="toggleForm(schedule.id)">Cancel</button>
+              <button class="btn btn-sm btn-success !text-white"
+                      @click="submitFieldwork(schedule)"
+                      :disabled="submitting[schedule.id] || !formData[schedule.id].total_time">
+                <span class="loading loading-spinner loading-xs" x-show="submitting[schedule.id]"></span>
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submitted Badge -->
+        <div x-show="submitted[schedule.id]"
+             class="bg-success/10 text-success text-center py-2 text-sm font-medium">
+          <i class="bi bi-check-circle"></i> Time logged successfully
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Batch Submit All -->
+  <div x-show="!loading && schedules.length > 0" class="mt-6 pb-6">
+    <button class="btn btn-primary !text-white w-full"
+            @click="submitAllFieldwork()"
+            :disabled="batchSubmitting || !hasAnyFormData()">
+      <span class="loading loading-spinner loading-sm" x-show="batchSubmitting"></span>
+      <i class="bi bi-check2-all" x-show="!batchSubmitting"></i>
+      Submit All Time Entries
+    </button>
+    <p class="text-xs text-center text-gray-500 mt-2">
+      Submits time entries for all jobs with filled time fields
+    </p>
+  </div>
+</main>
+
+<!-- Toast Notifications -->
+<div class="toast toast-end toast-bottom z-50">
+  <template x-for="toast in toasts" :key="toast.id">
+    <div class="alert" :class="'alert-' + toast.type">
+      <span x-text="toast.message"></span>
+    </div>
+  </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function agendaApp() {
+  return {
+    selectedDate: '{{ selected_date }}',
+    schedules: [],
+    loading: true,
+    openForms: {},
+    formData: {},
+    submitting: {},
+    submitted: {},
+    batchSubmitting: false,
+    toasts: [],
+
+    get dayLabel() {
+      const d = new Date(this.selectedDate + 'T12:00:00');
+      const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+      return d.toLocaleDateString('en-US', options);
+    },
+
+    init() {
+      this.loadAgenda();
+    },
+
+    async loadAgenda() {
+      this.loading = true;
+      try {
+        const resp = await fetch(`/api/schedules?date=${this.selectedDate}`);
+        if (!resp.ok) throw new Error('Failed to load agenda');
+        this.schedules = await resp.json();
+
+        // Initialize form data for each schedule
+        this.formData = {};
+        this.openForms = {};
+        this.submitting = {};
+        this.submitted = {};
+        for (const s of this.schedules) {
+          this.formData[s.id] = {
+            work_date: this.selectedDate,
+            total_time: '',
+            crew: '',
+            drone_card: '',
+            notes: ''
+          };
+        }
+      } catch (e) {
+        console.error('Load agenda error:', e);
+        this.showToast('Failed to load agenda', 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    prevDay() {
+      const d = new Date(this.selectedDate);
+      d.setDate(d.getDate() - 1);
+      this.selectedDate = d.toISOString().slice(0, 10);
+      this.loadAgenda();
+    },
+
+    nextDay() {
+      const d = new Date(this.selectedDate);
+      d.setDate(d.getDate() + 1);
+      this.selectedDate = d.toISOString().slice(0, 10);
+      this.loadAgenda();
+    },
+
+    goToToday() {
+      this.selectedDate = new Date().toISOString().slice(0, 10);
+      this.loadAgenda();
+    },
+
+    toggleForm(scheduleId) {
+      this.openForms[scheduleId] = !this.openForms[scheduleId];
+    },
+
+    formatTime(timeStr) {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${m} ${ampm}`;
+    },
+
+    getGoogleMapsUrl(schedule) {
+      if (schedule.lat && schedule.lng) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${schedule.lat},${schedule.lng}`;
+      }
+      if (schedule.address) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(schedule.address)}`;
+      }
+      return '#';
+    },
+
+    async submitFieldwork(schedule) {
+      const form = this.formData[schedule.id];
+      if (!form.total_time) {
+        this.showToast('Please enter time worked', 'warning');
+        return;
+      }
+
+      this.submitting[schedule.id] = true;
+      try {
+        const resp = await fetch(`/api/jobs/${schedule.job_number}/fieldwork`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            work_date: form.work_date,
+            total_time: form.total_time,
+            crew: form.crew || null,
+            drone_card: form.drone_card || null,
+            notes: form.notes || null
+          })
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || 'Failed to submit');
+        }
+
+        this.submitted[schedule.id] = true;
+        this.openForms[schedule.id] = false;
+        this.showToast(`Time logged for ${schedule.job_number}`, 'success');
+      } catch (e) {
+        console.error('Submit fieldwork error:', e);
+        this.showToast(e.message, 'error');
+      } finally {
+        this.submitting[schedule.id] = false;
+      }
+    },
+
+    hasAnyFormData() {
+      for (const id in this.formData) {
+        if (this.formData[id].total_time && !this.submitted[id]) {
+          return true;
+        }
+      }
+      return false;
+    },
+
+    async submitAllFieldwork() {
+      const entries = [];
+      for (const schedule of this.schedules) {
+        const form = this.formData[schedule.id];
+        if (form.total_time && !this.submitted[schedule.id]) {
+          entries.push({
+            job_number: schedule.job_number,
+            work_date: form.work_date,
+            total_time: form.total_time,
+            crew: form.crew || null,
+            drone_card: form.drone_card || null,
+            notes: form.notes || null
+          });
+        }
+      }
+
+      if (entries.length === 0) {
+        this.showToast('No time entries to submit', 'warning');
+        return;
+      }
+
+      this.batchSubmitting = true;
+      try {
+        const resp = await fetch('/api/fieldwork/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries })
+        });
+
+        const result = await resp.json();
+
+        if (result.created && result.created.length > 0) {
+          for (const item of result.created) {
+            // Find schedule by job_number
+            const schedule = this.schedules.find(s => s.job_number === item.job_number);
+            if (schedule) {
+              this.submitted[schedule.id] = true;
+              this.openForms[schedule.id] = false;
+            }
+          }
+          this.showToast(`${result.created.length} time entries submitted`, 'success');
+        }
+
+        if (result.errors && result.errors.length > 0) {
+          this.showToast(`${result.errors.length} entries failed`, 'error');
+        }
+      } catch (e) {
+        console.error('Batch submit error:', e);
+        this.showToast('Batch submit failed', 'error');
+      } finally {
+        this.batchSubmitting = false;
+      }
+    },
+
+    showToast(message, type = 'info') {
+      const id = Date.now();
+      this.toasts.push({ id, message, type });
+      setTimeout(() => {
+        this.toasts = this.toasts.filter(t => t.id !== id);
+      }, 5000);
+    }
+  };
+}
+</script>
+{% endblock %}

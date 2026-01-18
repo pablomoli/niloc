@@ -64,7 +64,7 @@ def create_tag():
     color = (data.get("color") or "#007bff").strip() or "#007bff"
     if not name:
         return jsonify({"error": "Tag name is required"}), 400
-    existing = Tag.query.filter_by(name=name).first()
+    existing = Tag.query.filter(func.lower(Tag.name) == name.lower()).first()
     if existing:
         return jsonify({"error": "Tag name already exists"}), 409
     try:
@@ -91,7 +91,7 @@ def update_tag(tag_id):
         new_name = (data.get("name") or "").strip()
         if not new_name:
             return jsonify({"error": "Tag name cannot be empty"}), 400
-        exists = Tag.query.filter(Tag.id != tag_id, Tag.name == new_name).first()
+        exists = Tag.query.filter(Tag.id != tag_id, func.lower(Tag.name) == new_name.lower()).first()
         if exists:
             return jsonify({"error": "Tag name already exists"}), 409
         tag.name = new_name
@@ -161,7 +161,7 @@ def add_tag_to_job(job_number):
     if tag_id:
         tag = Tag.query.get(tag_id)
     elif tag_name:
-        tag = Tag.query.filter_by(name=tag_name).first()
+        tag = Tag.query.filter(func.lower(Tag.name) == tag_name.lower()).first()
         if not tag:
             # Only admin may create-on-the-fly
             if session.get("role") == "admin":

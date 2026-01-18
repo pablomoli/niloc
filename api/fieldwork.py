@@ -284,3 +284,100 @@ def delete_fieldwork(fieldwork_id):
         db.session.rollback()
         return jsonify({"error": "Database error occurred"}), 500
 
+
+@api_bp.route("/fieldwork/batch", methods=["POST"])
+@login_required
+def batch_create_fieldwork():
+    """
+    POST /api/fieldwork/batch - Create multiple fieldwork entries at once.
+    Body: {
+        entries: [
+            { job_number: required, work_date: required, total_time: required, crew: optional, notes: optional },
+            ...
+        ]
+    }
+    """
+    data = request.get_json()
+    if not data or not data.get("entries"):
+        return jsonify({"error": "entries array required"}), 400
+
+    entries = data["entries"]
+    if not isinstance(entries, list) or len(entries) == 0:
+        return jsonify({"error": "entries must be a non-empty array"}), 400
+
+    results = []
+    errors = []
+
+    for i, entry in enumerate(entries):
+        job_number = entry.get("job_number")
+        if not job_number:
+            errors.append({"index": i, "error": "job_number required"})
+            continue
+
+        job = Job.active().filter_by(job_number=job_number).first()
+        if not job:
+            errors.append({"index": i, "error": f"Job {job_number} not found"})
+            continue
+
+        if not entry.get("work_date"):
+            errors.append({"index": i, "error": "work_date required"})
+            continue
+
+        if not entry.get("total_time"):
+            errors.append({"index": i, "error": "total_time required"})
+            continue
+
+        try:
+            work_date = datetime.strptime(entry["work_date"], "%Y-%m-%d").date()
+
+            total_time, error = parse_time_input(entry["total_time"])
+            if error:
+                errors.append({"index": i, "error": error})
+                continue
+
+            if total_time <= 0:
+                errors.append({"index": i, "error": "total_time must be positive"})
+                continue
+
+            fieldwork = FieldWork(
+                job_id=job.id,
+                work_date=work_date,
+                total_time=round(total_time, 2),
+                crew=(entry.get("crew") or "").strip() or None,
+                drone_card=(entry.get("drone_card") or "").strip() or None,
+                notes=(entry.get("notes") or "").strip() or None,
+            )
+
+            db.session.add(fieldwork)
+
+            # Update job aggregates
+            job.visited += 1
+            job.total_time_spent += fieldwork.total_time
+
+            results.append({
+                "index": i,
+                "job_number": job_number,
+                "fieldwork": fieldwork.to_dict()
+            })
+
+        except ValueError as e:
+            errors.append({"index": i, "error": f"Invalid date format: {e}"})
+            continue
+        except Exception as e:
+            errors.append({"index": i, "error": str(e)})
+            continue
+
+    if results:
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Batch fieldwork commit error: {e}", exc_info=True)
+            return jsonify({"error": "Database error during commit"}), 500
+
+    return jsonify({
+        "message": f"Created {len(results)} fieldwork entries",
+        "created": results,
+        "errors": errors
+    }), 201 if results else 400
+

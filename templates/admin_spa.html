@@ -1760,6 +1760,53 @@
                   rows="3"
                 ></textarea>
               </div>
+
+              <!-- Links Section -->
+              <div class="mb-3">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="form-label mb-0">Links</label>
+                  <button type="button" class="btn btn-xs btn-primary" @click="showLinkForm = !showLinkForm">
+                    <i class="bi" :class="showLinkForm ? 'bi-x-lg' : 'bi-plus-circle'"></i>
+                    <span x-text="showLinkForm ? 'Cancel' : 'Add Link'"></span>
+                  </button>
+                </div>
+
+                <!-- Link List -->
+                <div class="space-y-2">
+                  <template x-if="!editingJob.links || editingJob.links.length === 0">
+                    <p class="text-sm text-gray-400 italic">No links added</p>
+                  </template>
+                  <template x-for="(link, index) in editingJob.links" :key="index">
+                    <div class="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
+                      <a :href="link.url" target="_blank" rel="noopener noreferrer"
+                         class="flex-1 flex items-center gap-2 text-primary hover:underline truncate">
+                        <i class="bi bi-link-45deg"></i>
+                        <span x-text="link.display_name" class="truncate"></span>
+                        <i class="bi bi-box-arrow-up-right text-xs opacity-60"></i>
+                      </a>
+                      <button type="button" class="btn btn-xs btn-ghost text-error" @click="removeJobLink(index)" title="Remove link">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Add Link Form -->
+                <div x-show="showLinkForm" x-transition class="mt-3 p-3 bg-base-200 rounded-lg space-y-2">
+                  <input type="text" class="input input-bordered input-sm w-full"
+                         placeholder="Display name (e.g., Property Appraiser)"
+                         x-model="newLink.display_name" />
+                  <input type="url" class="input input-bordered input-sm w-full"
+                         placeholder="https://..."
+                         x-model="newLink.url" />
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-xs btn-ghost" @click="showLinkForm = false; newLink = {display_name: '', url: ''}">Cancel</button>
+                    <button type="button" class="btn btn-xs btn-success" @click="addJobLink()">
+                      <i class="bi bi-check-lg"></i> Add
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
               <button

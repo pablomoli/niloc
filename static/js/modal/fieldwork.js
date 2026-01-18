@@ -124,6 +124,12 @@ SimpleModal.showAddFieldworkForm = function() {
         existingForm.remove();
     }
 
+    // Hide empty state while form is visible
+    const emptyState = document.querySelector('#fieldwork-list .epic-empty-state');
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+
     timeSection.insertAdjacentHTML('beforeend', formHTML);
 };
 
@@ -134,6 +140,14 @@ SimpleModal.hideAddFieldworkForm = function() {
     const form = document.getElementById('fieldwork-form');
     if (form) {
         form.remove();
+    }
+
+    // Restore empty state visibility if no entries exist
+    if (this.fieldworkData.length === 0) {
+        const emptyState = document.querySelector('#fieldwork-list .epic-empty-state');
+        if (emptyState) {
+            emptyState.style.display = '';
+        }
     }
 };
 

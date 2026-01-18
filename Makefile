@@ -29,10 +29,14 @@ install:
 build:
 	npm run build
 
-# Run development server
+# Run development server (auto-finds available port if default is taken)
 run: build
 	@HOST=$${FLASK_RUN_HOST:-$${FLASK_HOST:-127.0.0.1}}; \
 	 PORT=$${FLASK_RUN_PORT:-$${FLASK_PORT:-5000}}; \
+	 while lsof -i :$$PORT >/dev/null 2>&1; do \
+	   echo "Port $$PORT is in use, trying $$((PORT + 1))..."; \
+	   PORT=$$((PORT + 1)); \
+	 done; \
 	 echo "Starting dev server at http://$${HOST}:$${PORT}"; \
 	 . venv/bin/activate && FLASK_RUN_HOST=$${HOST} FLASK_RUN_PORT=$${PORT} flask --app app run --reload
 

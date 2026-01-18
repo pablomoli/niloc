@@ -229,6 +229,15 @@ def logout():
     return redirect("/login")
 
 
+@app.route("/agenda")
+@login_required
+def agenda():
+    """Daily agenda view for field crews to see scheduled jobs and log fieldwork."""
+    from datetime import date
+    selected_date = request.args.get("date", date.today().isoformat())
+    return render_template("agenda.html", selected_date=selected_date)
+
+
 # =============================================================================
 # ERROR HANDLERS - Added for better error handling
 # =============================================================================
