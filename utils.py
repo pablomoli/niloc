@@ -109,7 +109,9 @@ def get_county_from_coords(lat, lon):
 def get_brevard_property_link(address):
     try:
         url = "https://www.bcpao.us/api/records"
-        res = requests.get(url, params={"address": address}, timeout=10)
+        # Brevard blocks python-requests User-Agent
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        res = requests.get(url, params={"address": address}, headers=headers, timeout=10)
         res.raise_for_status()
         data = res.json()
         if data:
@@ -189,7 +191,9 @@ def geocode_brevard_parcel(tax_account: str):
             'f': 'json'
         }
 
-        response = requests.get(url, params=params, timeout=10)
+        # Brevard blocks python-requests User-Agent
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
 

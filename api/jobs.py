@@ -766,7 +766,9 @@ def _query_parcel_by_address(address, county):
 
     try:
         logger.info(f"Making address query to: {url}")
-        response = requests.get(url, params=params, timeout=30)
+        # Brevard blocks python-requests User-Agent
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        response = requests.get(url, params=params, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
 
@@ -827,8 +829,10 @@ def _query_parcel_by_coordinates(lat, lng, county):
 
     try:
         # Timeout increased to 30s as Orange County endpoint can be slow
+        # Brevard blocks python-requests User-Agent
         logger.info(f"Making spatial query to: {url}")
-        response = requests.get(url, params=params, timeout=30)
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        response = requests.get(url, params=params, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
 
