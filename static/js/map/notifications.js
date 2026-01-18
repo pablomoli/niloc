@@ -48,7 +48,7 @@ function showNotification(message, type = 'info') {
         }, 300);
     };
 
-    const timeout = setTimeout(removeNotification, 3000);
+    const timeout = setTimeout(removeNotification, 4000);
 
     notification.addEventListener('click', () => {
         clearTimeout(timeout);

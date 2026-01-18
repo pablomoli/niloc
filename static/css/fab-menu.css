@@ -112,6 +112,14 @@
   background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
 }
 
+/* Parcel Boundaries - Purple */
+.toolbar-btn.parcel-btn {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+}
+.toolbar-btn.parcel-btn:hover {
+  background: linear-gradient(135deg, #a569bd 0%, #9b59b6 100%);
+}
+
 /* Map Settings/Layers - Indigo */
 .toolbar-btn.layers-btn {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -165,6 +173,9 @@
 }
 .left-toolbar.menu-open .toolbar-btn.static-btn:nth-child(3) {
   transition-delay: 60ms;
+}
+.left-toolbar.menu-open .toolbar-btn.static-btn:nth-child(4) {
+  transition-delay: 90ms;
 }
 
 /* Hover override for static buttons when closed (still allow hover effect) */

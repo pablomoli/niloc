@@ -59,6 +59,7 @@ class Job(db.Model):
     # Parcel geocoding fields
     is_parcel_job = db.Column(db.Boolean, default=False)
     parcel_data = db.Column(db.JSON, nullable=True)
+    parcel_geometry = db.Column(db.JSON, nullable=True)  # Cached boundary rings
 
     # Timestamps
     created_at = db.Column(
@@ -232,6 +233,7 @@ class Job(db.Model):
             "total_time_spent": self.total_time_spent,
             "is_parcel_job": self.is_parcel_job,
             "parcel_data": self.parcel_data,
+            "parcel_geometry": self.parcel_geometry,
             "links": self.links or [],
             "created_at": created_at_iso,
             "deleted_at": deleted_at_iso,
@@ -387,4 +389,63 @@ class POI(db.Model):
             A string in the format "<POI {name}>" where {name} is the POI's name.
         """
         return f"<POI {self.name}>"
+
+
+class Schedule(db.Model):
+    """
+    Represents a scheduled job visit for a specific date and time block.
+    A job can have multiple scheduled visits (return visits allowed).
+    """
+
+    __tablename__ = "schedules"
+
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(
+        db.Integer, db.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    scheduled_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=True)  # Time block start
+    end_time = db.Column(db.Time, nullable=True)  # Time block end
+    estimated_duration = db.Column(db.Float, nullable=True)  # Hours
+    route_order = db.Column(db.Integer, nullable=True)  # Position in day's route
+    notes = db.Column(db.Text)
+    created_at = db.Column(
+        db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    # Relationships
+    job = db.relationship(
+        "Job",
+        backref=db.backref("schedules", lazy="dynamic", cascade="all, delete-orphan"),
+    )
+    created_by = db.relationship("User", backref="created_schedules")
+
+    def to_dict(self):
+        """Serialize Schedule to dictionary."""
+        return {
+            "id": self.id,
+            "job_id": self.job_id,
+            "job_number": self.job.job_number if self.job else None,
+            "client": self.job.client if self.job else None,
+            "address": self.job.address if self.job else None,
+            "lat": self.job.lat if self.job else None,
+            "lng": self.job.long if self.job else None,
+            "scheduled_date": self.scheduled_date.isoformat() if self.scheduled_date else None,
+            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "estimated_duration": self.estimated_duration,
+            "route_order": self.route_order,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_by_id": self.created_by_id,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __repr__(self):
+        job_num = self.job.job_number if self.job else "?"
+        return f"<Schedule {job_num} on {self.scheduled_date}>"
 

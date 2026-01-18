@@ -23,6 +23,23 @@ MAX_SEARCH_RESULTS = 500  # Limit search results to prevent huge responses
 MAX_BULK_OPERATION_SIZE = 500  # Maximum jobs per bulk update/delete operation
 
 
+def _extract_parcel_geometry(parcel_data):
+    """
+    Extract parcel boundary geometry from parcel_data if available.
+    The geometry is stored in parcel_data.raw_response.geometry from the geocoding API.
+    """
+    if not parcel_data:
+        return None
+    try:
+        raw_response = parcel_data.get("raw_response", {})
+        geometry = raw_response.get("geometry")
+        if geometry and geometry.get("rings"):
+            return geometry
+    except (AttributeError, TypeError):
+        pass
+    return None
+
+
 @api_bp.route("/jobs", methods=["GET"])
 @login_required
 @with_db_retry(max_retries=3, delay=0.5)
@@ -394,6 +411,7 @@ def create_job():
         "total_time_spent": 0.0,
         "is_parcel_job": data.get("is_parcel_job", False),
         "parcel_data": data.get("parcel_data", None),
+        "parcel_geometry": _extract_parcel_geometry(data.get("parcel_data")),
         "lat": str(lat) if lat else None,
         "long": str(lng) if lng else None,
         "county": county,
@@ -625,6 +643,212 @@ def promote_parcel_to_address(job_number: str):
         db.session.rollback()
         logger.error(f"Promote job error: {e}", exc_info=True)
         return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/parcel-geometry", methods=["GET"])
+@login_required
+def get_parcel_geometry(job_number):
+    """
+    GET /api/jobs/<job_number>/parcel-geometry - Fetch and cache parcel boundary geometry.
+
+    For parcel jobs: Re-fetches geometry using stored parcel_id/tax_account.
+    For address jobs: Queries parcel layer by coordinates to find containing parcel.
+
+    Returns cached geometry if available, otherwise fetches and caches it.
+    Use ?refresh=true to force re-fetch even if cached.
+    """
+    from utils import geocode_orange_parcel, geocode_brevard_parcel
+
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    refresh = request.args.get("refresh", "").lower() == "true"
+
+    # Return cached geometry if available and not forcing refresh
+    if job.parcel_geometry and not refresh:
+        return jsonify({
+            "job_number": job_number,
+            "geometry": job.parcel_geometry,
+            "cached": True
+        })
+
+    geometry = None
+    county = (job.county or "").lower()
+
+    logger.info(f"Fetching parcel geometry for job {job_number}: is_parcel_job={job.is_parcel_job}, county={county}, lat={job.lat}, lng={job.long}")
+
+    try:
+        if job.is_parcel_job and job.parcel_data:
+            # For parcel jobs, use the stored parcel_id/tax_account
+            parcel_data = job.parcel_data
+            if county == "orange" and parcel_data.get("parcel_id"):
+                result = geocode_orange_parcel(parcel_data["parcel_id"])
+                if result and result.get("geometry"):
+                    geometry = result["geometry"]
+            elif county == "brevard" and parcel_data.get("tax_account"):
+                result = geocode_brevard_parcel(parcel_data["tax_account"])
+                if result and result.get("geometry"):
+                    geometry = result["geometry"]
+        else:
+            # For address jobs, try address-based lookup first, then fall back to coordinates
+            if job.address and county:
+                logger.info(f"Querying parcel by address for job: address={job.address}, county={county}")
+                geometry = _query_parcel_by_address(job.address, county)
+
+            # Fall back to coordinate query if address lookup failed
+            if not geometry and job.lat and job.long:
+                lat = float(job.lat)
+                lng = float(job.long)
+                logger.info(f"Falling back to coordinate query: lat={lat}, lng={lng}, county={county}")
+                geometry = _query_parcel_by_coordinates(lat, lng, county)
+
+            if not geometry:
+                logger.warning(f"Job {job_number} - no parcel found by address or coordinates")
+
+        if geometry:
+            # Cache the geometry
+            job.parcel_geometry = geometry
+            db.session.commit()
+            return jsonify({
+                "job_number": job_number,
+                "geometry": geometry,
+                "cached": False
+            })
+        else:
+            return jsonify({"error": "Could not fetch parcel geometry"}), 404
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Parcel geometry fetch error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch parcel geometry"}), 500
+
+
+def _query_parcel_by_address(address, county):
+    """
+    Query parcel layer by address to find the matching parcel.
+    Uses ArcGIS query with SITUS/address field.
+    """
+    import requests
+
+    if not address:
+        return None
+
+    # Clean address for query - extract just the street address part
+    # Remove city, state, zip if present
+    address_parts = address.split(',')
+    street_address = address_parts[0].strip().upper()
+
+    logger.info(f"Querying parcel by address: '{street_address}' in {county}")
+
+    if county == "orange":
+        url = "https://ocgis4.ocfl.net/arcgis/rest/services/Public_Dynamic/MapServer/216/query"
+        # Query SITUS field which contains the address
+        params = {
+            "where": f"SITUS LIKE '%{street_address}%'",
+            "outFields": "PARCEL,SITUS",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "json"
+        }
+    elif county == "brevard":
+        url = "https://www.bcpao.us/arcgis/rest/services/Brevard_Detailed_Dynamic/MapServer/24/query"
+        params = {
+            "where": f"Address LIKE '%{street_address}%'",
+            "outFields": "TaxAcct,Address",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "json"
+        }
+    else:
+        logger.warning(f"Unsupported county for address query: {county}")
+        return None
+
+    try:
+        logger.info(f"Making address query to: {url}")
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        feature_count = len(data.get("features", []))
+        logger.info(f"Address query returned {feature_count} features")
+
+        if data.get("features") and len(data["features"]) > 0:
+            feature = data["features"][0]
+            geometry = feature.get("geometry")
+            if geometry and geometry.get("rings"):
+                logger.info(f"Found parcel geometry by address with {len(geometry['rings'])} rings")
+                return {"type": "polygon", "rings": geometry["rings"]}
+            else:
+                logger.warning(f"Feature found but no geometry rings")
+        else:
+            logger.warning(f"No features found for address '{street_address}'")
+    except Exception as e:
+        logger.error(f"Parcel address query error: {e}", exc_info=True)
+
+    return None
+
+
+def _query_parcel_by_coordinates(lat, lng, county):
+    """
+    Query parcel layer by coordinates to find the containing parcel.
+    Uses ArcGIS spatial query with point geometry.
+    """
+    import requests
+
+    logger.info(f"Querying parcel by coordinates: lat={lat}, lng={lng}, county={county}")
+
+    if county == "orange":
+        url = "https://ocgis4.ocfl.net/arcgis/rest/services/Public_Dynamic/MapServer/216/query"
+        params = {
+            "geometry": f"{lng},{lat}",
+            "geometryType": "esriGeometryPoint",
+            "spatialRel": "esriSpatialRelIntersects",
+            "outFields": "PARCEL,SITUS",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "json"
+        }
+    elif county == "brevard":
+        url = "https://www.bcpao.us/arcgis/rest/services/Brevard_Detailed_Dynamic/MapServer/24/query"
+        params = {
+            "geometry": f"{lng},{lat}",
+            "geometryType": "esriGeometryPoint",
+            "spatialRel": "esriSpatialRelIntersects",
+            "inSR": "4326",
+            "outFields": "TaxAcct,Name",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "json"
+        }
+    else:
+        logger.warning(f"Unsupported county for parcel query: {county}")
+        return None
+
+    try:
+        # Timeout increased to 30s as Orange County endpoint can be slow
+        logger.info(f"Making spatial query to: {url}")
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        feature_count = len(data.get("features", []))
+        logger.info(f"Spatial query returned {feature_count} features")
+
+        if data.get("features") and len(data["features"]) > 0:
+            feature = data["features"][0]
+            geometry = feature.get("geometry")
+            if geometry and geometry.get("rings"):
+                logger.info(f"Found parcel geometry with {len(geometry['rings'])} rings")
+                return {"type": "polygon", "rings": geometry["rings"]}
+            else:
+                logger.warning(f"Feature found but no geometry rings: {feature.keys()}")
+        else:
+            logger.warning(f"No features found at coordinates ({lat}, {lng})")
+    except Exception as e:
+        logger.error(f"Parcel spatial query error: {e}", exc_info=True)
+
+    return None
 
 
 @api_bp.route("/jobs/bulk-update-status", methods=["POST"])
@@ -943,7 +1167,7 @@ def remove_job_link(job_number, index):
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    current_links = job.links or []
+    current_links = list(job.links or [])
 
     if index < 0 or index >= len(current_links):
         return jsonify({"error": "Link index out of range"}), 404
