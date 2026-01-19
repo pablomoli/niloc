@@ -160,13 +160,15 @@ def get_brevard_property_link(address=None, lat=None, lng=None):
     return None
 
 
-def get_orange_property_link(parcel_id=None, address=None):
+def get_orange_property_link(parcel_id=None, address=None, lat=None, lng=None):
     """
     Get Orange County Property Appraiser link.
 
     Args:
         parcel_id: Parcel ID in dashed format (e.g., "13-23-32-7600-00-070")
         address: Street address to search by if parcel_id not available
+        lat: Latitude for coordinate-based lookup (fallback)
+        lng: Longitude for coordinate-based lookup (fallback)
 
     Returns:
         Property appraiser URL or None
@@ -202,6 +204,28 @@ def get_orange_property_link(parcel_id=None, address=None):
                 api_parcel_id = data["features"][0].get("attributes", {}).get("PARCEL")
         except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
             logger.debug(f"Could not get Orange parcel ID for address {address}: {e}")
+
+    # Fall back to coordinate lookup if address failed
+    if not api_parcel_id and lat and lng:
+        try:
+            url = "https://ocgis4.ocfl.net/arcgis/rest/services/Public_Dynamic/MapServer/216/query"
+            params = {
+                "geometry": f"{lng},{lat}",
+                "geometryType": "esriGeometryPoint",
+                "spatialRel": "esriSpatialRelIntersects",
+                "inSR": "4326",
+                "outFields": "PARCEL",
+                "returnGeometry": "false",
+                "f": "json"
+            }
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("features") and len(data["features"]) > 0:
+                api_parcel_id = data["features"][0].get("attributes", {}).get("PARCEL")
+        except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
+            logger.debug(f"Could not get Orange parcel ID by coordinates ({lat}, {lng}): {e}")
 
     if api_parcel_id:
         return f"https://ocpaweb.ocpafl.org/parcelsearch/Parcel%20ID/{api_parcel_id}"

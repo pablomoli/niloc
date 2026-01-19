@@ -77,19 +77,23 @@ def backfill_links(prefix="26-", dry_run=False):
                         continue
 
                 elif county == "orange":
-                    # For Orange, try parcel_id first, then address
+                    # For Orange, try parcel_id first, then address, then coordinates
                     parcel_id = None
                     if job.parcel_data and isinstance(job.parcel_data, dict):
                         parcel_id = job.parcel_data.get("parcel_id")
 
+                    # Get coordinates for fallback lookup
+                    lat = float(job.lat) if job.lat else None
+                    lng = float(job.long) if job.long else None
+
                     if parcel_id:
                         print(f"[{i}/{total}] {job.job_number}: Building Orange link from parcel_id...")
                         link = get_orange_property_link(parcel_id=parcel_id)
-                    elif job.address:
-                        print(f"[{i}/{total}] {job.job_number}: Querying Orange by address...")
-                        link = get_orange_property_link(address=job.address)
+                    elif job.address or (lat and lng):
+                        print(f"[{i}/{total}] {job.job_number}: Querying Orange...")
+                        link = get_orange_property_link(address=job.address, lat=lat, lng=lng)
                     else:
-                        print(f"[{i}/{total}] {job.job_number}: Skipping Orange job with no parcel_id or address")
+                        print(f"[{i}/{total}] {job.job_number}: Skipping Orange job with no parcel_id, address, or coordinates")
                         skipped += 1
                         continue
                 else:

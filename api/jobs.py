@@ -425,7 +425,7 @@ def create_job():
         elif county_lower == "orange":
             parcel_info = data.get("parcel_data", {})
             parcel_id = parcel_info.get("parcel_id") if parcel_info else None
-            job_data["prop_appr_link"] = get_orange_property_link(parcel_id=parcel_id, address=address)
+            job_data["prop_appr_link"] = get_orange_property_link(parcel_id=parcel_id, address=address, lat=lat, lng=lng)
 
     # Save to database
     try:
