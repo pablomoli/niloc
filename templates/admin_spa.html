@@ -281,13 +281,31 @@
                          @drop="handleScheduleDrop($event, day.date)">
 
                       <template x-for="schedule in getSchedulesForDay(day.date)" :key="schedule.id">
-                        <div class="bg-base-200 rounded p-1 text-[10px] border border-base-300 cursor-pointer hover:bg-base-300 transition-colors"
+                        <div class="rounded p-1 text-[10px] border cursor-pointer transition-opacity hover:opacity-90"
+                             :style="getScheduleBlockStyle(schedule)"
+                             :class="getScheduleBlockTextClass(schedule)"
                              draggable="true"
                              @dragstart="handleScheduleDragStart($event, schedule)"
                              @click="openScheduleModal(schedule)">
-                          <div class="font-semibold text-primary truncate" x-text="schedule.job_number"></div>
-                          <div class="text-gray-500 truncate" x-text="schedule.client"></div>
-                          <div class="text-gray-400" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
+                          <div class="font-semibold truncate" x-text="schedule.job_number"></div>
+                          <div class="truncate opacity-90" x-text="schedule.client"></div>
+                          <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
+                          <template x-if="(schedule.tags || []).length">
+                            <div class="flex flex-wrap gap-0.5 mt-1">
+                              <template x-for="(t, idx) in (schedule.tags || []).slice(0,2)" :key="t.id">
+                                <span class="epic-tag-sm text-[9px] px-1.5 py-0.5"
+                                      :class="getTagTextColor(t.color)"
+                                      :style="`background-color:${t.color||'#007bff'};`"
+                                      x-text="t.name"></span>
+                              </template>
+                              <template x-if="(schedule.tags || []).length > 2">
+                                <span class="epic-tag-sm text-[9px] px-1.5 py-0.5"
+                                      style="background-color: rgba(255,255,255,0.6); color: #1f2937;">
+                                  +<span x-text="(schedule.tags||[]).length - 2"></span>
+                                </span>
+                              </template>
+                            </div>
+                          </template>
                         </div>
                       </template>
 
@@ -313,23 +331,38 @@
 
         <!-- Schedule Modal (moved here from calendar tab) -->
         <div class="modal" :class="{'modal-open': scheduleModal.show}">
-          <div class="modal-box max-w-lg" @click.stop>
+          <div class="modal-box w-auto max-w-[520px] min-w-[320px] relative overflow-visible" style="z-index: 1000000;" @click.stop>
             <h3 class="font-bold text-lg" x-text="scheduleModal.mode === 'create' ? 'Schedule Job' : 'Edit Schedule'"></h3>
 
             <div class="form-control mt-4">
               <label class="label"><span class="label-text">Job</span></label>
               <template x-if="scheduleModal.mode === 'create'">
-                <div class="relative">
+                <div class="relative" @keydown.escape="scheduleModal.showJobSuggestions = false">
                   <input type="text"
                          class="input input-bordered w-full"
-                         placeholder="Search by job number..."
+                         placeholder="Search by job number, client, or address..."
                          x-model="scheduleModal.jobSearch"
-                         @input="searchJobsForSchedule()"
-                         @focus="scheduleModal.showJobResults = true">
-                  <div class="absolute z-10 w-full bg-base-100 border border-base-300 rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto"
-                       x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0"
-                       @click.stop>
-                    <template x-for="job in scheduleModal.jobResults" :key="job.id">
+                         @input="onScheduleJobSearchInput"
+                         @focus="onScheduleJobSearchInput"
+                         @keydown.arrow-down.prevent="moveScheduleSuggestion(1)"
+                         @keydown.arrow-up.prevent="moveScheduleSuggestion(-1)"
+                         @keydown.enter.prevent="applyScheduleHighlightedSuggestion()">
+                  <div class="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-60 overflow-auto"
+                       x-show="scheduleModal.showJobSuggestions && scheduleModal.jobSuggestions.length > 0"
+                       x-transition
+                       @click.outside="scheduleModal.showJobSuggestions = false">
+                    <template x-for="(s, i) in scheduleModal.jobSuggestions" :key="s.value + '-' + s.type + '-' + i">
+                      <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+                              :class="{'bg-gray-100': i === scheduleModal.suggestionIndex}"
+                              @click="selectScheduleSuggestion(s)">
+                        <span class="badge badge-sm" :class="s.type === 'job_number' ? 'badge-primary' : s.type === 'client' ? 'badge-secondary' : s.type === 'address' ? 'badge-ghost' : 'badge-info'" x-text="s.type"></span>
+                        <span x-text="s.label"></span>
+                      </button>
+                    </template>
+                  </div>
+                  <div class="mt-2 w-full bg-base-100 border border-base-300 rounded-lg shadow-sm max-h-48 overflow-y-auto"
+                       x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0">
+                    <template x-for="(job, idx) in scheduleModal.jobResults" :key="job.id || job.job_number || idx">
                       <div class="p-2 hover:bg-base-200 cursor-pointer"
                            @click.stop="selectJobForSchedule(job)">
                         <div class="font-medium" x-text="job.job_number"></div>

@@ -125,7 +125,10 @@ window.adminAppComponent = function() {
     },
 
     // Calendar state (due date calendar on dashboard)
-    calendarMonth: new Date().toISOString().slice(0, 7),
+    calendarMonth: (() => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    })(),
     calendarCounts: {},
     calendarLoading: false,
 
@@ -236,9 +239,14 @@ window.adminAppComponent = function() {
       data: {},
       jobSearch: '',
       jobResults: [],
-      showJobResults: false
+      showJobResults: false,
+      jobSuggestions: [],
+      showJobSuggestions: false,
+      suggestionIndex: -1
     },
     _draggedSchedule: null,
+    _scheduleJobSearchTimer: null,
+    _scheduleJobSearchAbort: null,
 
     init() {
       this.ensureTabData('dashboard');
@@ -1037,7 +1045,8 @@ window.adminAppComponent = function() {
     },
 
     goToCurrentMonth() {
-      this.calendarMonth = new Date().toISOString().slice(0, 7);
+      const now = new Date();
+      this.calendarMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       localStorage.setItem('admin_due_date_month', this.calendarMonth);
       this.loadCalendarMonth(this.calendarMonth);
     },
@@ -2304,22 +2313,24 @@ window.adminAppComponent = function() {
     // SCHEDULE CALENDAR METHODS
     // =========================================================================
 
-    initCalendarWeek() {
+    initCalendarWeek(forceToday = false) {
       let weekStart = null;
-      try {
-        const savedWeek = localStorage.getItem('admin_schedule_week_start');
-        if (savedWeek && /^\d{4}-\d{2}-\d{2}$/.test(savedWeek)) {
-          weekStart = savedWeek;
+      if (!forceToday) {
+        try {
+          const savedWeek = localStorage.getItem('admin_schedule_week_start');
+          if (savedWeek && /^\d{4}-\d{2}-\d{2}$/.test(savedWeek)) {
+            weekStart = savedWeek;
+          }
+        } catch (_) {
+          // ignore localStorage errors
         }
-      } catch (_) {
-        // ignore localStorage errors
       }
       if (!weekStart) {
         const today = new Date();
         const monday = new Date(today);
         monday.setDate(today.getDate() - today.getDay() + 1); // Get Monday
         if (today.getDay() === 0) monday.setDate(monday.getDate() - 7); // Sunday fix
-        weekStart = monday.toISOString().slice(0, 10);
+        weekStart = this.toLocalDateString(monday);
       }
       this.currentWeekStart = weekStart;
       localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
@@ -2328,15 +2339,15 @@ window.adminAppComponent = function() {
 
     updateCalendarDays() {
       const days = [];
-      const start = new Date(this.currentWeekStart);
-      const today = new Date().toISOString().slice(0, 10);
+      const start = this.parseLocalDate(this.currentWeekStart);
+      const today = this.toLocalDateString(new Date());
       const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
-        const dateStr = d.toISOString().slice(0, 10);
+        const dateStr = this.toLocalDateString(d);
         days.push({
           date: dateStr,
           dayName: dayNames[i],
@@ -2360,25 +2371,25 @@ window.adminAppComponent = function() {
     },
 
     calendarPrevWeek() {
-      const d = new Date(this.currentWeekStart);
+      const d = this.parseLocalDate(this.currentWeekStart);
       d.setDate(d.getDate() - 7);
-      this.currentWeekStart = d.toISOString().slice(0, 10);
+      this.currentWeekStart = this.toLocalDateString(d);
       localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
       this.updateCalendarDays();
       this.loadSchedules();
     },
 
     calendarNextWeek() {
-      const d = new Date(this.currentWeekStart);
+      const d = this.parseLocalDate(this.currentWeekStart);
       d.setDate(d.getDate() + 7);
-      this.currentWeekStart = d.toISOString().slice(0, 10);
+      this.currentWeekStart = this.toLocalDateString(d);
       localStorage.setItem('admin_schedule_week_start', this.currentWeekStart);
       this.updateCalendarDays();
       this.loadSchedules();
     },
 
     calendarToday() {
-      this.initCalendarWeek();
+      this.initCalendarWeek(true);
       this.loadSchedules();
     },
 
@@ -2418,6 +2429,28 @@ window.adminAppComponent = function() {
       return start;
     },
 
+    getScheduleBlockStyle(schedule) {
+      const color = this.getStatusColor(schedule.status);
+      return `background-color: ${color}; border-color: ${color};`;
+    },
+
+    getScheduleBlockTextClass(schedule) {
+      return this.getStatusTextColor(schedule.status);
+    },
+
+    toLocalDateString(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+
+    parseLocalDate(dateStr) {
+      const [year, month, day] = (dateStr || '').split('-').map(Number);
+      if (!year || !month || !day) return new Date();
+      return new Date(year, month - 1, day);
+    },
+
     openNewScheduleModal(dateStr) {
       this.scheduleModal = {
         show: true,
@@ -2432,7 +2465,10 @@ window.adminAppComponent = function() {
         },
         jobSearch: '',
         jobResults: [],
-        showJobResults: false
+        showJobResults: false,
+        jobSuggestions: [],
+        showJobSuggestions: false,
+        suggestionIndex: -1
       };
     },
 
@@ -2443,24 +2479,91 @@ window.adminAppComponent = function() {
         data: { ...schedule },
         jobSearch: '',
         jobResults: [],
-        showJobResults: false
+        showJobResults: false,
+        jobSuggestions: [],
+        showJobSuggestions: false,
+        suggestionIndex: -1
       };
     },
 
-    async searchJobsForSchedule() {
+    onScheduleJobSearchInput() {
       const q = this.scheduleModal.jobSearch.trim();
+      clearTimeout(this._scheduleJobSearchTimer);
       if (q.length < 2) {
         this.scheduleModal.jobResults = [];
+        this.scheduleModal.showJobResults = false;
+        this.scheduleModal.jobSuggestions = [];
+        this.scheduleModal.showJobSuggestions = false;
+        this.scheduleModal.suggestionIndex = -1;
+        return;
+      }
+      this._scheduleJobSearchTimer = setTimeout(() => {
+        this.searchJobsForSchedule(q, false);
+        this.fetchScheduleJobSuggestions(q);
+      }, 300);
+    },
+
+    async fetchScheduleJobSuggestions(q) {
+      try {
+        if (this._scheduleJobSearchAbort) this._scheduleJobSearchAbort.abort();
+        this._scheduleJobSearchAbort = new AbortController();
+        const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=8`, {
+          signal: this._scheduleJobSearchAbort.signal
+        });
+        const data = await resp.json();
+        this.scheduleModal.jobSuggestions = data.suggestions || [];
+        this.scheduleModal.suggestionIndex = this.scheduleModal.jobSuggestions.length ? 0 : -1;
+        this.scheduleModal.showJobSuggestions = this.scheduleModal.jobSuggestions.length > 0;
+      } catch (e) {
+        console.warn('Schedule autocomplete fetch failed', e);
+        this.scheduleModal.jobSuggestions = [];
+        this.scheduleModal.showJobSuggestions = false;
+      }
+    },
+
+    moveScheduleSuggestion(delta) {
+      if (!this.scheduleModal.showJobSuggestions || this.scheduleModal.jobSuggestions.length === 0) return;
+      const max = this.scheduleModal.jobSuggestions.length - 1;
+      let idx = this.scheduleModal.suggestionIndex + delta;
+      if (idx < 0) idx = max;
+      if (idx > max) idx = 0;
+      this.scheduleModal.suggestionIndex = idx;
+    },
+
+    applyScheduleHighlightedSuggestion() {
+      if (this.scheduleModal.suggestionIndex >= 0 &&
+        this.scheduleModal.jobSuggestions[this.scheduleModal.suggestionIndex]) {
+        this.selectScheduleSuggestion(this.scheduleModal.jobSuggestions[this.scheduleModal.suggestionIndex]);
+        return;
+      }
+      this.scheduleModal.showJobSuggestions = false;
+    },
+
+    selectScheduleSuggestion(s) {
+      this.scheduleModal.jobSearch = s.value;
+      this.scheduleModal.showJobSuggestions = false;
+      this.scheduleModal.suggestionIndex = -1;
+      this.searchJobsForSchedule(s.value, true);
+    },
+
+    async searchJobsForSchedule(q, showResults = false) {
+      const searchTerm = (q ?? this.scheduleModal.jobSearch).trim();
+      if (searchTerm.length < 2) {
+        this.scheduleModal.jobResults = [];
+        this.scheduleModal.showJobResults = false;
         return;
       }
       try {
-        const resp = await fetch(`/api/jobs/search/autocomplete?q=${encodeURIComponent(q)}&limit=10`);
-        if (resp.ok) {
-          this.scheduleModal.jobResults = await resp.json();
-          this.scheduleModal.showJobResults = true;
-        }
+        const resp = await fetch(`/api/jobs/search?q=${encodeURIComponent(searchTerm)}`);
+        if (!resp.ok) throw new Error('Search failed');
+        const data = await resp.json();
+        const results = Array.isArray(data.jobs) ? data.jobs : [];
+        this.scheduleModal.jobResults = results;
+        this.scheduleModal.showJobResults = showResults && results.length > 0;
       } catch (e) {
-        console.error('Job search error:', e);
+        console.error('Schedule job search error:', e);
+        this.scheduleModal.jobResults = [];
+        this.scheduleModal.showJobResults = false;
       }
     },
 
