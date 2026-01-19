@@ -206,17 +206,32 @@ SimpleModal.renderModal = function(job, femaLink) {
                         </div>
                     </div>
 
-                    ${femaLink ? `
+                    ${(femaLink || job.prop_appr_link) ? `
                     <div class="epic-form-section">
-                        <button
-                            onclick="window.open('${femaLink}', '_blank')"
-                            class="epic-btn epic-btn-secondary"
-                            style="width: 100%; justify-content: center;"
-                            title="View FEMA Flood Zone">
-                            <i class="bi bi-water"></i>
-                            <span>View FEMA Flood Zone Map</span>
-                            <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; opacity: 0.7;"></i>
-                        </button>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            ${femaLink ? `
+                            <button
+                                onclick="window.open('${femaLink}', '_blank')"
+                                class="epic-btn epic-btn-secondary"
+                                style="flex: 1; min-width: 140px; justify-content: center;"
+                                title="View FEMA Flood Zone">
+                                <i class="bi bi-water"></i>
+                                <span>FEMA Flood Zone</span>
+                                <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; opacity: 0.7;"></i>
+                            </button>
+                            ` : ''}
+                            ${job.prop_appr_link ? `
+                            <button
+                                onclick="window.open('${job.prop_appr_link}', '_blank')"
+                                class="epic-btn epic-btn-secondary"
+                                style="flex: 1; min-width: 140px; justify-content: center;"
+                                title="View Property Appraiser">
+                                <i class="bi bi-building"></i>
+                                <span>Property Appraiser</span>
+                                <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; opacity: 0.7;"></i>
+                            </button>
+                            ` : ''}
+                        </div>
                     </div>
                     ` : ''}
 
