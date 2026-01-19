@@ -120,6 +120,55 @@ def get_brevard_property_link(address):
         logger.debug(f"Could not get Brevard property link for address {address}: {e}")
     return None
 
+
+def get_orange_property_link(parcel_id=None, address=None):
+    """
+    Get Orange County Property Appraiser link.
+
+    Args:
+        parcel_id: Parcel ID in dashed format (e.g., "13-23-32-7600-00-070")
+        address: Street address to search by if parcel_id not available
+
+    Returns:
+        Property appraiser URL or None
+    """
+    api_parcel_id = None
+
+    # If we have a parcel_id, convert it to API format
+    if parcel_id and '-' in parcel_id:
+        parts = parcel_id.split('-')
+        if len(parts) == 6:
+            # Rearrange: Range + Township + Section + Subdivision + Block + Lot
+            api_parcel_id = parts[2] + parts[1] + parts[0] + parts[3] + parts[4] + parts[5]
+
+    # If no parcel_id, try to find it by address
+    if not api_parcel_id and address:
+        try:
+            # Extract street address part
+            address_parts = address.split(',')
+            street_address = address_parts[0].strip().upper()
+
+            url = "https://ocgis4.ocfl.net/arcgis/rest/services/Public_Dynamic/MapServer/216/query"
+            params = {
+                "where": f"SITUS LIKE '%{street_address}%'",
+                "outFields": "PARCEL",
+                "returnGeometry": "false",
+                "f": "json"
+            }
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("features") and len(data["features"]) > 0:
+                api_parcel_id = data["features"][0].get("attributes", {}).get("PARCEL")
+        except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
+            logger.debug(f"Could not get Orange parcel ID for address {address}: {e}")
+
+    if api_parcel_id:
+        return f"https://ocpaweb.ocpafl.org/parcelsearch/Parcel%20ID/{api_parcel_id}"
+
+    return None
+
 def _compute_polygon_centroid(rings):
     """
     Compute the centroid of a polygon from its rings.

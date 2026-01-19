@@ -12,7 +12,7 @@ from api.search import create_fuzzy_search_conditions, normalize_search_term
 from auth_utils import login_required
 from models import db, Job, Tag, FieldWork, User, job_tags
 from db_utils import with_db_retry, handle_db_error
-from utils import get_brevard_property_link, is_valid_job_status, VALID_JOB_STATUSES
+from utils import get_brevard_property_link, get_orange_property_link, is_valid_job_status, VALID_JOB_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -417,9 +417,15 @@ def create_job():
         "county": county,
     }
 
-    # Add property appraiser link for Brevard County
-    if (not is_parcel) and county and county.lower() == "brevard":
-        job_data["prop_appr_link"] = get_brevard_property_link(address)
+    # Add property appraiser link based on county
+    if county:
+        county_lower = county.lower()
+        if county_lower == "brevard":
+            job_data["prop_appr_link"] = get_brevard_property_link(address)
+        elif county_lower == "orange":
+            parcel_info = data.get("parcel_data", {})
+            parcel_id = parcel_info.get("parcel_id") if parcel_info else None
+            job_data["prop_appr_link"] = get_orange_property_link(parcel_id=parcel_id, address=address)
 
     # Save to database
     try:
