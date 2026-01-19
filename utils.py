@@ -106,18 +106,57 @@ def get_county_from_coords(lat, lon):
         result = conn.execute(sql, {"lon": lon, "lat": lat}).fetchone()
         return result[0] if result else None
 
-def get_brevard_property_link(address):
-    try:
-        url = "https://www.bcpao.us/api/records"
-        # Brevard blocks python-requests User-Agent
-        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
-        res = requests.get(url, params={"address": address}, headers=headers, timeout=10)
-        res.raise_for_status()
-        data = res.json()
-        if data:
-            return f"https://www.bcpao.us/propertysearch/#/account/{data[0]['account']}"
-    except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
-        logger.debug(f"Could not get Brevard property link for address {address}: {e}")
+def get_brevard_property_link(address=None, lat=None, lng=None):
+    """
+    Get Brevard County Property Appraiser link.
+
+    Args:
+        address: Street address to search by
+        lat: Latitude for coordinate-based lookup (fallback)
+        lng: Longitude for coordinate-based lookup (fallback)
+
+    Returns:
+        Property appraiser URL or None
+    """
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+    account = None
+
+    # Try address lookup first
+    if address:
+        try:
+            url = "https://www.bcpao.us/api/records"
+            res = requests.get(url, params={"address": address}, headers=headers, timeout=10)
+            res.raise_for_status()
+            data = res.json()
+            if data:
+                account = data[0].get('account')
+        except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
+            logger.debug(f"Could not get Brevard property link by address {address}: {e}")
+
+    # Fall back to coordinate lookup if address failed
+    if not account and lat and lng:
+        try:
+            url = "https://www.bcpao.us/arcgis/rest/services/Brevard_Detailed_Dynamic/MapServer/24/query"
+            params = {
+                "geometry": f"{lng},{lat}",
+                "geometryType": "esriGeometryPoint",
+                "spatialRel": "esriSpatialRelIntersects",
+                "inSR": "4326",
+                "outFields": "TaxAcct",
+                "returnGeometry": "false",
+                "f": "json"
+            }
+            res = requests.get(url, params=params, headers=headers, timeout=10)
+            res.raise_for_status()
+            data = res.json()
+            if data.get("features") and len(data["features"]) > 0:
+                account = data["features"][0].get("attributes", {}).get("TaxAcct")
+        except (requests.exceptions.RequestException, KeyError, IndexError, ValueError) as e:
+            logger.debug(f"Could not get Brevard property link by coordinates ({lat}, {lng}): {e}")
+
+    if account:
+        return f"https://www.bcpao.us/propertysearch/#/account/{account}"
+
     return None
 
 

@@ -64,11 +64,15 @@ def backfill_links(prefix="26-", dry_run=False):
 
             try:
                 if county == "brevard":
-                    if job.address:
-                        print(f"[{i}/{total}] {job.job_number}: Querying Brevard by address...")
-                        link = get_brevard_property_link(job.address)
+                    # Get coordinates for fallback lookup
+                    lat = float(job.lat) if job.lat else None
+                    lng = float(job.long) if job.long else None
+
+                    if job.address or (lat and lng):
+                        print(f"[{i}/{total}] {job.job_number}: Querying Brevard...")
+                        link = get_brevard_property_link(address=job.address, lat=lat, lng=lng)
                     else:
-                        print(f"[{i}/{total}] {job.job_number}: Skipping Brevard job with no address")
+                        print(f"[{i}/{total}] {job.job_number}: Skipping Brevard job with no address or coordinates")
                         skipped += 1
                         continue
 

@@ -421,7 +421,7 @@ def create_job():
     if county:
         county_lower = county.lower()
         if county_lower == "brevard":
-            job_data["prop_appr_link"] = get_brevard_property_link(address)
+            job_data["prop_appr_link"] = get_brevard_property_link(address=address, lat=lat, lng=lng)
         elif county_lower == "orange":
             parcel_info = data.get("parcel_data", {})
             parcel_id = parcel_info.get("parcel_id") if parcel_info else None
