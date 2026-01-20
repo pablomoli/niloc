@@ -60,7 +60,7 @@ SimpleModal.promoteToAddress = async function(jobNumber, address) {
         // Update current job data
         this.currentJob.is_parcel_job = false;
         if (address) this.currentJob.address = address;
-        this.renderModal(this.currentJob, this.generateFEMALink(this.currentJob.address));
+        this.renderModal(this.currentJob, this.generateFEMALink(this.currentJob.lat, this.currentJob.long));
         this.showNotification('Job promoted to address job successfully', 'success');
         // Update job in global state if available
         if (window.AppState && window.AppState.allJobs) {

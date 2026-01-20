@@ -9,7 +9,7 @@
 SimpleModal.show = function(job) {
     this.currentJob = { ...job };
     this.fieldworkLoaded = false;
-    const femaLink = this.generateFEMALink(job.address);
+    const femaLink = this.generateFEMALink(job.lat, job.long);
     // Render immediately with placeholders
     this.renderModal(job, femaLink);
     // Warm tags cache

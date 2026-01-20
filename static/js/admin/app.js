@@ -485,10 +485,7 @@ window.adminAppComponent = function() {
 
     // Pagination methods
     updatePagination() {
-      const filtersActive =
-        this.jobSearch.trim().length > 0 ||
-        (this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length);
-      const totalRecords = this.jobsLoadedAll || filtersActive
+      const totalRecords = this.jobsLoadedAll || this.hasActiveFilters()
         ? this.filteredJobs.length
         : (this.jobsMeta.total || this.filteredJobs.length);
       this.totalPages = Math.max(1, Math.ceil(totalRecords / this.jobsPerPage));
@@ -498,10 +495,7 @@ window.adminAppComponent = function() {
     },
 
     getPageInfo() {
-      const filtersActive =
-        this.jobSearch.trim().length > 0 ||
-        (this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length);
-      const totalRecords = this.jobsLoadedAll || filtersActive
+      const totalRecords = this.jobsLoadedAll || this.hasActiveFilters()
         ? this.filteredJobs.length
         : (this.jobsMeta.total || this.filteredJobs.length);
       const start = Math.min((this.currentPage - 1) * this.jobsPerPage + 1, totalRecords);
@@ -1773,7 +1767,8 @@ window.adminAppComponent = function() {
       const hasSearch = this.jobSearch && this.jobSearch.trim().length > 0;
       const hasStatusFilter = this.selectedStatuses.length > 0 && this.selectedStatuses.length < this.statuses.length;
       const hasTagFilter = this.selectedTags && this.selectedTags.length > 0;
-      return hasSearch || hasStatusFilter || hasTagFilter;
+      const hasDueDateFilter = this.dueDateFilter && this.dueDateFilter.start && this.dueDateFilter.end;
+      return hasSearch || hasStatusFilter || hasTagFilter || hasDueDateFilter;
     },
 
     confirmBulkDelete() {

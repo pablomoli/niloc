@@ -4,12 +4,13 @@
  */
 
 /**
- * Generate FEMA Flood Zone link from address.
+ * Generate FEMA Flood Zone link from coordinates.
+ * FEMA expects longitude,latitude format.
  */
-SimpleModal.generateFEMALink = function(address) {
-    if (!address || address === 'N/A') return null;
+SimpleModal.generateFEMALink = function(lat, long) {
+    if (!lat || !long) return null;
     const baseURL = "https://msc.fema.gov/portal/search";
-    return `${baseURL}?AddressQuery=${encodeURIComponent(address)}`;
+    return `${baseURL}?AddressQuery=${encodeURIComponent(`${long},${lat}`)}`;
 };
 
 /**
