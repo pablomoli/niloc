@@ -72,6 +72,7 @@ SimpleModal.showAddFieldworkForm = function() {
 
     const formHTML = `
         <div id="fieldwork-form" class="epic-data-card accent-pink" style="margin-top: 16px;">
+            <form onsubmit="SimpleModal.saveFieldwork(); return false;">
             <div class="epic-modal-subtitle" style="margin-bottom: 16px;">New Time Entry</div>
 
             <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -104,16 +105,17 @@ SimpleModal.showAddFieldworkForm = function() {
                 </div>
 
                 <div style="display: flex; gap: 8px; padding-top: 8px;">
-                    <button id="fw-save-btn" class="epic-btn epic-btn-success" style="flex: 1;" onclick="SimpleModal.saveFieldwork()">
+                    <button type="submit" id="fw-save-btn" class="epic-btn epic-btn-success" style="flex: 1;">
                         <i class="bi bi-check-lg"></i>
                         Save Entry
                     </button>
-                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideAddFieldworkForm()">
+                    <button type="button" class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideAddFieldworkForm()">
                         <i class="bi bi-x-lg"></i>
                         Cancel
                     </button>
                 </div>
             </div>
+            </form>
         </div>
     `;
 
@@ -246,6 +248,7 @@ SimpleModal.editFieldwork = function(fieldworkId) {
 
     const formHTML = `
         <div id="edit-fieldwork-form" class="epic-data-card accent-blue" style="margin-top: 16px;">
+            <form onsubmit="SimpleModal.saveEditFieldwork(${fieldworkId}); return false;">
             <div class="epic-modal-subtitle" style="margin-bottom: 16px;">Edit Time Entry</div>
 
             <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -278,16 +281,17 @@ SimpleModal.editFieldwork = function(fieldworkId) {
                 </div>
 
                 <div style="display: flex; gap: 8px; padding-top: 8px;">
-                    <button id="edit-fw-save-btn" class="epic-btn epic-btn-primary" style="flex: 1;" onclick="SimpleModal.saveEditFieldwork(${fieldworkId})">
+                    <button type="submit" id="edit-fw-save-btn" class="epic-btn epic-btn-primary" style="flex: 1;">
                         <i class="bi bi-check-lg"></i>
                         Save Changes
                     </button>
-                    <button class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideEditFieldworkForm()">
+                    <button type="button" class="epic-btn epic-btn-ghost" onclick="SimpleModal.hideEditFieldworkForm()">
                         <i class="bi bi-x-lg"></i>
                         Cancel
                     </button>
                 </div>
             </div>
+            </form>
         </div>
     `;
 

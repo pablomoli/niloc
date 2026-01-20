@@ -189,7 +189,8 @@
                                     <input type="text"
                                            class="epic-input"
                                            :placeholder="brevardSearchType === 'tax-account' ? 'Enter tax account number...' : 'Enter parcel ID...'"
-                                           x-model="parcelSearch">
+                                           x-model="parcelSearch"
+                                           @keyup.enter="performParcelSearch()">
                                 </div>
                             </div>
                         </template>
@@ -201,7 +202,8 @@
                                 <input type="text"
                                        class="epic-input"
                                        placeholder="Enter parcel ID..."
-                                       x-model="parcelSearch">
+                                       x-model="parcelSearch"
+                                       @keyup.enter="performParcelSearch()">
                             </div>
                         </template>
 
