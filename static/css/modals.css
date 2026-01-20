@@ -14,6 +14,11 @@
   display: none !important;
 }
 
+/* Lock body scroll when modal is open (modern browsers) */
+body:has(.epic-modal-backdrop:not(.hidden)) {
+  overflow: hidden;
+}
+
 .epic-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -25,6 +30,8 @@
   justify-content: center;
   z-index: 2000;
   padding: var(--space-md);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .epic-modal {
@@ -136,7 +143,9 @@
   padding: var(--space-md);
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  overscroll-behavior: contain;
 
   /* Custom scrollbar */
   scrollbar-width: thin;
@@ -172,6 +181,16 @@
   gap: var(--space-sm);
   flex-shrink: 0;
   background: var(--modal-surface-elevated);
+  border-radius: 0 0 var(--modal-radius) var(--modal-radius);
+}
+
+/* Forms inside modals need proper flex layout */
+.epic-modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .advanced-search-footer {

@@ -295,6 +295,41 @@ window.adminAppComponent = function() {
       } catch (_) {
         this.selectedTags = [];
       }
+
+      // Global escape key handler for modals (closes topmost visible modal)
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+
+        // Modal IDs in z-index order (highest first - nested modals close first)
+        const modals = [
+          { id: 'confirmModal', check: () => this.confirmModal.show, close: () => { this.confirmModal.show = false; } },
+          { id: 'bulkUpdateModal', close: () => this.closeBulkUpdateModal() },
+          { id: 'fieldworkModal', close: () => document.getElementById('fieldworkModal')?.classList.add('hidden') },
+          { id: 'promoteAddressModal', close: () => this.closePromoteModal() },
+          { id: 'editJobModal', close: () => document.getElementById('editJobModal')?.classList.add('hidden') },
+          { id: 'jobTagsModal', close: () => document.getElementById('jobTagsModal')?.classList.add('hidden') },
+          { id: 'editUserModal', close: () => document.getElementById('editUserModal')?.classList.add('hidden') },
+          { id: 'addUserModal', close: () => document.getElementById('addUserModal')?.classList.add('hidden') },
+          { id: 'scheduleModal', check: () => this.scheduleModal.show, close: () => this.closeScheduleModal() },
+        ];
+
+        for (const modal of modals) {
+          // Use custom check if provided, otherwise check DOM visibility
+          const isVisible = modal.check
+            ? modal.check()
+            : (() => {
+                const el = document.getElementById(modal.id);
+                return el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none';
+              })();
+
+          if (isVisible) {
+            modal.close();
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
+      });
     },
 
     activateTab(tab) {
@@ -1350,6 +1385,12 @@ window.adminAppComponent = function() {
 
     closePromoteModal() {
       document.getElementById('promoteAddressModal').classList.add('hidden');
+    },
+
+    closeScheduleModal() {
+      this.scheduleModal.show = false;
+      this.scheduleModal.showJobSuggestions = false;
+      this.scheduleModal.showJobResults = false;
     },
 
     async submitPromote() {

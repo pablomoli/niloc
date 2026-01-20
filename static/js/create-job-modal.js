@@ -8,6 +8,7 @@ window.CreateJobModal = {
         // Get available statuses from MarkerUtils (single source of truth)
         const statuses = window.MarkerUtils ? Object.keys(window.MarkerUtils.EPIC_COLORS) : [
             "On Hold/Pending Estimate",
+            "Cancelled/Declined",
             "Needs Fieldwork",
             "Fieldwork Complete",
             "To Be Printed",
@@ -161,8 +162,17 @@ window.CreateJobModal = {
                 document.getElementById('job_number').focus();
             }
         }, 100);
+
+        // Add escape key handler
+        this._escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.hide();
+                e.preventDefault();
+            }
+        };
+        document.addEventListener('keydown', this._escapeHandler);
     },
-    
+
     async loadTagsOnce() {
         try {
             const fetcher = window.cachedFetch || window.fetch;
@@ -223,6 +233,12 @@ window.CreateJobModal = {
     },
     
     hide() {
+        // Remove escape key handler
+        if (this._escapeHandler) {
+            document.removeEventListener('keydown', this._escapeHandler);
+            this._escapeHandler = null;
+        }
+
         const modal = document.getElementById('createJobModal');
         if (modal) {
             modal.remove();

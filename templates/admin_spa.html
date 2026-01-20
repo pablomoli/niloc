@@ -329,92 +329,111 @@
           </div>
         </div>
 
-        <!-- Schedule Modal (moved here from calendar tab) -->
-        <div class="modal" :class="{'modal-open': scheduleModal.show}">
-          <div class="modal-box w-auto max-w-[520px] min-w-[320px] relative overflow-visible" style="z-index: 1000000;" @click.stop>
-            <h3 class="font-bold text-lg" x-text="scheduleModal.mode === 'create' ? 'Schedule Job' : 'Edit Schedule'"></h3>
+        <!-- Schedule Modal -->
+        <div class="epic-modal-backdrop hidden"
+             :class="{'hidden': !scheduleModal.show}"
+             id="scheduleModal"
+             @click.self="closeScheduleModal()">
+          <div class="epic-modal" style="max-width: 520px; min-width: 320px;">
+            <!-- Header -->
+            <div class="epic-modal-header">
+              <div class="epic-modal-subtitle">Calendar</div>
+              <h3 class="epic-modal-title" x-text="scheduleModal.mode === 'create' ? 'Schedule Job' : 'Edit Schedule'"></h3>
+              <button class="epic-modal-close" @click="closeScheduleModal()" aria-label="Close">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
 
-            <div class="form-control mt-4">
-              <label class="label"><span class="label-text">Job</span></label>
-              <template x-if="scheduleModal.mode === 'create'">
-                <div class="relative" @keydown.escape="scheduleModal.showJobSuggestions = false">
-                  <input type="text"
-                         class="input input-bordered w-full"
-                         placeholder="Search by job number, client, or address..."
-                         x-model="scheduleModal.jobSearch"
-                         @input="onScheduleJobSearchInput"
-                         @focus="onScheduleJobSearchInput"
-                         @keydown.arrow-down.prevent="moveScheduleSuggestion(1)"
-                         @keydown.arrow-up.prevent="moveScheduleSuggestion(-1)"
-                         @keydown.enter.prevent="applyScheduleHighlightedSuggestion()">
-                  <div class="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 shadow-lg max-h-60 overflow-auto"
-                       x-show="scheduleModal.showJobSuggestions && scheduleModal.jobSuggestions.length > 0"
-                       x-transition
-                       @click.outside="scheduleModal.showJobSuggestions = false">
-                    <template x-for="(s, i) in scheduleModal.jobSuggestions" :key="s.value + '-' + s.type + '-' + i">
-                      <button class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
-                              :class="{'bg-gray-100': i === scheduleModal.suggestionIndex}"
-                              @click="selectScheduleSuggestion(s)">
-                        <span class="badge badge-sm" :class="s.type === 'job_number' ? 'badge-primary' : s.type === 'client' ? 'badge-secondary' : s.type === 'address' ? 'badge-ghost' : 'badge-info'" x-text="s.type"></span>
-                        <span x-text="s.label"></span>
-                      </button>
-                    </template>
+            <form @submit.prevent="saveSchedule()">
+            <!-- Body -->
+            <div class="epic-modal-body">
+              <!-- Job Selection -->
+              <div class="epic-form-section">
+                <label class="epic-form-label">Job</label>
+                <template x-if="scheduleModal.mode === 'create'">
+                  <div class="relative" @keydown.escape="scheduleModal.showJobSuggestions = false">
+                    <input type="text"
+                           class="epic-input"
+                           placeholder="Search by job number, client, or address..."
+                           x-model="scheduleModal.jobSearch"
+                           @input="onScheduleJobSearchInput"
+                           @focus="onScheduleJobSearchInput"
+                           @keydown.arrow-down.prevent="moveScheduleSuggestion(1)"
+                           @keydown.arrow-up.prevent="moveScheduleSuggestion(-1)"
+                           @keydown.enter.prevent="applyScheduleHighlightedSuggestion()">
+                    <div class="absolute z-50 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto"
+                         x-show="scheduleModal.showJobSuggestions && scheduleModal.jobSuggestions.length > 0"
+                         x-transition
+                         @click.outside="scheduleModal.showJobSuggestions = false">
+                      <template x-for="(s, i) in scheduleModal.jobSuggestions" :key="s.value + '-' + s.type + '-' + i">
+                        <button class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors"
+                                :class="{'bg-gray-100': i === scheduleModal.suggestionIndex}"
+                                @click="selectScheduleSuggestion(s)">
+                          <span class="epic-tag-sm" :class="s.type === 'job_number' ? 'bg-primary text-white' : s.type === 'client' ? 'bg-secondary text-white' : s.type === 'address' ? 'bg-gray-200 text-gray-700' : 'bg-info text-white'" x-text="s.type"></span>
+                          <span x-text="s.label"></span>
+                        </button>
+                      </template>
+                    </div>
+                    <div class="mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                         x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0">
+                      <template x-for="(job, idx) in scheduleModal.jobResults" :key="job.id || job.job_number || idx">
+                        <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                             @click.stop="selectJobForSchedule(job)">
+                          <div class="font-semibold text-gray-900" x-text="job.job_number"></div>
+                          <div class="text-sm text-gray-500" x-text="job.client"></div>
+                        </div>
+                      </template>
+                    </div>
                   </div>
-                  <div class="mt-2 w-full bg-base-100 border border-base-300 rounded-lg shadow-sm max-h-48 overflow-y-auto"
-                       x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0">
-                    <template x-for="(job, idx) in scheduleModal.jobResults" :key="job.id || job.job_number || idx">
-                      <div class="p-2 hover:bg-base-200 cursor-pointer"
-                           @click.stop="selectJobForSchedule(job)">
-                        <div class="font-medium" x-text="job.job_number"></div>
-                        <div class="text-xs text-gray-500" x-text="job.client"></div>
-                      </div>
-                    </template>
+                </template>
+                <template x-if="scheduleModal.mode === 'edit'">
+                  <div class="font-semibold text-gray-900 py-2" x-text="scheduleModal.data.job_number + ' - ' + scheduleModal.data.client"></div>
+                </template>
+              </div>
+
+              <!-- Date/Time Grid -->
+              <div class="epic-form-section">
+                <div class="grid grid-cols-3 gap-4">
+                  <div>
+                    <label class="epic-form-label">Date</label>
+                    <input type="date" class="epic-input" x-model="scheduleModal.data.scheduled_date">
+                  </div>
+                  <div>
+                    <label class="epic-form-label">Start Time</label>
+                    <input type="time" class="epic-input" x-model="scheduleModal.data.start_time">
+                  </div>
+                  <div>
+                    <label class="epic-form-label">Duration (hrs)</label>
+                    <input type="number" step="0.5" min="0.5" class="epic-input"
+                           x-model="scheduleModal.data.estimated_duration" placeholder="2">
                   </div>
                 </div>
-              </template>
-              <template x-if="scheduleModal.mode === 'edit'">
-                <div class="font-medium" x-text="scheduleModal.data.job_number + ' - ' + scheduleModal.data.client"></div>
-              </template>
-            </div>
+              </div>
 
-            <div class="grid grid-cols-3 gap-4 mt-4">
-              <div class="form-control">
-                <label class="label"><span class="label-text">Date</span></label>
-                <input type="date" class="input input-bordered" x-model="scheduleModal.data.scheduled_date">
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text">Start Time</span></label>
-                <input type="time" class="input input-bordered" x-model="scheduleModal.data.start_time">
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text">Duration (hrs)</span></label>
-                <input type="number" step="0.5" min="0.5" class="input input-bordered"
-                       x-model="scheduleModal.data.estimated_duration" placeholder="2">
+              <!-- Notes -->
+              <div class="epic-form-section">
+                <label class="epic-form-label">Notes</label>
+                <textarea class="epic-input epic-textarea" rows="2" x-model="scheduleModal.data.notes" placeholder="Optional notes..."></textarea>
               </div>
             </div>
 
-            <div class="form-control mt-4">
-              <label class="label"><span class="label-text">Notes</span></label>
-              <textarea class="textarea textarea-bordered" rows="2" x-model="scheduleModal.data.notes" placeholder="Optional notes..."></textarea>
-            </div>
-
-            <div class="modal-action">
-              <button class="btn btn-error btn-outline"
+            <!-- Footer -->
+            <div class="epic-modal-footer">
+              <button type="button" class="epic-btn epic-btn-danger"
                       x-show="scheduleModal.mode === 'edit'"
                       @click="deleteSchedule(scheduleModal.data.id)">
                 <i class="bi bi-trash"></i> Delete
               </button>
               <div class="flex-1"></div>
-              <button class="btn" @click="scheduleModal.show = false">Cancel</button>
-              <button class="btn btn-primary !text-white"
-                      @click="saveSchedule()"
+              <button type="button" class="epic-btn epic-btn-ghost" @click="closeScheduleModal()">Cancel</button>
+              <button type="submit" class="epic-btn epic-btn-primary"
                       :disabled="_savingSchedule || !scheduleModal.data.job_id">
                 <span class="loading loading-spinner loading-sm" x-show="_savingSchedule"></span>
                 <span x-text="scheduleModal.mode === 'create' ? 'Create' : 'Save'"></span>
               </button>
             </div>
+            </form>
           </div>
-          <div class="modal-backdrop" @click="scheduleModal.show = false"></div>
         </div>
       </div>
 
@@ -1709,326 +1728,333 @@
     </div>
 
     <!-- Edit Job Modal -->
-    <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
-      id="editJobModal"
-      @click.self="document.getElementById('editJobModal').classList.add('hidden')"
-    >
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg relative max-h-90vh overflow-y-auto">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                  onclick="document.getElementById('editJobModal').classList.add('hidden')">✕</button>
-          
-          <h3 class="font-bold text-lg mb-4 text-primary">Edit Job</h3>
-          <form @submit.prevent="updateJob()">
-            <div class="modal-body">
-              <div class="mb-3">
-                <label for="editJobNumber" class="form-label">Job Number</label>
-                <input
-                  type="text"
-                  class="input input-bordered w-full bg-base-200"
-                  id="editJobNumber"
-                  x-model="editingJob.job_number"
-                  readonly
-                />
+    <div class="epic-modal-backdrop hidden"
+         id="editJobModal"
+         @click.self="document.getElementById('editJobModal').classList.add('hidden')">
+      <div class="epic-modal modal-lg">
+        <!-- Header -->
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">Job Management</div>
+          <h3 class="epic-modal-title">Edit Job</h3>
+          <button class="epic-modal-close" onclick="document.getElementById('editJobModal').classList.add('hidden')" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <form @submit.prevent="updateJob()">
+          <div class="epic-modal-body">
+            <!-- Job Number (readonly) -->
+            <div class="epic-form-section">
+              <label class="epic-form-label">Job Number</label>
+              <input type="text" class="epic-input" style="background: #f3f4f6;"
+                     id="editJobNumber"
+                     x-model="editingJob.job_number"
+                     readonly />
+            </div>
+
+            <!-- Client -->
+            <div class="epic-form-section">
+              <label class="epic-form-label required">Client</label>
+              <input type="text" class="epic-input"
+                     id="editJobClient"
+                     x-model="editingJob.client"
+                     required />
+            </div>
+
+            <!-- Address -->
+            <div class="epic-form-section">
+              <label class="epic-form-label" :class="{'required': !editingJob.is_parcel_job}">Address</label>
+              <input type="text" class="epic-input"
+                     id="editJobAddress"
+                     x-model="editingJob.address"
+                     :disabled="editingJob.is_parcel_job"
+                     :required="!editingJob.is_parcel_job"
+                     :style="editingJob.is_parcel_job ? 'background: #f3f4f6; cursor: not-allowed;' : ''" />
+              <template x-if="editingJob.is_parcel_job">
+                <p class="text-xs text-gray-500 mt-2">Address is managed by parcel lookup. Promote this job to edit the address.</p>
+              </template>
+            </div>
+
+            <!-- Status -->
+            <div class="epic-form-section">
+              <label class="epic-form-label">Status</label>
+              <select class="epic-input epic-select" id="editJobStatus" x-model="editingJob.status">
+                <option value="">Select Status</option>
+                <option value="On Hold/Pending Estimate">On Hold/Pending Estimate</option>
+                <option value="Cancelled/Declined">Cancelled/Declined</option>
+                <option value="Needs Fieldwork">Needs Fieldwork</option>
+                <option value="Fieldwork Complete">Fieldwork Complete</option>
+                <option value="To Be Printed">To Be Printed</option>
+                <option value="Set/Flag Pins">Set/Flag Pins</option>
+                <option value="Survey Complete/Invoice Sent">Survey Complete/Invoice Sent</option>
+                <option value="Completed/To be Filed">Completed/To be Filed</option>
+                <option value="Site Plan">Site Plan</option>
+              </select>
+            </div>
+
+            <!-- Due Date -->
+            <div class="epic-form-section">
+              <label class="epic-form-label">Due Date</label>
+              <input type="date" class="epic-input"
+                     id="editJobDueDate"
+                     x-model="editingJob.due_date" />
+            </div>
+
+            <!-- Notes -->
+            <div class="epic-form-section">
+              <label class="epic-form-label">Notes</label>
+              <textarea class="epic-input epic-textarea"
+                        id="editJobNotes"
+                        x-model="editingJob.notes"
+                        rows="3"></textarea>
+            </div>
+
+            <!-- Links Section -->
+            <div class="epic-form-section">
+              <div class="flex items-center justify-between mb-3">
+                <label class="epic-form-label" style="margin: 0;">Links</label>
+                <button type="button" class="epic-btn epic-btn-primary epic-btn-sm" @click="showLinkForm = !showLinkForm">
+                  <i class="bi" :class="showLinkForm ? 'bi-x-lg' : 'bi-plus-circle'"></i>
+                  <span x-text="showLinkForm ? 'Cancel' : 'Add Link'"></span>
+                </button>
               </div>
-              <div class="mb-3">
-                <label for="editJobClient" class="form-label">Client</label>
-                <input
-                  type="text"
-                  class="input input-bordered w-full"
-                  id="editJobClient"
-                  x-model="editingJob.client"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="editJobAddress" class="form-label"
-                  >Address (will re-geocode if changed)</label
-                >
-                <input
-                  type="text"
-                  class="input input-bordered w-full"
-                  id="editJobAddress"
-                  x-model="editingJob.address"
-                  :disabled="editingJob.is_parcel_job"
-                  :required="!editingJob.is_parcel_job"
-                />
-                <template x-if="editingJob.is_parcel_job">
-                  <p class="text-xs text-gray-500 mt-1">Address is managed by parcel lookup. Promote this job to edit the address.</p>
+
+              <!-- Link List -->
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <template x-if="!editingJob.links || editingJob.links.length === 0">
+                  <p style="color: #9ca3af; font-size: 0.875rem; font-style: italic;">No links added</p>
+                </template>
+                <template x-for="(link, index) in editingJob.links" :key="index">
+                  <div class="epic-link-item" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <a :href="link.url" target="_blank" rel="noopener noreferrer"
+                       style="flex: 1; display: flex; align-items: center; gap: 8px; color: #4f46e5; text-decoration: none; font-weight: 500;">
+                      <i class="bi bi-link-45deg"></i>
+                      <span x-text="link.display_name" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                      <i class="bi bi-box-arrow-up-right" style="font-size: 0.7rem; opacity: 0.6; flex-shrink: 0;"></i>
+                    </a>
+                    <button type="button" class="epic-btn epic-btn-ghost epic-btn-icon" style="flex-shrink: 0; padding: 4px 8px;" @click="removeJobLink(index)" title="Remove link">
+                      <i class="bi bi-trash" style="color: #ef4444;"></i>
+                    </button>
+                  </div>
                 </template>
               </div>
-              <div class="mb-3">
-                <label for="editJobStatus" class="form-label">Status</label>
-                <select
-                  class="select select-bordered w-full"
-                  id="editJobStatus"
-                  x-model="editingJob.status"
-                >
-                  <option value="">Select Status</option>
-                  <option value="On Hold/Pending Estimate">On Hold/Pending Estimate</option>
-                  <option value="Needs Fieldwork">Needs Fieldwork</option>
-                  <option value="Fieldwork Complete">Fieldwork Complete</option>
-                  <option value="To Be Printed">To Be Printed</option>
-                  <option value="Set/Flag Pins">Set/Flag Pins</option>
-                  <option value="Survey Complete/Invoice Sent">Survey Complete/Invoice Sent</option>
-                  <option value="Completed/To be Filed">Completed/To be Filed</option>
-                  <option value="Site Plan">Site Plan</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="editJobDueDate" class="form-label">Due Date</label>
-                <input
-                  type="date"
-                  class="input input-bordered w-full"
-                  id="editJobDueDate"
-                  x-model="editingJob.due_date"
-                />
-              </div>
-              <div class="mb-3">
-                <label for="editJobNotes" class="form-label">Notes</label>
-                <textarea
-                  class="textarea textarea-bordered w-full"
-                  id="editJobNotes"
-                  x-model="editingJob.notes"
-                  rows="3"
-                ></textarea>
-              </div>
 
-              <!-- Links Section -->
-              <div class="mb-3">
-                <div class="flex items-center justify-between mb-2">
-                  <label class="form-label mb-0">Links</label>
-                  <button type="button" class="btn btn-xs btn-primary" @click="showLinkForm = !showLinkForm">
-                    <i class="bi" :class="showLinkForm ? 'bi-x-lg' : 'bi-plus-circle'"></i>
-                    <span x-text="showLinkForm ? 'Cancel' : 'Add Link'"></span>
-                  </button>
-                </div>
-
-                <!-- Link List -->
-                <div class="space-y-2">
-                  <template x-if="!editingJob.links || editingJob.links.length === 0">
-                    <p class="text-sm text-gray-400 italic">No links added</p>
-                  </template>
-                  <template x-for="(link, index) in editingJob.links" :key="index">
-                    <div class="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
-                      <a :href="link.url" target="_blank" rel="noopener noreferrer"
-                         class="flex-1 flex items-center gap-2 text-primary hover:underline truncate">
-                        <i class="bi bi-link-45deg"></i>
-                        <span x-text="link.display_name" class="truncate"></span>
-                        <i class="bi bi-box-arrow-up-right text-xs opacity-60"></i>
-                      </a>
-                      <button type="button" class="btn btn-xs btn-ghost text-error" @click="removeJobLink(index)" title="Remove link">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </template>
-                </div>
-
-                <!-- Add Link Form -->
-                <div x-show="showLinkForm" x-transition class="mt-3 p-3 bg-base-200 rounded-lg space-y-2">
-                  <input type="text" class="input input-bordered input-sm w-full"
+              <!-- Add Link Form -->
+              <div x-show="showLinkForm" x-transition class="epic-data-card accent-purple" style="margin-top: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <input type="text" class="epic-input" style="padding: 12px 14px;"
                          placeholder="Display name (e.g., Property Appraiser)"
                          x-model="newLink.display_name" />
-                  <input type="url" class="input input-bordered input-sm w-full"
+                  <input type="url" class="epic-input" style="padding: 12px 14px;"
                          placeholder="https://..."
                          x-model="newLink.url" />
-                  <div class="flex justify-end gap-2">
-                    <button type="button" class="btn btn-xs btn-ghost" @click="showLinkForm = false; newLink = {display_name: '', url: ''}">Cancel</button>
-                    <button type="button" class="btn btn-xs btn-success" @click="addJobLink()">
+                  <div style="display: flex; gap: 8px; margin-top: 4px; justify-content: flex-end;">
+                    <button type="button" class="epic-btn epic-btn-ghost epic-btn-sm" @click="showLinkForm = false; newLink = {display_name: '', url: ''}">Cancel</button>
+                    <button type="button" class="epic-btn epic-btn-success epic-btn-sm" @click="addJobLink()">
                       <i class="bi bi-check-lg"></i> Add
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                @click="document.getElementById('editJobModal').classList.add('hidden')"
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="epic-modal-footer">
+            <button type="button" class="epic-btn epic-btn-ghost"
+                    @click="document.getElementById('editJobModal').classList.add('hidden')">
+              Cancel
+            </button>
+            <button type="submit" class="epic-btn epic-btn-primary">
+              Save Changes
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
     <!-- Promote to Address Modal -->
-    <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
-      id="promoteAddressModal"
-      @click.self="closePromoteModal()"
-    >
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closePromoteModal()">✕</button>
-        <h3 class="font-bold text-lg mb-4 text-primary">Upgrade to Address Job</h3>
-        <div class="mb-3">
-          <label class="block text-gray-600 text-sm font-medium mb-2">Address *</label>
-          <input type="text" id="promoteAddressInput" class="input input-bordered w-full" x-model="promotionAddress" placeholder="Enter full address" />
+    <div class="epic-modal-backdrop hidden"
+         id="promoteAddressModal"
+         @click.self="closePromoteModal()">
+      <div class="epic-modal" style="max-width: 420px;">
+        <!-- Header -->
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">Parcel Job</div>
+          <h3 class="epic-modal-title">Upgrade to Address</h3>
+          <button class="epic-modal-close" @click="closePromoteModal()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <div class="flex justify-end space-x-3 mt-2">
-          <button type="button" class="btn btn-ghost" @click="closePromoteModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" @click="submitPromote()">Upgrade</button>
-        </div>
+
+        <form @submit.prevent="submitPromote()">
+          <!-- Body -->
+          <div class="epic-modal-body">
+            <div class="epic-form-section">
+              <label class="epic-form-label required">Address</label>
+              <input type="text" id="promoteAddressInput" class="epic-input"
+                     x-model="promotionAddress"
+                     placeholder="Enter full address"
+                     required />
+              <p class="text-xs text-gray-500 mt-2">This will geocode the address and convert the parcel job to an address job.</p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="epic-modal-footer">
+            <button type="button" class="epic-btn epic-btn-ghost" @click="closePromoteModal()">Cancel</button>
+            <button type="submit" class="epic-btn epic-btn-primary">
+              <i class="bi bi-arrow-up-circle"></i> Upgrade
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
     <!-- Legacy Add Job Modal removed in favor of shared CreateJobModal -->
 
     <!-- Fieldwork Management Modal -->
-    <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
-      id="fieldworkModal"
-      @click.self="document.getElementById('fieldworkModal').classList.add('hidden')"
-    >
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-4xl relative max-h-[90vh] overflow-y-auto">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                onclick="document.getElementById('fieldworkModal').classList.add('hidden')">✕</button>
-        
-        <!-- Line 1: Time Tracking title and X button -->
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-bold text-lg text-primary">Time Tracking</h3>
-        </div>
-        
-        <!-- Line 2: Job # and Total Time -->
-        <div class="flex justify-between items-center mb-4">
-          <h4 class="font-medium text-gray-700" x-text="'Job #' + (fieldworkModal.job?.job_number || '')"></h4>
-          <div class="text-right">
-            <span class="text-gray-400 text-xs font-medium mr-2">Total Time</span>
-            <div class="inline-block px-3 py-1 rounded-full text-white text-sm font-medium bg-epic-pink" 
-                 x-text="formatDuration(getTotalFieldworkTime())">
+    <div class="epic-modal-backdrop hidden"
+         id="fieldworkModal"
+         @click.self="document.getElementById('fieldworkModal').classList.add('hidden')">
+      <div class="epic-modal modal-xl">
+        <!-- Header -->
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle" x-text="'Job #' + (fieldworkModal.job?.job_number || '')"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+            <h3 class="epic-modal-title">Time Tracking</h3>
+            <div class="epic-time-badge">
+              <i class="bi bi-clock"></i>
+              <span x-text="formatDuration(getTotalFieldworkTime())"></span>
             </div>
           </div>
-        </div>
-
-        <!-- Add New Entry Button -->
-        <div class="mb-4">
-          <button @click="showAddFieldworkForm = !showAddFieldworkForm" 
-                  class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle mr-1"></i>
-            <span x-text="showAddFieldworkForm ? 'Cancel' : 'Add New Entry'"></span>
+          <button class="epic-modal-close" onclick="document.getElementById('fieldworkModal').classList.add('hidden')" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
           </button>
         </div>
 
-        <!-- Add Entry Form -->
-        <div x-show="showAddFieldworkForm" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h5 class="font-medium text-gray-800 mb-3">Add Time Entry</h5>
-          <form @submit.prevent="saveFieldworkEntry()">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
-                <input type="date" x-model="newFieldworkEntry.work_date" class="input input-bordered input-sm w-full" required>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                <input type="text" x-model="newFieldworkEntry.total_time" placeholder="1:30 or 9:00a-10:30a" class="input input-bordered input-sm w-full" required>
-                <p class="text-xs text-gray-500 mt-1">H:MM or time range (e.g., 9:00a-10:30a)</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Crew</label>
-                <input type="text" x-model="newFieldworkEntry.crew" class="input input-bordered input-sm w-full" placeholder="Optional">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Drone Card</label>
-                <input type="text" x-model="newFieldworkEntry.drone_card" class="input input-bordered input-sm w-full" placeholder="Optional">
-              </div>
-            </div>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea x-model="newFieldworkEntry.notes" class="textarea textarea-bordered w-full" rows="2" placeholder="Optional notes"></textarea>
-            </div>
-            <div class="flex gap-2">
-              <button type="submit" class="btn btn-success btn-sm">
-                <i class="bi bi-check-lg mr-1"></i>
-                Save Entry
-              </button>
-              <button type="button" @click="showAddFieldworkForm = false; resetNewEntry()" class="btn btn-secondary btn-sm">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Fieldwork Entries Table -->
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Duration</th>
-                <th>Crew</th>
-                <th>Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="entry in fieldworkEntries" :key="entry.id">
-                <tr>
-                  <td x-text="formatDate(entry.work_date)"></td>
-                  <td x-text="entry.start_time"></td>
-                  <td x-text="entry.end_time"></td>
-                  <td x-text="formatDuration(entry.total_time)"></td>
-                  <td x-text="entry.crew || '-'"></td>
-                  <td x-text="entry.notes || '-'"></td>
-                  <td>
-                    <button @click="editFieldworkEntry(entry)" 
-                            class="px-2 py-1 rounded text-xs font-medium border-2 border-primary text-primary bg-white hover:bg-primary hover:text-white transition-colors duration-200 mr-1" title="Edit Entry">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button @click="deleteFieldworkEntry(entry)" 
-                            class="px-2 py-1 rounded text-xs font-medium border-2 border-error text-error bg-white hover:bg-error hover:text-white transition-colors duration-200" title="Delete Entry">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-
-        <template x-if="fieldworkEntries.length === 0">
-          <div class="text-center py-8 text-gray-500">
-            <i class="bi bi-clock-history text-4xl mb-2"></i>
-            <p>No time entries recorded for this job</p>
+        <!-- Body -->
+        <div class="epic-modal-body">
+          <!-- Add New Entry Button -->
+          <div class="epic-form-section" style="display: flex; align-items: center; justify-content: space-between;">
+            <label class="epic-form-label" style="margin: 0;">Time Entries</label>
+            <button @click="showAddFieldworkForm = !showAddFieldworkForm" class="epic-btn epic-btn-primary epic-btn-sm">
+              <i class="bi" :class="showAddFieldworkForm ? 'bi-x-lg' : 'bi-plus-circle'"></i>
+              <span x-text="showAddFieldworkForm ? 'Cancel' : 'Add Entry'"></span>
+            </button>
           </div>
-        </template>
+
+          <!-- Add Entry Form -->
+          <div x-show="showAddFieldworkForm" x-transition class="epic-data-card accent-pink" style="margin-bottom: 16px;">
+            <form @submit.prevent="saveFieldworkEntry()">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <label class="epic-form-label">Work Date</label>
+                  <input type="date" x-model="newFieldworkEntry.work_date" class="epic-input" style="padding: 10px 14px;" required>
+                </div>
+                <div>
+                  <label class="epic-form-label">Duration</label>
+                  <input type="text" x-model="newFieldworkEntry.total_time" placeholder="1:30 or 9:00a-10:30a" class="epic-input" style="padding: 10px 14px;" required>
+                  <p class="text-xs text-gray-500 mt-1">H:MM or time range</p>
+                </div>
+                <div>
+                  <label class="epic-form-label">Crew</label>
+                  <input type="text" x-model="newFieldworkEntry.crew" class="epic-input" style="padding: 10px 14px;" placeholder="Optional">
+                </div>
+                <div>
+                  <label class="epic-form-label">Drone Card</label>
+                  <input type="text" x-model="newFieldworkEntry.drone_card" class="epic-input" style="padding: 10px 14px;" placeholder="Optional">
+                </div>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label class="epic-form-label">Notes</label>
+                <textarea x-model="newFieldworkEntry.notes" class="epic-input epic-textarea" rows="2" placeholder="Optional notes"></textarea>
+              </div>
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" @click="showAddFieldworkForm = false; resetNewEntry()" class="epic-btn epic-btn-ghost epic-btn-sm">Cancel</button>
+                <button type="submit" class="epic-btn epic-btn-success epic-btn-sm">
+                  <i class="bi bi-check-lg"></i> Save Entry
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Fieldwork Entries Table -->
+          <div class="epic-table-container">
+            <table class="epic-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Duration</th>
+                  <th>Crew</th>
+                  <th>Notes</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="entry in fieldworkEntries" :key="entry.id">
+                  <tr>
+                    <td x-text="formatDate(entry.work_date)"></td>
+                    <td x-text="entry.start_time || '-'"></td>
+                    <td x-text="entry.end_time || '-'"></td>
+                    <td><span class="font-mono text-epic-pink font-semibold" x-text="formatDuration(entry.total_time)"></span></td>
+                    <td x-text="entry.crew || '-'"></td>
+                    <td x-text="entry.notes || '-'"></td>
+                    <td style="text-align: right;">
+                      <button @click="editFieldworkEntry(entry)" class="epic-btn epic-btn-ghost epic-btn-sm" title="Edit Entry">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button @click="deleteFieldworkEntry(entry)" class="epic-btn epic-btn-ghost epic-btn-sm" style="color: #ef4444;" title="Delete Entry">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+
+            <template x-if="fieldworkEntries.length === 0">
+              <div class="epic-empty-state">
+                <i class="bi bi-clock-history"></i>
+                <p>No time entries recorded for this job</p>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="epic-modal-footer">
+          <button class="epic-btn epic-btn-primary" onclick="document.getElementById('fieldworkModal').classList.add('hidden')">Done</button>
+        </div>
       </div>
     </div>
 
     <!-- Confirmation Modal -->
-    <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[2000]"
-      id="confirmModal"
-      @click.self="hideConfirmModal()"
-    >
-      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-md relative">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
-                @click="hideConfirmModal()">✕</button>
-        
-        <h3 class="font-bold text-lg mb-4 text-primary" x-text="confirmModal.title"></h3>
-        
-        <p class="mb-6" x-text="confirmModal.message"></p>
-        
-        <div class="flex justify-end space-x-3">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            @click="hideConfirmModal()"
-          >
-            Cancel
+    <div class="epic-modal-backdrop hidden" style="z-index: 2001;"
+         id="confirmModal"
+         @click.self="hideConfirmModal()">
+      <div class="epic-modal modal-danger" style="max-width: 420px;">
+        <!-- Header -->
+        <div class="epic-modal-header">
+          <h3 class="epic-modal-title" x-text="confirmModal.title"></h3>
+          <button class="epic-modal-close" @click="hideConfirmModal()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
           </button>
-          <button
-            type="button"
-            class="btn btn-error"
-            @click="confirmModal.callback(); hideConfirmModal()"
-          >
+        </div>
+
+        <!-- Body -->
+        <div class="epic-modal-body">
+          <p style="margin: 0; color: #374151; line-height: 1.6;" x-text="confirmModal.message"></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="epic-modal-footer">
+          <button type="button" class="epic-btn epic-btn-ghost" @click="hideConfirmModal()">Cancel</button>
+          <button type="button" class="epic-btn epic-btn-danger" @click="confirmModal.callback(); hideConfirmModal()">
+            <i class="bi bi-trash"></i>
             <span x-text="confirmModal.confirmText"></span>
           </button>
         </div>
@@ -2036,69 +2062,68 @@
     </div>
 
     <!-- Bulk Update Status Modal -->
-    <div id="bulkUpdateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" @click.stop>
+    <div class="epic-modal-backdrop hidden"
+         id="bulkUpdateModal"
+         @click.self="closeBulkUpdateModal()">
+      <div class="epic-modal" style="max-width: 480px;">
         <!-- Header -->
-        <div class="flex items-center justify-between p-6 border-b">
-          <h3 class="text-xl font-semibold">
-            <i class="bi bi-arrow-repeat text-primary"></i> Update Job Status
-          </h3>
-          <button @click="closeBulkUpdateModal()"
-                  class="btn btn-sm btn-ghost btn-circle"
-                  title="Close">
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">Bulk Action</div>
+          <h3 class="epic-modal-title">Update Status</h3>
+          <button class="epic-modal-close" @click="closeBulkUpdateModal()" aria-label="Close">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
 
-        <!-- Body -->
-        <div class="p-6">
-          <p class="text-gray-600 mb-4">
-            Update status for <strong x-text="getSelectedCount()"></strong>
-            <span x-text="getSelectedCount() === 1 ? 'job' : 'jobs'"></span>:
-          </p>
+        <form @submit.prevent="executeBulkUpdate()">
+          <!-- Body -->
+          <div class="epic-modal-body">
+            <div class="epic-form-section">
+              <p style="color: #374151; margin-bottom: 16px;">
+                Update status for <strong x-text="getSelectedCount()"></strong>
+                <span x-text="getSelectedCount() === 1 ? 'job' : 'jobs'"></span>:
+              </p>
 
-          <!-- Status Selector -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">New Status</span>
-            </label>
-            <select id="bulkStatusSelect"
-                    class="select select-bordered w-full"
-                    x-model="bulkOperation.status"
+              <label class="epic-form-label required">New Status</label>
+              <select id="bulkStatusSelect"
+                      class="epic-input epic-select"
+                      x-model="bulkOperation.status"
+                      :disabled="bulkOperation.inProgress"
+                      required>
+                <option value="">Select a status...</option>
+                <template x-for="status in statuses" :key="status">
+                  <option :value="status" x-text="status"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="epic-data-card accent-blue" style="margin-top: 16px;">
+              <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <i class="bi bi-info-circle" style="color: #3b82f6; font-size: 1.25rem; flex-shrink: 0;"></i>
+                <p style="margin: 0; font-size: 0.875rem; color: #374151;">This will update the status for all selected jobs.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="epic-modal-footer">
+            <button type="button" class="epic-btn epic-btn-ghost"
+                    @click="closeBulkUpdateModal()"
                     :disabled="bulkOperation.inProgress">
-              <option value="">Select a status...</option>
-              <template x-for="status in statuses" :key="status">
-                <option :value="status" x-text="status"></option>
+              Cancel
+            </button>
+            <button type="submit" class="epic-btn epic-btn-primary"
+                    :disabled="!bulkOperation.status || bulkOperation.inProgress">
+              <template x-if="bulkOperation.inProgress">
+                <span class="loading loading-spinner loading-sm"></span>
               </template>
-            </select>
+              <template x-if="!bulkOperation.inProgress">
+                <i class="bi bi-check-lg"></i>
+              </template>
+              <span x-text="bulkOperation.inProgress ? 'Updating...' : 'Update'"></span>
+            </button>
           </div>
-
-          <!-- Info Alert -->
-          <div class="alert alert-info mt-4">
-            <i class="bi bi-info-circle"></i>
-            <span class="text-sm">This will update the status for all selected jobs.</span>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-end gap-2 p-6 border-t bg-gray-50">
-          <button @click="closeBulkUpdateModal()"
-                  class="btn btn-ghost"
-                  :disabled="bulkOperation.inProgress">
-            Cancel
-          </button>
-          <button @click="executeBulkUpdate()"
-                  class="btn btn-primary !text-white"
-                  :disabled="!bulkOperation.status || bulkOperation.inProgress">
-            <template x-if="bulkOperation.inProgress">
-              <span class="loading loading-spinner loading-sm"></span>
-            </template>
-            <template x-if="!bulkOperation.inProgress">
-              <i class="bi bi-check-lg"></i>
-            </template>
-            <span x-text="bulkOperation.inProgress ? 'Updating...' : 'Update'"></span>
-          </button>
-        </div>
+        </form>
       </div>
     </div>
 

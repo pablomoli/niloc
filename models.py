@@ -426,14 +426,18 @@ class Schedule(db.Model):
 
     def to_dict(self):
         """Serialize Schedule to dictionary."""
+        job = self.job
+        job_tags = [tag.to_dict() for tag in job.tags] if job and job.tags else []
         return {
             "id": self.id,
             "job_id": self.job_id,
-            "job_number": self.job.job_number if self.job else None,
-            "client": self.job.client if self.job else None,
-            "address": self.job.address if self.job else None,
-            "lat": self.job.lat if self.job else None,
-            "lng": self.job.long if self.job else None,
+            "job_number": job.job_number if job else None,
+            "client": job.client if job else None,
+            "address": job.address if job else None,
+            "status": job.status if job else None,
+            "tags": job_tags,
+            "lat": job.lat if job else None,
+            "lng": job.long if job else None,
             "scheduled_date": self.scheduled_date.isoformat() if self.scheduled_date else None,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,
@@ -448,4 +452,3 @@ class Schedule(db.Model):
     def __repr__(self):
         job_num = self.job.job_number if self.job else "?"
         return f"<Schedule {job_num} on {self.scheduled_date}>"
-

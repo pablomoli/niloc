@@ -20,6 +20,29 @@ SimpleModal.show = function(job) {
         this.refreshFieldworkDisplay();
         this.updateTotalTimeDisplay();
     });
+
+    // Add escape key handler
+    this._escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            // Check if nested modals are open first
+            const confirmModal = document.getElementById('fieldwork-confirm-modal');
+            const promotionModal = document.getElementById('promotion-modal');
+            if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                this.hideConfirmModal();
+                e.preventDefault();
+                return;
+            }
+            if (promotionModal && !promotionModal.classList.contains('hidden')) {
+                this.closePromotion();
+                e.preventDefault();
+                return;
+            }
+            // Close main modal
+            this.hide();
+            e.preventDefault();
+        }
+    };
+    document.addEventListener('keydown', this._escapeHandler);
 };
 
 /**
@@ -408,6 +431,12 @@ SimpleModal.renderModal = function(job, femaLink) {
  * Hide the modal.
  */
 SimpleModal.hide = function() {
+    // Remove escape key handler
+    if (this._escapeHandler) {
+        document.removeEventListener('keydown', this._escapeHandler);
+        this._escapeHandler = null;
+    }
+
     const modal = document.getElementById('simpleJobModal');
     if (modal) {
         modal.remove();
