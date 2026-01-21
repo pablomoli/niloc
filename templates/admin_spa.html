@@ -289,7 +289,7 @@
                              @click="openScheduleModal(schedule)">
                           <div class="font-semibold truncate">
                             <span x-text="schedule.job_number"></span>
-                            <span class="opacity-75 font-normal" x-show="schedule.address" x-text="' - ' + extractStreetName(schedule.address)"></span>
+                            <span class="opacity-75 font-normal" x-show="schedule.address || schedule.street_name" x-text="' - ' + (schedule.address ? extractStreetName(schedule.address) : schedule.street_name)"></span>
                           </div>
                           <div class="truncate opacity-90" x-text="schedule.client"></div>
                           <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>

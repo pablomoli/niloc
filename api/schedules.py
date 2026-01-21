@@ -1,6 +1,7 @@
 # api/schedules.py - Schedule CRUD and routing optimization endpoints
 import logging
 import math
+import re
 from datetime import datetime, date, time, timedelta, timezone
 
 from flask import jsonify, request, session, make_response
@@ -529,8 +530,27 @@ def generate_ics(schedules, calendar_name="Epic Map Schedule"):
         else:
             dtend = dtstart + timedelta(hours=1)  # Default 1 hour
 
-        # Escape special characters
-        summary = escape_ics_text(f"{job.job_number} - {job.client}")
+        # Extract street name for summary
+        street_name = ""
+        if job.address:
+            # Extract street name from address (portion before first comma, without house number)
+            street_part = job.address.split(',')[0].strip()
+            # Remove leading house number (digits, optional letter suffix)
+            street_name = re.sub(r'^\d+[A-Za-z]?\s+', '', street_part) or street_part
+        elif job.is_parcel_job and job.parcel_data:
+            # Get street_name from parcel_data for parcel jobs
+            # Prefer street_name, fall back to formatted_address (for older jobs)
+            raw_response = job.parcel_data.get('raw_response', {})
+            street_name = raw_response.get('street_name') or raw_response.get('formatted_address', '')
+            # Don't use "No Address Available" as street name
+            if street_name == 'No Address Available':
+                street_name = ''
+
+        # Build summary with job number and street name
+        if street_name:
+            summary = escape_ics_text(f"{job.job_number} - {street_name}")
+        else:
+            summary = escape_ics_text(f"{job.job_number} - {job.client}")
 
         # Location: prefer address, fallback to coordinates
         if job.address:

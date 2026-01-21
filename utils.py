@@ -393,7 +393,7 @@ def geocode_orange_parcel(parcel_id):
         url = "https://ocgis4.ocfl.net/arcgis/rest/services/Public_Dynamic/MapServer/216/query"
         params = {
             'where': f"PARCEL='{api_parcel_id}'",
-            'outFields': 'PARCEL,LATITUDE,LONGITUDE,SITUS',
+            'outFields': 'PARCEL,LATITUDE,LONGITUDE,SITUS,STR_NAME',
             'returnGeometry': 'true',
             'outSR': '4326',  # WGS84 for Leaflet compatibility
             'f': 'json'
@@ -415,6 +415,7 @@ def geocode_orange_parcel(parcel_id):
         latitude = attributes.get('LATITUDE')
         longitude = attributes.get('LONGITUDE')
         situs = attributes.get('SITUS', 'No Address Available')
+        street_name = attributes.get('STR_NAME', '')
 
         if latitude is None or longitude is None:
             logger.warning(f"Missing coordinates for Orange County parcel: {parcel_id}")
@@ -427,6 +428,7 @@ def geocode_orange_parcel(parcel_id):
             "formatted_address": situs if situs != 'No Address Available' else "No Address Available",
             "county": "Orange",
             "parcel_id": parcel_id,  # Keep original format with dashes
+            "street_name": street_name,
             "notes": f"Orange County Parcel - Parcel ID: {parcel_id}"
         }
 

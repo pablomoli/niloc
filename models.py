@@ -427,6 +427,19 @@ class Schedule(db.Model):
         """Serialize Schedule to dictionary, including job notes and links."""
         job = self.job
         job_tags = [tag.to_dict() for tag in job.tags] if job and job.tags else []
+
+        # Extract street_name from parcel_data for parcel jobs
+        street_name = None
+        if job and job.is_parcel_job and job.parcel_data:
+            parcel_data = job.parcel_data
+            # Check raw_response (contains full API response)
+            raw_response = parcel_data.get('raw_response', {})
+            # Prefer street_name, fall back to formatted_address (for older jobs)
+            street_name = raw_response.get('street_name') or raw_response.get('formatted_address', '')
+            # Don't use "No Address Available" as street name
+            if street_name == 'No Address Available':
+                street_name = None
+
         return {
             "id": self.id,
             "job_id": self.job_id,
@@ -437,6 +450,8 @@ class Schedule(db.Model):
             "tags": job_tags,
             "lat": job.lat if job else None,
             "lng": job.long if job else None,
+            "is_parcel_job": job.is_parcel_job if job else False,
+            "street_name": street_name,
             "scheduled_date": self.scheduled_date.isoformat() if self.scheduled_date else None,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,
