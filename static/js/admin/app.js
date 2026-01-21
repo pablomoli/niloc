@@ -248,6 +248,13 @@ window.adminAppComponent = function() {
     _scheduleJobSearchTimer: null,
     _scheduleJobSearchAbort: null,
 
+    // Calendar subscription modal state
+    calendarSubModal: {
+      show: false,
+      selectedTagIds: [],
+      copied: false,
+    },
+
     init() {
       this.ensureTabData('dashboard');
       document.addEventListener('jobCreated', async () => {
@@ -311,6 +318,7 @@ window.adminAppComponent = function() {
           { id: 'editUserModal', close: () => document.getElementById('editUserModal')?.classList.add('hidden') },
           { id: 'addUserModal', close: () => document.getElementById('addUserModal')?.classList.add('hidden') },
           { id: 'scheduleModal', check: () => this.scheduleModal.show, close: () => this.closeScheduleModal() },
+          { id: 'calendarSubModal', check: () => this.calendarSubModal.show, close: () => this.closeCalendarSubModal() },
         ];
 
         for (const modal of modals) {
@@ -1385,6 +1393,62 @@ window.adminAppComponent = function() {
       this.scheduleModal.show = false;
       this.scheduleModal.showJobSuggestions = false;
       this.scheduleModal.showJobResults = false;
+    },
+
+    // Calendar Subscription Modal methods
+    async openCalendarSubModal() {
+      // Ensure tags are loaded for selection
+      if (!this.tagsLoaded || this.tags.length === 0) {
+        await this.loadTags(false);
+      }
+      this.calendarSubModal = {
+        show: true,
+        selectedTagIds: [],
+        copied: false,
+      };
+    },
+
+    closeCalendarSubModal() {
+      this.calendarSubModal.show = false;
+    },
+
+    toggleCalendarSubTag(tagId) {
+      const idx = this.calendarSubModal.selectedTagIds.indexOf(tagId);
+      if (idx === -1) {
+        this.calendarSubModal.selectedTagIds.push(tagId);
+      } else {
+        this.calendarSubModal.selectedTagIds.splice(idx, 1);
+      }
+      this.calendarSubModal.copied = false;
+    },
+
+    isCalendarSubTagSelected(tagId) {
+      return this.calendarSubModal.selectedTagIds.includes(tagId);
+    },
+
+    getCalendarSubUrl() {
+      const base = `${window.location.origin}/api/schedules/calendar.ics`;
+      const params = new URLSearchParams();
+      params.set('days', '90');
+      if (this.calendarSubModal.selectedTagIds.length > 0) {
+        params.set('tags', this.calendarSubModal.selectedTagIds.join(','));
+      }
+      return `${base}?${params.toString()}`;
+    },
+
+    async copyCalendarSubUrl() {
+      const url = this.getCalendarSubUrl();
+      try {
+        await navigator.clipboard.writeText(url);
+        this.calendarSubModal.copied = true;
+        Alpine.store('notifications').add('Calendar URL copied to clipboard', 'success');
+        setTimeout(() => {
+          this.calendarSubModal.copied = false;
+        }, 2000);
+      } catch (e) {
+        console.error('Failed to copy URL:', e);
+        Alpine.store('notifications').add('Failed to copy URL', 'error');
+      }
     },
 
     async submitPromote() {

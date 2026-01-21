@@ -248,9 +248,9 @@
                     <i class="bi bi-chevron-right text-gray-600 text-xs"></i>
                   </button>
                   <button class="ml-1 px-1.5 py-0.5 text-xs font-medium rounded bg-gray-100 hover:bg-gray-200" @click="calendarToday()">Today</button>
-                  <a :href="`/api/schedules/calendar.ics?days=90`" class="ml-1 p-1 rounded hover:bg-gray-200" title="Export .ics">
-                    <i class="bi bi-download text-gray-600 text-xs"></i>
-                  </a>
+                  <button class="ml-1 p-1 rounded hover:bg-gray-200" @click="openCalendarSubModal()" title="Subscribe to Calendar">
+                    <i class="bi bi-link-45deg text-gray-600 text-xs"></i>
+                  </button>
                 </div>
               </div>
 
@@ -1495,6 +1495,55 @@
           <div class="flex justify-center items-center py-8" x-show="_loadingDeletedJobs">
             <span class="loading loading-spinner loading-lg"></span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Subscription Modal -->
+    <div class="epic-modal-backdrop" x-show="calendarSubModal.show" x-cloak @click.self="closeCalendarSubModal()">
+      <div class="epic-modal" style="max-width: 500px;">
+        <div class="epic-modal-header">
+          <div class="epic-modal-subtitle">Calendar</div>
+          <h3 class="epic-modal-title">Subscribe to Schedule</h3>
+          <button class="epic-modal-close" @click="closeCalendarSubModal()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="epic-modal-body">
+          <div class="epic-form-section">
+            <label class="epic-form-label">Filter by Tags (optional)</label>
+            <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 12px;">Select tags to only include jobs with those tags. Leave empty for all jobs.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px;">
+              <template x-for="tag in tags" :key="tag.id">
+                <button class="epic-tag-filled cursor-pointer transition-all"
+                        :class="[getTagTextColor(tag.color), isCalendarSubTagSelected(tag.id) ? 'ring-2 ring-offset-1 ring-gray-400' : 'opacity-60 hover:opacity-100']"
+                        :style="`background-color:${tag.color||'#007bff'};`"
+                        @click="toggleCalendarSubTag(tag.id)">
+                  <span x-text="tag.name"></span>
+                  <i class="bi bi-check ml-1" x-show="isCalendarSubTagSelected(tag.id)"></i>
+                </button>
+              </template>
+              <template x-if="!tags || tags.length === 0">
+                <span style="color: #9ca3af; font-size: 0.875rem; font-style: italic;">No tags available</span>
+              </template>
+            </div>
+          </div>
+          <div class="epic-form-section">
+            <label class="epic-form-label">Calendar URL</label>
+            <div class="flex gap-2 items-stretch">
+              <input type="text" class="epic-input flex-1" readonly :value="getCalendarSubUrl()" style="font-size: 0.75rem; font-family: monospace;">
+              <button class="epic-btn epic-btn-primary flex items-center gap-2" @click="copyCalendarSubUrl()">
+                <i class="bi" :class="calendarSubModal.copied ? 'bi-check' : 'bi-clipboard'"></i>
+                <span x-text="calendarSubModal.copied ? 'Copied' : 'Copy'"></span>
+              </button>
+            </div>
+            <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+              Add this URL to Outlook, Google Calendar, or any calendar app that supports iCal subscriptions.
+            </p>
+          </div>
+        </div>
+        <div class="epic-modal-footer">
+          <button class="epic-btn" @click="closeCalendarSubModal()">Close</button>
         </div>
       </div>
     </div>

@@ -408,7 +408,6 @@ class Schedule(db.Model):
     end_time = db.Column(db.Time, nullable=True)  # Time block end
     estimated_duration = db.Column(db.Float, nullable=True)  # Hours
     route_order = db.Column(db.Integer, nullable=True)  # Position in day's route
-    notes = db.Column(db.Text)
     created_at = db.Column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

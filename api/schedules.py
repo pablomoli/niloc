@@ -7,7 +7,7 @@ from flask import jsonify, request, session, make_response
 
 from api import api_bp
 from auth_utils import login_required
-from models import db, Job, Schedule, POI
+from models import db, Job, Schedule, POI, Tag, job_tags
 
 logger = logging.getLogger(__name__)
 
@@ -493,7 +493,14 @@ def reorder_day_schedules(date_str):
 # =============================================================================
 
 
-def generate_ics(schedules):
+def escape_ics_text(text):
+    """Escape special characters for iCal format."""
+    if not text:
+        return ""
+    return text.replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
+
+
+def generate_ics(schedules, calendar_name="Epic Map Schedule"):
     """Generate iCal format string from schedules."""
     lines = [
         "BEGIN:VCALENDAR",
@@ -501,7 +508,7 @@ def generate_ics(schedules):
         "PRODID:-//Epic Map System//Schedule//EN",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
-        "X-WR-CALNAME:Epic Map Schedule",
+        f"X-WR-CALNAME:{escape_ics_text(calendar_name)}",
     ]
 
     for s in schedules:
@@ -523,22 +530,41 @@ def generate_ics(schedules):
             dtend = dtstart + timedelta(hours=1)  # Default 1 hour
 
         # Escape special characters
-        summary = f"{job.job_number} - {job.client}".replace(",", "\\,").replace(";", "\\;")
-        location = (job.address or "").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
+        summary = escape_ics_text(f"{job.job_number} - {job.client}")
 
+        # Location: prefer address, fallback to coordinates
+        if job.address:
+            location = escape_ics_text(job.address)
+        elif job.lat and job.long:
+            location = f"{job.lat},{job.long}"
+        else:
+            location = ""
+
+        # Build description with notes and links
         description_parts = []
         if job.status:
             description_parts.append(f"Status: {job.status}")
         if s.estimated_duration:
             description_parts.append(f"Est. Duration: {s.estimated_duration}h")
         if job.notes:
-            description_parts.append(job.notes)
-        description = "\\n".join(description_parts).replace(",", "\\,").replace(";", "\\;")
+            description_parts.append(f"\\n{job.notes}")
+
+        # Add job links
+        job_links = job.links or []
+        if job_links:
+            description_parts.append("\\nLinks:")
+            for link in job_links:
+                display_name = link.get("display_name", "Link")
+                url = link.get("url", "")
+                if url:
+                    description_parts.append(f"- {display_name}: {url}")
+
+        description = escape_ics_text("\\n".join(description_parts))
 
         # Generate unique ID
         uid = f"schedule-{s.id}@epicmap.local"
 
-        lines.extend([
+        event_lines = [
             "BEGIN:VEVENT",
             f"UID:{uid}",
             f"DTSTAMP:{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
@@ -547,21 +573,34 @@ def generate_ics(schedules):
             f"SUMMARY:{summary}",
             f"LOCATION:{location}",
             f"DESCRIPTION:{description}",
-            "END:VEVENT",
-        ])
+        ]
+
+        # Add CATEGORIES for Outlook color coding
+        if job.status:
+            event_lines.append(f"CATEGORIES:{escape_ics_text(job.status)}")
+
+        event_lines.append("END:VEVENT")
+        lines.extend(event_lines)
 
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines)
 
 
 @api_bp.route("/schedules/calendar.ics", methods=["GET"])
-@login_required
 def export_ics():
     """
     GET /api/schedules/calendar.ics - Export schedules as iCal feed.
+    Public endpoint for calendar subscription.
+
     Query params:
         - days: number of days to include (default 90, max 365)
         - start_date: custom start date (default today)
+        - tags: comma-separated tag IDs to filter by (OR logic)
+
+    Example URLs:
+        /api/schedules/calendar.ics
+        /api/schedules/calendar.ics?tags=1,2,3
+        /api/schedules/calendar.ics?days=30&tags=5
     """
     days = request.args.get("days", 90, type=int)
     days = min(max(days, 1), 365)
@@ -574,17 +613,47 @@ def export_ics():
 
     end = start + timedelta(days=days)
 
-    schedules = (
+    # Build base query
+    query = (
         Schedule.query
         .join(Job)
         .filter(Job.deleted_at.is_(None))
         .filter(Schedule.scheduled_date >= start)
         .filter(Schedule.scheduled_date <= end)
-        .order_by(Schedule.scheduled_date, Schedule.start_time)
-        .all()
     )
 
-    ics_content = generate_ics(schedules)
+    # Parse and apply tag filter
+    tags_param = request.args.get("tags", "")
+    tag_ids = []
+    tag_names = []
+
+    if tags_param:
+        try:
+            tag_ids = [int(t.strip()) for t in tags_param.split(",") if t.strip()]
+        except ValueError:
+            # Invalid tag IDs provided
+            pass
+
+        if tag_ids:
+            # Filter schedules where job has any of the specified tags (OR logic)
+            query = query.join(job_tags, Job.id == job_tags.c.job_id)
+            query = query.filter(job_tags.c.tag_id.in_(tag_ids))
+            # Use distinct to avoid duplicates when job has multiple matching tags
+            query = query.distinct()
+
+            # Fetch tag names for calendar title
+            tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+            tag_names = [t.name for t in tags]
+
+    schedules = query.order_by(Schedule.scheduled_date, Schedule.start_time).all()
+
+    # Build calendar name
+    if tag_names:
+        calendar_name = f"Epic Map Schedule ({', '.join(tag_names)})"
+    else:
+        calendar_name = "Epic Map Schedule"
+
+    ics_content = generate_ics(schedules, calendar_name=calendar_name)
 
     response = make_response(ics_content)
     response.headers["Content-Type"] = "text/calendar; charset=utf-8"
