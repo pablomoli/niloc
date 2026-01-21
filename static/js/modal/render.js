@@ -190,6 +190,26 @@ SimpleModal.renderModal = function(job, femaLink) {
                     <div class="epic-form-section">
                         <div class="epic-data-card accent-blue">
                             <label class="epic-form-label">Location</label>
+                            ${job.is_parcel_job ? `
+                            <!-- Parcel Job Location Display -->
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                ${this.getParcelStreetName(job) ? `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="bi bi-signpost-2" style="color: #6b7280;"></i>
+                                    <span style="font-weight: 500;">${escapeHtml(this.getParcelStreetName(job))}</span>
+                                </div>
+                                ` : ''}
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="bi bi-map" style="color: #6b7280;"></i>
+                                    <span class="font-mono" style="font-size: 0.875rem;">${escapeHtml(job.parcel_data?.parcel_id || 'N/A')}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="bi bi-geo-alt" style="color: #6b7280;"></i>
+                                    <span style="font-size: 0.875rem; color: #6b7280;">${escapeHtml(job.county) || 'N/A'} County</span>
+                                </div>
+                            </div>
+                            ` : `
+                            <!-- Address Job Location Display -->
                             <div id="address-view" style="display: block;">
                                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                                     <div style="flex: 1;">
@@ -226,6 +246,7 @@ SimpleModal.renderModal = function(job, femaLink) {
                                     </button>
                                 </div>
                             </div>
+                            `}
                         </div>
                     </div>
 

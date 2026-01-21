@@ -14,6 +14,19 @@ SimpleModal.generateFEMALink = function(lat, long) {
 };
 
 /**
+ * Get street name from parcel job data.
+ * Prefers street_name, falls back to formatted_address.
+ */
+SimpleModal.getParcelStreetName = function(job) {
+    if (!job || !job.is_parcel_job || !job.parcel_data) return null;
+    const rawResponse = job.parcel_data.raw_response || {};
+    const streetName = rawResponse.street_name || rawResponse.formatted_address || '';
+    // Don't return "No Address Available"
+    if (streetName === 'No Address Available') return null;
+    return streetName || null;
+};
+
+/**
  * Generate status dropdown options.
  */
 SimpleModal.generateStatusOptions = function(currentStatus) {
