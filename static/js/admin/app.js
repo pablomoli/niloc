@@ -2465,6 +2465,15 @@ window.adminAppComponent = function() {
       return start;
     },
 
+    extractStreetName(address) {
+      if (!address) return '';
+      // Get the street portion (before first comma)
+      const streetPart = address.split(',')[0].trim();
+      // Remove leading house number (digits, optional letter suffix like "123A")
+      const withoutNumber = streetPart.replace(/^\d+[A-Za-z]?\s+/, '');
+      return withoutNumber || streetPart;
+    },
+
     getScheduleBlockStyle(schedule) {
       const color = this.getStatusColor(schedule.status);
       return `background-color: ${color}; border-color: ${color};`;
@@ -2607,6 +2616,8 @@ window.adminAppComponent = function() {
       this.scheduleModal.data.job_id = job.id;
       this.scheduleModal.data.job_number = job.job_number;
       this.scheduleModal.data.client = job.client;
+      this.scheduleModal.data.job_notes = job.notes || null;
+      this.scheduleModal.data.job_links = job.links || [];
       this.scheduleModal.jobSearch = job.job_number;
       this.scheduleModal.showJobResults = false;
     },
@@ -2625,8 +2636,7 @@ window.adminAppComponent = function() {
           scheduled_date: data.scheduled_date,
           start_time: data.start_time || null,
           end_time: data.end_time || null,
-          estimated_duration: data.estimated_duration ? parseFloat(data.estimated_duration) : null,
-          notes: data.notes || null
+          estimated_duration: data.estimated_duration ? parseFloat(data.estimated_duration) : null
         };
 
         const resp = await fetch(url, {

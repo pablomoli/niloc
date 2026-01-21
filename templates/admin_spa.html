@@ -287,7 +287,10 @@
                              draggable="true"
                              @dragstart="handleScheduleDragStart($event, schedule)"
                              @click="openScheduleModal(schedule)">
-                          <div class="font-semibold truncate" x-text="schedule.job_number"></div>
+                          <div class="font-semibold truncate">
+                            <span x-text="schedule.job_number"></span>
+                            <span class="opacity-75 font-normal" x-show="schedule.address" x-text="' - ' + extractStreetName(schedule.address)"></span>
+                          </div>
                           <div class="truncate opacity-90" x-text="schedule.client"></div>
                           <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
                           <template x-if="(schedule.tags || []).length">
@@ -410,11 +413,30 @@
                 </div>
               </div>
 
-              <!-- Notes -->
-              <div class="epic-form-section">
-                <label class="epic-form-label">Notes</label>
-                <textarea class="epic-input epic-textarea" rows="2" x-model="scheduleModal.data.notes" placeholder="Optional notes..."></textarea>
-              </div>
+              <!-- Job Notes (read-only, inherited from job) -->
+              <template x-if="scheduleModal.data.job_notes">
+                <div class="epic-form-section">
+                  <label class="epic-form-label">Job Notes</label>
+                  <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 border border-gray-200" x-text="scheduleModal.data.job_notes"></div>
+                </div>
+              </template>
+
+              <!-- Job Links (read-only, inherited from job) -->
+              <template x-if="scheduleModal.data.job_links && scheduleModal.data.job_links.length">
+                <div class="epic-form-section">
+                  <label class="epic-form-label">Job Links</label>
+                  <div class="flex flex-col gap-2">
+                    <template x-for="(link, idx) in (scheduleModal.data.job_links || [])" :key="idx">
+                      <a :href="link.url" target="_blank" rel="noopener noreferrer"
+                         class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-indigo-600 hover:bg-gray-100 transition-colors text-sm font-medium">
+                        <i class="bi bi-link-45deg"></i>
+                        <span class="flex-1 truncate" x-text="link.display_name"></span>
+                        <i class="bi bi-box-arrow-up-right text-xs opacity-60"></i>
+                      </a>
+                    </template>
+                  </div>
+                </div>
+              </template>
             </div>
 
             <!-- Footer -->

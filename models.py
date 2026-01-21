@@ -425,7 +425,7 @@ class Schedule(db.Model):
     created_by = db.relationship("User", backref="created_schedules")
 
     def to_dict(self):
-        """Serialize Schedule to dictionary."""
+        """Serialize Schedule to dictionary, including job notes and links."""
         job = self.job
         job_tags = [tag.to_dict() for tag in job.tags] if job and job.tags else []
         return {
@@ -443,10 +443,12 @@ class Schedule(db.Model):
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "estimated_duration": self.estimated_duration,
             "route_order": self.route_order,
-            "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by_id": self.created_by_id,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # Job notes and links (inherited from job)
+            "job_notes": job.notes if job else None,
+            "job_links": job.links if job else [],
         }
 
     def __repr__(self):

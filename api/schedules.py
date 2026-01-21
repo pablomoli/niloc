@@ -248,7 +248,6 @@ def create_schedule():
             start_time=start_time,
             end_time=end_time,
             estimated_duration=estimated_duration,
-            notes=(data.get("notes") or "").strip() or None,
             created_by_id=session.get("user_id"),
         )
 
@@ -307,10 +306,6 @@ def update_schedule(schedule_id):
                     return jsonify({"error": "Invalid estimated_duration"}), 400
             else:
                 schedule.estimated_duration = None
-
-        # Update notes
-        if "notes" in data:
-            schedule.notes = (data["notes"] or "").strip() or None
 
         # Update route order
         if "route_order" in data:
@@ -536,8 +531,8 @@ def generate_ics(schedules):
             description_parts.append(f"Status: {job.status}")
         if s.estimated_duration:
             description_parts.append(f"Est. Duration: {s.estimated_duration}h")
-        if s.notes:
-            description_parts.append(s.notes)
+        if job.notes:
+            description_parts.append(job.notes)
         description = "\\n".join(description_parts).replace(",", "\\,").replace(";", "\\;")
 
         # Generate unique ID
