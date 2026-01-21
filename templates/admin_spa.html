@@ -313,16 +313,19 @@
                       </template>
 
                       <button class="btn btn-ghost btn-xs w-full opacity-40 hover:opacity-100 text-[10px] py-0 h-5 min-h-0"
-                              @click="openNewScheduleModal(day.date)">
-                        <i class="bi bi-plus text-xs"></i>
+                              @click="openNewScheduleModal(day.date)"
+                              title="Add job to schedule">
+                        <i class="bi bi-plus text-xs"></i> Add
                       </button>
 
                       <button class="btn btn-ghost btn-xs w-full text-primary text-[10px] py-0 h-5 min-h-0"
                               x-show="getSchedulesForDay(day.date).length >= 2"
                               @click="optimizeDayRoute(day.date)"
-                              :disabled="_optimizingRoute === day.date">
+                              :disabled="_optimizingRoute === day.date"
+                              title="Optimize route order">
                         <span class="loading loading-spinner loading-xs" x-show="_optimizingRoute === day.date"></span>
                         <i class="bi bi-signpost-2 text-xs" x-show="_optimizingRoute !== day.date"></i>
+                        <span x-show="_optimizingRoute !== day.date">Route</span>
                       </button>
                     </div>
                   </template>

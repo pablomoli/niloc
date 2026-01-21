@@ -503,6 +503,9 @@ def escape_ics_text(text):
 
 def generate_ics(schedules, calendar_name="Epic Map Schedule"):
     """Generate iCal format string from schedules."""
+    # Florida timezone (America/New_York covers EST/EDT)
+    tz_id = "America/New_York"
+
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -510,6 +513,25 @@ def generate_ics(schedules, calendar_name="Epic Map Schedule"):
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
         f"X-WR-CALNAME:{escape_ics_text(calendar_name)}",
+        f"X-WR-TIMEZONE:{tz_id}",
+        # VTIMEZONE component for America/New_York
+        "BEGIN:VTIMEZONE",
+        f"TZID:{tz_id}",
+        "BEGIN:DAYLIGHT",
+        "TZOFFSETFROM:-0500",
+        "TZOFFSETTO:-0400",
+        "TZNAME:EDT",
+        "DTSTART:19700308T020000",
+        "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+        "END:DAYLIGHT",
+        "BEGIN:STANDARD",
+        "TZOFFSETFROM:-0400",
+        "TZOFFSETTO:-0500",
+        "TZNAME:EST",
+        "DTSTART:19701101T020000",
+        "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+        "END:STANDARD",
+        "END:VTIMEZONE",
     ]
 
     for s in schedules:
@@ -588,8 +610,8 @@ def generate_ics(schedules, calendar_name="Epic Map Schedule"):
             "BEGIN:VEVENT",
             f"UID:{uid}",
             f"DTSTAMP:{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
-            f"DTSTART:{dtstart.strftime('%Y%m%dT%H%M%S')}",
-            f"DTEND:{dtend.strftime('%Y%m%dT%H%M%S')}",
+            f"DTSTART;TZID={tz_id}:{dtstart.strftime('%Y%m%dT%H%M%S')}",
+            f"DTEND;TZID={tz_id}:{dtend.strftime('%Y%m%dT%H%M%S')}",
             f"SUMMARY:{summary}",
             f"LOCATION:{location}",
             f"DESCRIPTION:{description}",
