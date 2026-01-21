@@ -1428,12 +1428,13 @@ window.adminAppComponent = function() {
 
     getCalendarSubUrl() {
       const base = `${window.location.origin}/api/schedules/calendar.ics`;
-      const params = new URLSearchParams();
-      params.set('days', '90');
+      // Only add query params if tags are selected (days defaults to 90 server-side)
       if (this.calendarSubModal.selectedTagIds.length > 0) {
+        const params = new URLSearchParams();
         params.set('tags', this.calendarSubModal.selectedTagIds.join(','));
+        return `${base}?${params.toString()}`;
       }
-      return `${base}?${params.toString()}`;
+      return base;
     },
 
     async copyCalendarSubUrl() {
