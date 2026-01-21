@@ -2704,14 +2704,21 @@ window.adminAppComponent = function() {
 
       if (schedule.scheduled_date === newDate) return;
 
+      const oldDate = schedule.scheduled_date;
+      // Optimistically update local state (no full repaint)
+      schedule.scheduled_date = newDate;
+
       try {
         const resp = await fetch(`/api/schedules/${schedule.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ scheduled_date: newDate })
         });
-        if (!resp.ok) throw new Error('Move failed');
-        await this.loadSchedules();
+        if (!resp.ok) {
+          // Revert on failure
+          schedule.scheduled_date = oldDate;
+          throw new Error('Move failed');
+        }
         Alpine.store('notifications').add('Schedule moved', 'success');
       } catch (e) {
         console.error('Move schedule error:', e);
