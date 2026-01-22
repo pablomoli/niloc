@@ -2539,6 +2539,20 @@ window.adminAppComponent = function() {
       return withoutNumber || streetPart;
     },
 
+    getJobDisplayAddress(job) {
+      // For regular jobs, return the address
+      if (job.address) return job.address;
+      // For parcel jobs, extract street name from parcel_data
+      if (job.is_parcel_job && job.parcel_data) {
+        const rawResponse = job.parcel_data.raw_response || {};
+        const streetName = rawResponse.street_name || rawResponse.formatted_address || '';
+        if (streetName && streetName !== 'No Address Available') {
+          return streetName;
+        }
+      }
+      return '';
+    },
+
     getScheduleBlockStyle(schedule) {
       const color = this.getStatusColor(schedule.status);
       return `background-color: ${color}; border-color: ${color};`;

@@ -770,7 +770,7 @@
                     </td>
                     <td x-text="job.client"></td>
                     <td>
-                      <div x-text="job.address"></div>
+                      <div x-text="getJobDisplayAddress(job)"></div>
                     </td>
                     <td>
                       <span
@@ -1443,7 +1443,7 @@
                     </td>
                     <td x-text="job.client"></td>
                     <td>
-                      <div class="max-w-xs truncate" x-text="job.address" :title="job.address"></div>
+                      <div class="max-w-xs truncate" x-text="getJobDisplayAddress(job)" :title="getJobDisplayAddress(job)"></div>
                     </td>
                     <td>
                       <span class="text-sm" x-text="getDeletedByName(job.deleted_by_id)"></span>
