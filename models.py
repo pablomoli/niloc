@@ -429,16 +429,20 @@ class Schedule(db.Model):
         job_tags = [tag.to_dict() for tag in job.tags] if job and job.tags else []
 
         # Extract street_name from parcel_data for parcel jobs
+        # Priority: user-entered street_name > raw_response.street_name > raw_response.formatted_address
         street_name = None
         if job and job.is_parcel_job and job.parcel_data:
             parcel_data = job.parcel_data
-            # Check raw_response (contains full API response)
-            raw_response = parcel_data.get('raw_response', {})
-            # Prefer street_name, fall back to formatted_address (for older jobs)
-            street_name = raw_response.get('street_name') or raw_response.get('formatted_address', '')
-            # Don't use "No Address Available" as street name
-            if street_name == 'No Address Available':
-                street_name = None
+            # Check for user-entered street_name first (at top level)
+            if parcel_data.get('street_name'):
+                street_name = parcel_data.get('street_name')
+            else:
+                # Fall back to raw_response data
+                raw_response = parcel_data.get('raw_response', {})
+                street_name = raw_response.get('street_name') or raw_response.get('formatted_address', '')
+                # Don't use "No Address Available" as street name
+                if street_name == 'No Address Available':
+                    street_name = None
 
         return {
             "id": self.id,

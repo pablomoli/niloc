@@ -509,6 +509,16 @@ def update_job(job_number):
             job.address = geocode_result["formatted_address"]
             job.county = geocode_result["county"]
 
+    # Handle street_name for parcel jobs (stored in parcel_data)
+    if job.is_parcel_job and "street_name" in data:
+        street_name = data["street_name"].strip() if data["street_name"] else None
+        if job.parcel_data is None:
+            job.parcel_data = {}
+        # Create a new dict to trigger SQLAlchemy change detection
+        updated_parcel_data = dict(job.parcel_data)
+        updated_parcel_data["street_name"] = street_name
+        job.parcel_data = updated_parcel_data
+
     try:
         db.session.commit()
         return jsonify({"message": "Job updated successfully", "job": job.to_dict()})

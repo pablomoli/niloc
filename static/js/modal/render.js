@@ -193,12 +193,24 @@ SimpleModal.renderModal = function(job, femaLink) {
                             ${job.is_parcel_job ? `
                             <!-- Parcel Job Location Display -->
                             <div style="display: flex; flex-direction: column; gap: 8px;">
-                                ${this.getParcelStreetName(job) ? `
-                                <div style="display: flex; align-items: center; gap: 8px;">
+                                <div id="street_name-view" style="display: flex; align-items: center; gap: 8px;">
                                     <i class="bi bi-signpost-2" style="color: #6b7280;"></i>
-                                    <span style="font-weight: 500;">${escapeHtml(this.getParcelStreetName(job))}</span>
+                                    <div class="epic-editable-field" onclick="SimpleModal.toggleEdit('street_name')" title="Click to edit" style="margin: 0; flex: 1;">
+                                        <span id="street_name-view-text" class="field-value" style="font-weight: 500;">${escapeHtml(this.getParcelStreetName(job)) || 'No street name'}</span>
+                                        <i class="bi bi-pencil-square edit-indicator"></i>
+                                    </div>
                                 </div>
-                                ` : ''}
+                                <div id="street_name-edit" style="display: none;">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <input type="text" id="street_name-input" class="epic-input" value="${escapeHtml(this.getParcelStreetName(job)) || ''}" placeholder="Enter street name" onkeypress="if(event.key==='Enter') SimpleModal.saveField('street_name')" onkeydown="if(event.key==='Escape') SimpleModal.toggleEdit('street_name')">
+                                        <button class="epic-btn epic-btn-success epic-btn-icon" onclick="SimpleModal.saveField('street_name')">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="epic-btn epic-btn-ghost epic-btn-icon" onclick="SimpleModal.toggleEdit('street_name')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <i class="bi bi-map" style="color: #6b7280;"></i>
                                     <span class="font-mono" style="font-size: 0.875rem;">${escapeHtml(job.parcel_data?.parcel_id || 'N/A')}</span>

@@ -2543,7 +2543,13 @@ window.adminAppComponent = function() {
       // For regular jobs, return the address
       if (job.address) return job.address;
       // For parcel jobs, extract street name from parcel_data
+      // Priority: user-entered street_name > raw_response.street_name > raw_response.formatted_address
       if (job.is_parcel_job && job.parcel_data) {
+        // Check for user-entered street_name first
+        if (job.parcel_data.street_name) {
+          return job.parcel_data.street_name;
+        }
+        // Fall back to raw_response data
         const rawResponse = job.parcel_data.raw_response || {};
         const streetName = rawResponse.street_name || rawResponse.formatted_address || '';
         if (streetName && streetName !== 'No Address Available') {

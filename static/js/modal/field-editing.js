@@ -34,6 +34,9 @@ SimpleModal.toggleEdit = function(field) {
             } else if (field === 'notes') {
                 const textarea = document.getElementById('notes-input');
                 if (textarea) textarea.value = this.currentJob.notes || '';
+            } else if (field === 'street_name') {
+                const input = document.getElementById('street_name-input');
+                if (input) input.value = this.getParcelStreetName(this.currentJob) || '';
             }
         } else {
             // Enter edit mode
@@ -68,6 +71,12 @@ SimpleModal.toggleEdit = function(field) {
                         }
                     }, 50);
                 }
+            } else if (field === 'street_name') {
+                const input = document.getElementById('street_name-input');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
             }
         }
     }
@@ -96,9 +105,12 @@ SimpleModal.saveField = async function(field) {
     } else if (field === 'notes') {
         const textarea = document.getElementById('notes-input');
         newValue = textarea ? textarea.value.trim() : null;
+    } else if (field === 'street_name') {
+        const input = document.getElementById('street_name-input');
+        newValue = input ? input.value.trim() : null;
     }
 
-    if (field !== 'notes' && field !== 'due_date' && !newValue) {
+    if (field !== 'notes' && field !== 'due_date' && field !== 'street_name' && !newValue) {
         this.showNotification('Value cannot be empty', 'error');
         return;
     }
@@ -202,6 +214,15 @@ SimpleModal.saveField = async function(field) {
                     viewDiv.style.display = newValue ? 'block' : 'none';
                 }
                 this.currentJob.notes = newValue || null;
+            } else if (field === 'street_name') {
+                const viewText = document.getElementById('street_name-view-text');
+                if (viewText) {
+                    viewText.textContent = newValue || 'No street name';
+                }
+                // Update parcel_data in currentJob
+                if (this.currentJob.parcel_data) {
+                    this.currentJob.parcel_data.street_name = newValue || null;
+                }
             }
 
             // Invalidate cache

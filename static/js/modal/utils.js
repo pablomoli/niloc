@@ -15,10 +15,15 @@ SimpleModal.generateFEMALink = function(lat, long) {
 
 /**
  * Get street name from parcel job data.
- * Prefers street_name, falls back to formatted_address.
+ * Priority: user-entered street_name > raw_response.street_name > raw_response.formatted_address
  */
 SimpleModal.getParcelStreetName = function(job) {
     if (!job || !job.is_parcel_job || !job.parcel_data) return null;
+    // Check for user-entered street_name first (at top level of parcel_data)
+    if (job.parcel_data.street_name) {
+        return job.parcel_data.street_name;
+    }
+    // Fall back to raw_response data
     const rawResponse = job.parcel_data.raw_response || {};
     const streetName = rawResponse.street_name || rawResponse.formatted_address || '';
     // Don't return "No Address Available"
