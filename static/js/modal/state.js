@@ -235,17 +235,28 @@ SimpleModal.revealNearbyOnMap = function() {
     // Fit map to show all markers with padding
     map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17 });
 
-    // Auto-clear highlights after 45 seconds
+    // Auto-clear highlights after 20 seconds
     this.nearbyHighlightTimeout = setTimeout(() => {
         this.clearNearbyHighlights();
         if (typeof showNotification === 'function') {
             showNotification('Nearby job highlights cleared', 'info');
         }
-    }, 45000);
+    }, 20000);
 
-    // Show notification with dismiss option
+    // Add escape key handler to dismiss highlights
+    this._nearbyEscapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            this.clearNearbyHighlights();
+            if (typeof showNotification === 'function') {
+                showNotification('Nearby job highlights cleared', 'info');
+            }
+        }
+    };
+    document.addEventListener('keydown', this._nearbyEscapeHandler);
+
+    // Show notification
     if (typeof showNotification === 'function') {
-        showNotification(`Showing ${nearbyJobs.length} nearby jobs - click any marker to view (auto-hides in 45s)`, 'success');
+        showNotification(`Showing ${nearbyJobs.length} nearby jobs - click marker to view, ESC to dismiss`, 'success');
     }
 };
 
@@ -256,6 +267,10 @@ SimpleModal.clearNearbyHighlights = function() {
     if (this.nearbyHighlightTimeout) {
         clearTimeout(this.nearbyHighlightTimeout);
         this.nearbyHighlightTimeout = null;
+    }
+    if (this._nearbyEscapeHandler) {
+        document.removeEventListener('keydown', this._nearbyEscapeHandler);
+        this._nearbyEscapeHandler = null;
     }
     if (this.nearbyHighlightLayer) {
         const map = window.AppState?.map;
