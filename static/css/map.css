@@ -307,3 +307,29 @@
   .layer-container { width: 95%; padding: 15px; }
   .layer-option, .layer-toggle { padding: 15px; font-size: 16px; }
 }
+
+/* Nearby Jobs Highlight Layer */
+.nearby-highlight-current {
+  animation: pulse-highlight 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+/* Make sure highlight tooltips are visible */
+.leaflet-tooltip.leaflet-tooltip-top {
+  font-family: var(--font-display, system-ui, sans-serif);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}

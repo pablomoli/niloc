@@ -1240,13 +1240,20 @@ def get_nearby_jobs(job_number):
 
         nearby_jobs = nearby_query.all()
 
-        # Calculate distances for response
-        center = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+        # Calculate distances for response using geography type (meters)
+        # Cast the center point to geography for accurate distance calculation
+        from geoalchemy2 import Geography
+        from sqlalchemy import cast
+        center_geog = cast(
+            func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326),
+            Geography(geometry_type='POINT', srid=4326)
+        )
+
         results = []
         for nearby_job in nearby_jobs:
-            # Get distance in meters
+            # Get distance in meters using geography comparison
             distance = db.session.scalar(
-                func.ST_Distance(nearby_job.geog, center)
+                func.ST_Distance(nearby_job.geog, center_geog)
             )
             distance_miles = distance / 1609.34 if distance else None
 

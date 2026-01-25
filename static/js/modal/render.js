@@ -365,6 +365,10 @@ SimpleModal.renderModal = function(job, femaLink) {
                                     Nearby Jobs
                                     <span style="font-weight: normal; color: #6b7280; font-size: 0.75rem; margin-left: 4px;">(0.5 mi)</span>
                                 </label>
+                                <button id="reveal-nearby-btn" class="epic-btn epic-btn-sm" style="background: #10b981; color: white; display: none;" onclick="SimpleModal.revealNearbyOnMap()" title="Show nearby jobs on the map">
+                                    <i class="bi bi-map"></i>
+                                    Reveal on Map
+                                </button>
                             </div>
                             <div id="nearby-jobs-list" style="display: flex; flex-direction: column; gap: 6px;">
                                 <div class="text-gray-500 text-sm">Loading nearby jobs...</div>
@@ -490,6 +494,11 @@ SimpleModal.hide = function() {
     if (this._escapeHandler) {
         document.removeEventListener('keydown', this._escapeHandler);
         this._escapeHandler = null;
+    }
+
+    // Clear nearby job highlights from map
+    if (this.clearNearbyHighlights) {
+        this.clearNearbyHighlights();
     }
 
     const modal = document.getElementById('simpleJobModal');

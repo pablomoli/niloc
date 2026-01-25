@@ -77,26 +77,33 @@ SimpleModal.fetchNearbyJobs = async function(jobNumber) {
  */
 SimpleModal.refreshNearbyJobsDisplay = function() {
     const container = document.getElementById('nearby-jobs-list');
+    const revealBtn = document.getElementById('reveal-nearby-btn');
     if (!container) return;
 
     if (!this.nearbyJobsLoaded) {
         container.innerHTML = '<div class="text-gray-500 text-sm">Loading nearby jobs...</div>';
+        if (revealBtn) revealBtn.style.display = 'none';
         return;
     }
 
     if (this.nearbyJobs.length === 0) {
         container.innerHTML = '<div class="text-gray-500 text-sm">No jobs within 0.5 miles</div>';
+        if (revealBtn) revealBtn.style.display = 'none';
         return;
     }
 
+    // Show the reveal button when there are nearby jobs
+    if (revealBtn) revealBtn.style.display = 'inline-flex';
+
     container.innerHTML = this.nearbyJobs.map(job => {
         const statusColor = window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d';
-        const distanceText = job.distance_miles !== null
-            ? `${job.distance_miles} mi`
-            : 'N/A';
+        const statusName = window.MarkerUtils?.STATUS_NAMES[job.status] || job.status || 'Unknown';
+        // Format distance: always show 2 decimal places, clamp null to 0
+        const distance = job.distance_miles ?? 0;
+        const distanceText = distance < 0.01 ? '< 0.01 mi' : `${distance.toFixed(2)} mi`;
 
         return `
-            <div class="nearby-job-item" onclick="SimpleModal.openNearbyJob('${job.job_number}')" title="Click to view job">
+            <div class="nearby-job-item" onclick="SimpleModal.openNearbyJob('${job.job_number}')" title="${escapeHtml(statusName)} - Click to view">
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
                     <span class="nearby-job-status" style="background: ${statusColor};"></span>
                     <span class="nearby-job-number">#${job.job_number}</span>
@@ -126,6 +133,136 @@ SimpleModal.openNearbyJob = function(jobNumber) {
                 }
             })
             .catch(err => console.error('Error loading nearby job:', err));
+    }
+};
+
+/**
+ * Temporary layer for nearby job highlights
+ */
+SimpleModal.nearbyHighlightLayer = null;
+SimpleModal.nearbyHighlightTimeout = null;
+
+/**
+ * Reveal nearby jobs on the map with highlight markers and connection lines.
+ * Creates a temporary layer that shows nearby jobs regardless of current filters.
+ */
+SimpleModal.revealNearbyOnMap = function() {
+    if (!this.currentJob || !this.nearbyJobs.length) return;
+
+    const map = window.AppState?.map;
+    if (!map) return;
+
+    // Store data before closing modal
+    const currentJob = { ...this.currentJob };
+    const nearbyJobs = [...this.nearbyJobs];
+
+    // Close the modal so user can see the map
+    this.hide();
+
+    // Clear any existing highlight layer
+    this.clearNearbyHighlights();
+
+    const currentLat = parseFloat(currentJob.lat);
+    const currentLng = parseFloat(currentJob.long);
+
+    if (isNaN(currentLat) || isNaN(currentLng)) return;
+
+    // Create a new layer group for highlights and add to map
+    this.nearbyHighlightLayer = L.featureGroup();
+    map.addLayer(this.nearbyHighlightLayer);
+
+    // Bring to front to ensure visibility
+    this.nearbyHighlightLayer.bringToFront();
+
+    const bounds = L.latLngBounds([[currentLat, currentLng]]);
+
+    // Add current job marker (larger, pulsing style)
+    const currentMarker = L.circleMarker([currentLat, currentLng], {
+        radius: 16,
+        fillColor: '#FF1393',
+        color: '#fff',
+        weight: 4,
+        opacity: 1,
+        fillOpacity: 0.9,
+        className: 'nearby-highlight-current'
+    }).bindTooltip(`Current: #${currentJob.job_number}`, { permanent: true, direction: 'top', offset: [0, -10] });
+    this.nearbyHighlightLayer.addLayer(currentMarker);
+
+    // Add nearby job markers with connecting lines
+    nearbyJobs.forEach((job) => {
+        const lat = parseFloat(job.lat);
+        const lng = parseFloat(job.lng);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        bounds.extend([lat, lng]);
+
+        // Draw connection line
+        const line = L.polyline([[currentLat, currentLng], [lat, lng]], {
+            color: '#10b981',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '8, 12'
+        });
+        this.nearbyHighlightLayer.addLayer(line);
+
+        // Draw nearby job marker
+        const statusColor = window.MarkerUtils?.EPIC_COLORS[job.status] || '#6c757d';
+        const marker = L.circleMarker([lat, lng], {
+            radius: 12,
+            fillColor: statusColor,
+            color: '#fff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).bindTooltip(`#${job.job_number}: ${job.client}`, { permanent: true, direction: 'top', offset: [0, -8] });
+
+        // Click to open job modal
+        marker.on('click', () => {
+            this.clearNearbyHighlights();
+            // Find full job data and open modal
+            const fullJob = window.AppState?.allJobs?.find(j => j.job_number === job.job_number);
+            if (fullJob) {
+                this.show(fullJob);
+            } else {
+                fetch(`/api/jobs/${job.job_number}`)
+                    .then(r => r.json())
+                    .then(data => { if (data && !data.error) this.show(data); });
+            }
+        });
+        this.nearbyHighlightLayer.addLayer(marker);
+    });
+
+    // Fit map to show all markers with padding
+    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17 });
+
+    // Auto-clear highlights after 45 seconds
+    this.nearbyHighlightTimeout = setTimeout(() => {
+        this.clearNearbyHighlights();
+        if (typeof showNotification === 'function') {
+            showNotification('Nearby job highlights cleared', 'info');
+        }
+    }, 45000);
+
+    // Show notification with dismiss option
+    if (typeof showNotification === 'function') {
+        showNotification(`Showing ${nearbyJobs.length} nearby jobs - click any marker to view (auto-hides in 45s)`, 'success');
+    }
+};
+
+/**
+ * Clear the nearby jobs highlight layer from the map.
+ */
+SimpleModal.clearNearbyHighlights = function() {
+    if (this.nearbyHighlightTimeout) {
+        clearTimeout(this.nearbyHighlightTimeout);
+        this.nearbyHighlightTimeout = null;
+    }
+    if (this.nearbyHighlightLayer) {
+        const map = window.AppState?.map;
+        if (map && map.hasLayer(this.nearbyHighlightLayer)) {
+            map.removeLayer(this.nearbyHighlightLayer);
+        }
+        this.nearbyHighlightLayer = null;
     }
 };
 
