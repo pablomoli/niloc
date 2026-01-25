@@ -430,6 +430,8 @@ def create_job():
     # Save to database
     try:
         job = Job(**job_data)
+        # Populate geography column for spatial queries
+        job.update_geog()
         db.session.add(job)
         db.session.commit()
 
@@ -508,6 +510,8 @@ def update_job(job_number):
             job.long = geocode_result["lng"]
             job.address = geocode_result["formatted_address"]
             job.county = geocode_result["county"]
+            # Update geography column for spatial queries
+            job.update_geog()
 
     # Handle street_name for parcel jobs (stored in parcel_data)
     if job.is_parcel_job and "street_name" in data:
@@ -645,6 +649,8 @@ def promote_parcel_to_address(job_number: str):
             if geo.get("county"):
                 job.county = geo.get("county")
         job.is_parcel_job = False
+        # Update geography column for spatial queries
+        job.update_geog()
 
         db.session.commit()
 
@@ -1179,6 +1185,104 @@ def add_job_link(job_number):
         db.session.rollback()
         logger.error(f"Add link error: {e}", exc_info=True)
         return jsonify({"error": "Database error occurred"}), 500
+
+
+@api_bp.route("/jobs/<job_number>/nearby", methods=["GET"])
+@login_required
+@with_db_retry(max_retries=3, delay=0.5)
+def get_nearby_jobs(job_number):
+    """GET /api/jobs/JOB123/nearby - Get jobs within 0.5 miles of this job
+
+    Query params:
+    - radius: optional radius in meters (default: 804.67 = 0.5 miles)
+    - limit: max results (default: 10)
+
+    Returns jobs ordered by distance (nearest first), excluding the source job.
+    Requires PostGIS extension and geog column to be set up via migration.
+    """
+    HALF_MILE_METERS = 804.67
+
+    job = Job.active().filter_by(job_number=job_number).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    if not job.lat or not job.long:
+        return jsonify({
+            "job_number": job_number,
+            "nearby": [],
+            "count": 0,
+            "message": "Job has no coordinates"
+        })
+
+    try:
+        lat = float(job.lat)
+        lng = float(job.long)
+    except (ValueError, TypeError):
+        return jsonify({
+            "job_number": job_number,
+            "nearby": [],
+            "count": 0,
+            "message": "Job has invalid coordinates"
+        })
+
+    radius = request.args.get("radius", HALF_MILE_METERS, type=float)
+    limit = min(request.args.get("limit", 10, type=int), 50)
+
+    # Statuses to exclude from nearby results (not actionable)
+    EXCLUDED_STATUSES = ["On Hold/Pending Estimate", "Cancelled/Declined"]
+
+    try:
+        # Use the model's within_radius method, excluding the source job and inactive statuses
+        nearby_query = Job.within_radius(lat, lng, radius).filter(
+            Job.id != job.id,
+            ~Job.status.in_(EXCLUDED_STATUSES)
+        ).limit(limit)
+
+        nearby_jobs = nearby_query.all()
+
+        # Calculate distances for response
+        center = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+        results = []
+        for nearby_job in nearby_jobs:
+            # Get distance in meters
+            distance = db.session.scalar(
+                func.ST_Distance(nearby_job.geog, center)
+            )
+            distance_miles = distance / 1609.34 if distance else None
+
+            results.append({
+                "job_number": nearby_job.job_number,
+                "client": nearby_job.client,
+                "address": nearby_job.address,
+                "status": nearby_job.status,
+                "is_parcel_job": nearby_job.is_parcel_job,
+                "distance_meters": round(distance, 1) if distance else None,
+                "distance_miles": round(distance_miles, 2) if distance_miles else None,
+                "lat": nearby_job.lat,
+                "lng": nearby_job.long
+            })
+
+        return jsonify({
+            "job_number": job_number,
+            "nearby": results,
+            "count": len(results),
+            "radius_meters": radius,
+            "radius_miles": round(radius / 1609.34, 2)
+        })
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        # Handle case where PostGIS or geog column not yet available
+        if "geog" in error_msg or "postgis" in error_msg or "st_" in error_msg:
+            logger.warning(f"Nearby jobs unavailable - PostGIS/geog not configured: {e}")
+            return jsonify({
+                "job_number": job_number,
+                "nearby": [],
+                "count": 0,
+                "message": "Spatial queries not available - run migration to enable"
+            })
+        logger.error(f"Nearby jobs error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch nearby jobs"}), 500
 
 
 @api_bp.route("/jobs/<job_number>/links/<int:index>", methods=["DELETE"])

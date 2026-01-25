@@ -9,6 +9,8 @@
 SimpleModal.show = function(job) {
     this.currentJob = { ...job };
     this.fieldworkLoaded = false;
+    this.nearbyJobsLoaded = false;
+    this.nearbyJobs = [];
     const femaLink = this.generateFEMALink(job.lat, job.long);
     // Render immediately with placeholders
     this.renderModal(job, femaLink);
@@ -19,6 +21,10 @@ SimpleModal.show = function(job) {
         this.fieldworkLoaded = true;
         this.refreshFieldworkDisplay();
         this.updateTotalTimeDisplay();
+    });
+    // Load nearby jobs
+    this.fetchNearbyJobs(job.job_number).then(() => {
+        this.refreshNearbyJobsDisplay();
     });
 
     // Add escape key handler
@@ -346,6 +352,22 @@ SimpleModal.renderModal = function(job, femaLink) {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nearby Jobs Section -->
+                    <div class="epic-form-section">
+                        <div class="epic-data-card accent-green">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <label class="epic-form-label" style="margin: 0;">
+                                    <i class="bi bi-geo-alt" style="margin-right: 4px;"></i>
+                                    Nearby Jobs
+                                    <span style="font-weight: normal; color: #6b7280; font-size: 0.75rem; margin-left: 4px;">(0.5 mi)</span>
+                                </label>
+                            </div>
+                            <div id="nearby-jobs-list" style="display: flex; flex-direction: column; gap: 6px;">
+                                <div class="text-gray-500 text-sm">Loading nearby jobs...</div>
                             </div>
                         </div>
                     </div>

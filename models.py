@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
-from sqlalchemy import or_
+from sqlalchemy import or_, func
+from geoalchemy2 import Geography
 import logging
 
 db = SQLAlchemy()
@@ -40,6 +41,8 @@ class Job(db.Model):
     # Coordinates
     lat = db.Column(db.String(20))
     long = db.Column(db.String(20))
+    # PostGIS geography column for spatial queries (SRID 4326, meters)
+    geog = db.Column(Geography(geometry_type='POINT', srid=4326), nullable=True)
 
     # Links
     prop_appr_link = db.Column(db.String(500))
@@ -163,6 +166,82 @@ class Job(db.Model):
     # =============================================================================
     # QUERY METHODS - PROPERLY FIXED SQLALCHEMY SYNTAX
     # =============================================================================
+
+    # =============================================================================
+    # GEOGRAPHY/SPATIAL METHODS
+    # =============================================================================
+
+    def update_geog(self):
+        """
+        Update the geography column from lat/long values.
+        Call this after setting lat/long to keep geog in sync.
+        """
+        if self.lat and self.long:
+            try:
+                lat_val = float(self.lat)
+                long_val = float(self.long)
+                # Create WKT point string: POINT(longitude latitude)
+                self.geog = f'SRID=4326;POINT({long_val} {lat_val})'
+            except (ValueError, TypeError):
+                self.geog = None
+        else:
+            self.geog = None
+
+    @classmethod
+    def within_radius(cls, lat, lng, radius_meters, include_deleted=False):
+        """
+        Query jobs within a radius of a point.
+
+        Args:
+            lat: Center point latitude
+            lng: Center point longitude
+            radius_meters: Search radius in meters
+            include_deleted: Whether to include soft-deleted jobs
+
+        Returns:
+            SQLAlchemy query filtered to jobs within the radius,
+            ordered by distance (nearest first)
+        """
+        # Create a geography point for the center
+        center = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+
+        # Build the query with distance filter and ordering
+        query = cls.query.filter(
+            cls.geog.isnot(None),
+            func.ST_DWithin(cls.geog, center, radius_meters)
+        ).order_by(
+            func.ST_Distance(cls.geog, center)
+        )
+
+        if not include_deleted:
+            query = query.filter(cls.deleted_at.is_(None))
+
+        return query
+
+    @classmethod
+    def with_distance(cls, lat, lng, include_deleted=False):
+        """
+        Query all jobs with their distance from a point.
+
+        Args:
+            lat: Reference point latitude
+            lng: Reference point longitude
+            include_deleted: Whether to include soft-deleted jobs
+
+        Returns:
+            Query with (Job, distance_meters) tuples, ordered by distance
+        """
+        center = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+        distance = func.ST_Distance(cls.geog, center).label('distance_meters')
+
+        query = db.session.query(cls, distance).filter(
+            cls.geog.isnot(None)
+        ).order_by(distance)
+
+        if not include_deleted:
+            query = query.filter(cls.deleted_at.is_(None))
+
+        return query
 
     @classmethod
     def active(cls):
