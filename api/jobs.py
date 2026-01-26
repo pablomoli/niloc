@@ -1196,7 +1196,7 @@ def get_nearby_jobs(job_number):
 
     Query params:
     - radius: optional radius in meters (default: 804.67 = 0.5 miles)
-    - limit: max results (default: 10)
+    - limit: max results (default: 5)
 
     Returns jobs ordered by distance (nearest first), excluding the source job.
     Requires PostGIS extension and geog column to be set up via migration.
@@ -1227,7 +1227,7 @@ def get_nearby_jobs(job_number):
         })
 
     radius = request.args.get("radius", HALF_MILE_METERS, type=float)
-    limit = min(request.args.get("limit", 10, type=int), 50)
+    limit = min(request.args.get("limit", 5, type=int), 50)
 
     # Statuses to exclude from nearby results (not actionable)
     EXCLUDED_STATUSES = ["On Hold/Pending Estimate", "Cancelled/Declined"]
