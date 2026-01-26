@@ -469,21 +469,25 @@ class POI(db.Model):
 
 class Schedule(db.Model):
     """
-    Represents a scheduled job visit for a specific date and time block.
-    A job can have multiple scheduled visits (return visits allowed).
+    Represents a scheduled visit for a specific date and time block.
+    Can be for a Job or a POI (but not both). Supports multiple visits.
     """
 
     __tablename__ = "schedules"
 
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(
-        db.Integer, db.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+        db.Integer, db.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=True
+    )
+    poi_id = db.Column(
+        db.Integer, db.ForeignKey("pois.id", ondelete="CASCADE"), nullable=True
     )
     scheduled_date = db.Column(db.Date, nullable=False)
     start_time = db.Column(db.Time, nullable=True)  # Time block start
     end_time = db.Column(db.Time, nullable=True)  # Time block end
     estimated_duration = db.Column(db.Float, nullable=True)  # Hours
     route_order = db.Column(db.Integer, nullable=True)  # Position in day's route
+    notes = db.Column(db.Text, nullable=True)  # Schedule-specific notes
     created_at = db.Column(
         db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -497,54 +501,102 @@ class Schedule(db.Model):
         "Job",
         backref=db.backref("schedules", lazy="dynamic", cascade="all, delete-orphan"),
     )
+    poi = db.relationship(
+        "POI",
+        backref=db.backref("schedules", lazy="dynamic", cascade="all, delete-orphan"),
+    )
     created_by = db.relationship("User", backref="created_schedules")
 
+    @property
+    def schedule_type(self):
+        """Return 'job' or 'poi' based on which foreign key is set."""
+        if self.job_id:
+            return "job"
+        elif self.poi_id:
+            return "poi"
+        return None
+
     def to_dict(self):
-        """Serialize Schedule to dictionary, including job notes and links."""
+        """Serialize Schedule to dictionary, handling both job and POI schedules."""
         job = self.job
+        poi = self.poi
         job_tags = [tag.to_dict() for tag in job.tags] if job and job.tags else []
 
         # Extract street_name from parcel_data for parcel jobs
-        # Priority: user-entered street_name > raw_response.street_name > raw_response.formatted_address
         street_name = None
         if job and job.is_parcel_job and job.parcel_data:
             parcel_data = job.parcel_data
-            # Check for user-entered street_name first (at top level)
             if parcel_data.get('street_name'):
                 street_name = parcel_data.get('street_name')
             else:
-                # Fall back to raw_response data
                 raw_response = parcel_data.get('raw_response', {})
                 street_name = raw_response.get('street_name') or raw_response.get('formatted_address', '')
-                # Don't use "No Address Available" as street name
                 if street_name == 'No Address Available':
                     street_name = None
 
+        # Get fieldwork entries for job schedules only
+        fieldwork_entries = []
+        if job and self.scheduled_date:
+            entries = FieldWork.query.filter_by(
+                job_id=job.id,
+                work_date=self.scheduled_date
+            ).order_by(FieldWork.created_at.desc()).all()
+            fieldwork_entries = [fw.to_dict() for fw in entries]
+
+        # Determine coordinates and display info based on type
+        if job:
+            lat = str(job.lat) if job.lat is not None else None
+            lng = str(job.long) if job.long is not None else None
+            display_name = job.job_number
+            address = job.address
+            client = job.client
+        elif poi:
+            lat = str(poi.lat) if poi.lat is not None else None
+            lng = str(poi.lng) if poi.lng is not None else None
+            display_name = poi.name
+            address = poi.address
+            client = None
+        else:
+            lat, lng, display_name, address, client = None, None, None, None, None
+
         return {
             "id": self.id,
+            "type": self.schedule_type,
+            # Job fields
             "job_id": self.job_id,
             "job_number": job.job_number if job else None,
-            "client": job.client if job else None,
-            "address": job.address if job else None,
+            "client": client,
             "status": job.status if job else None,
             "tags": job_tags,
-            "lat": str(job.lat) if job and job.lat is not None else None,
-            "lng": str(job.long) if job and job.long is not None else None,
             "is_parcel_job": job.is_parcel_job if job else False,
             "street_name": street_name,
+            "job_notes": job.notes if job else None,
+            "job_links": job.links if job else [],
+            "fieldwork": fieldwork_entries,
+            # POI fields
+            "poi_id": self.poi_id,
+            "poi_name": poi.name if poi else None,
+            "poi_icon": poi.icon if poi else None,
+            "poi_color": poi.color if poi else None,
+            # Common fields
+            "display_name": display_name,
+            "address": address,
+            "lat": lat,
+            "lng": lng,
             "scheduled_date": self.scheduled_date.isoformat() if self.scheduled_date else None,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "estimated_duration": self.estimated_duration,
             "route_order": self.route_order,
+            "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by_id": self.created_by_id,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            # Job notes and links (inherited from job)
-            "job_notes": job.notes if job else None,
-            "job_links": job.links if job else [],
         }
 
     def __repr__(self):
-        job_num = self.job.job_number if self.job else "?"
-        return f"<Schedule {job_num} on {self.scheduled_date}>"
+        if self.job:
+            return f"<Schedule Job:{self.job.job_number} on {self.scheduled_date}>"
+        elif self.poi:
+            return f"<Schedule POI:{self.poi.name} on {self.scheduled_date}>"
+        return f"<Schedule #{self.id} on {self.scheduled_date}>"

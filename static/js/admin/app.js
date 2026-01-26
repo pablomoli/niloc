@@ -229,20 +229,23 @@ window.adminAppComponent = function() {
     schedulesLoaded: false,
     _loadingSchedules: false,
     _savingSchedule: false,
-    _optimizingRoute: null,
     currentWeekStart: null,
     calendarDays: [],
     calendarWeekLabel: '',
+    pois: [], // Available POIs for scheduling
     scheduleModal: {
       show: false,
       mode: 'create',
       data: {},
+      scheduleType: 'job', // 'job' or 'poi'
       jobSearch: '',
       jobResults: [],
       showJobResults: false,
       jobSuggestions: [],
       showJobSuggestions: false,
-      suggestionIndex: -1
+      suggestionIndex: -1,
+      poiSearch: '',
+      showPoiResults: false
     },
     _draggedSchedule: null,
     _scheduleJobSearchTimer: null,
@@ -384,6 +387,10 @@ window.adminAppComponent = function() {
       if (tab === 'calendar') {
         this.initCalendarWeek();
         this.loadSchedules();
+        // Load POIs for schedule creation
+        if (!this.poisLoaded) {
+          this.loadPois();
+        }
       }
     },
 
@@ -2585,9 +2592,11 @@ window.adminAppComponent = function() {
       this.scheduleModal = {
         show: true,
         mode: 'create',
+        scheduleType: 'job', // 'job' or 'poi'
         data: {
           scheduled_date: dateStr,
           job_id: null,
+          poi_id: null,
           estimated_duration: '',
           start_time: '',
           end_time: '',
@@ -2598,21 +2607,28 @@ window.adminAppComponent = function() {
         showJobResults: false,
         jobSuggestions: [],
         showJobSuggestions: false,
-        suggestionIndex: -1
+        suggestionIndex: -1,
+        poiSearch: '',
+        showPoiResults: false
       };
     },
 
     openScheduleModal(schedule) {
+      // Determine if this is a job or POI schedule
+      const scheduleType = schedule.poi_id ? 'poi' : 'job';
       this.scheduleModal = {
         show: true,
         mode: 'edit',
+        scheduleType: scheduleType,
         data: { ...schedule },
         jobSearch: '',
         jobResults: [],
         showJobResults: false,
         jobSuggestions: [],
         showJobSuggestions: false,
-        suggestionIndex: -1
+        suggestionIndex: -1,
+        poiSearch: schedule.poi_name || '',
+        showPoiResults: false
       };
     },
 
@@ -2707,22 +2723,50 @@ window.adminAppComponent = function() {
       this.scheduleModal.showJobResults = false;
     },
 
+    selectPoiForSchedule(poi) {
+      this.scheduleModal.data.poi_id = poi.id;
+      this.scheduleModal.data.poi_name = poi.name;
+      this.scheduleModal.data.poi_icon = poi.icon;
+      this.scheduleModal.data.poi_color = poi.color;
+      this.scheduleModal.data.job_id = null; // Clear job if POI selected
+    },
+
+    getFilteredPois() {
+      const search = (this.scheduleModal.poiSearch || '').toLowerCase().trim();
+      if (!search) {
+        return this.pois;
+      }
+      return this.pois.filter(poi => {
+        const name = (poi.name || '').toLowerCase();
+        const address = (poi.address || '').toLowerCase();
+        return name.includes(search) || address.includes(search);
+      });
+    },
+
     async saveSchedule() {
       if (this._savingSchedule) return;
       this._savingSchedule = true;
       try {
         const data = this.scheduleModal.data;
+        const scheduleType = this.scheduleModal.scheduleType;
         const isEdit = this.scheduleModal.mode === 'edit';
         const url = isEdit ? `/api/schedules/${data.id}` : '/api/schedules';
         const method = isEdit ? 'PUT' : 'POST';
 
         const payload = {
-          job_id: data.job_id,
           scheduled_date: data.scheduled_date,
           start_time: data.start_time || null,
           end_time: data.end_time || null,
-          estimated_duration: data.estimated_duration ? parseFloat(data.estimated_duration) : null
+          estimated_duration: data.estimated_duration ? parseFloat(data.estimated_duration) : null,
+          notes: data.notes || null
         };
+
+        // Add either job_id or poi_id based on schedule type
+        if (scheduleType === 'poi') {
+          payload.poi_id = data.poi_id;
+        } else {
+          payload.job_id = data.job_id;
+        }
 
         const resp = await fetch(url, {
           method,
@@ -2761,20 +2805,35 @@ window.adminAppComponent = function() {
       }, 'Delete');
     },
 
-    async optimizeDayRoute(dateStr) {
-      if (this._optimizingRoute) return;
-      this._optimizingRoute = dateStr;
-      try {
-        const resp = await fetch(`/api/schedules/optimize/${dateStr}`, { method: 'POST' });
-        if (!resp.ok) throw new Error('Optimization failed');
-        await this.loadSchedules();
-        Alpine.store('notifications').add('Route optimized', 'success');
-      } catch (e) {
-        console.error('Optimize route error:', e);
-        Alpine.store('notifications').add(e.message, 'error');
-      } finally {
-        this._optimizingRoute = null;
+    getGoogleMapsRouteUrl(dateStr) {
+      // Build Google Maps directions URL with all stops for the day
+      const schedules = this.getSchedulesForDay(dateStr);
+      if (schedules.length === 0) return '#';
+
+      // Filter schedules that have coordinates
+      const stops = schedules
+        .filter(s => s.lat && s.lng)
+        .map(s => `${s.lat},${s.lng}`);
+
+      if (stops.length === 0) return '#';
+
+      // Google Maps directions format:
+      // Single stop: /maps/dir/?api=1&destination=lat,lng
+      // Multiple stops: origin + destination + waypoints
+      if (stops.length === 1) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${stops[0]}`;
       }
+
+      // Multiple stops: first is origin, last is destination, middle are waypoints
+      const origin = stops[0];
+      const destination = stops[stops.length - 1];
+      const waypoints = stops.slice(1, -1);
+
+      let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+      if (waypoints.length > 0) {
+        url += `&waypoints=${waypoints.join('|')}`;
+      }
+      return url;
     },
 
     handleScheduleDragStart(event, schedule) {

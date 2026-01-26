@@ -287,11 +287,26 @@
                              draggable="true"
                              @dragstart="handleScheduleDragStart($event, schedule)"
                              @click="openScheduleModal(schedule)">
-                          <div class="font-semibold truncate">
-                            <span x-text="schedule.job_number"></span>
-                            <span class="opacity-75 font-normal" x-show="schedule.address || schedule.street_name" x-text="' - ' + (schedule.address ? extractStreetName(schedule.address) : schedule.street_name)"></span>
-                          </div>
-                          <div class="truncate opacity-90" x-text="schedule.client"></div>
+                          <!-- Job Schedule -->
+                          <template x-if="schedule.type === 'job' || schedule.job_id">
+                            <div>
+                              <div class="font-semibold truncate">
+                                <span x-text="schedule.job_number"></span>
+                                <span class="opacity-75 font-normal" x-show="schedule.address || schedule.street_name" x-text="' - ' + (schedule.address ? extractStreetName(schedule.address) : schedule.street_name)"></span>
+                              </div>
+                              <div class="truncate opacity-90" x-text="schedule.client"></div>
+                            </div>
+                          </template>
+                          <!-- POI Schedule -->
+                          <template x-if="schedule.type === 'poi' || schedule.poi_id">
+                            <div>
+                              <div class="font-semibold truncate flex items-center gap-1">
+                                <i class="bi" :class="schedule.poi_icon || 'bi-geo-alt'"></i>
+                                <span x-text="schedule.poi_name || schedule.display_name"></span>
+                              </div>
+                              <div class="truncate opacity-90" x-show="schedule.address" x-text="schedule.address"></div>
+                            </div>
+                          </template>
                           <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
                           <template x-if="(schedule.tags || []).length">
                             <div class="flex flex-wrap gap-0.5 mt-1">
@@ -318,15 +333,14 @@
                         <i class="bi bi-plus text-xs"></i> Add
                       </button>
 
-                      <button class="btn btn-ghost btn-xs w-full text-primary text-[10px] py-0 h-5 min-h-0"
-                              x-show="getSchedulesForDay(day.date).length >= 2"
-                              @click="optimizeDayRoute(day.date)"
-                              :disabled="_optimizingRoute === day.date"
-                              title="Optimize route order">
-                        <span class="loading loading-spinner loading-xs" x-show="_optimizingRoute === day.date"></span>
-                        <i class="bi bi-signpost-2 text-xs" x-show="_optimizingRoute !== day.date"></i>
-                        <span x-show="_optimizingRoute !== day.date">Route</span>
-                      </button>
+                      <a class="btn btn-ghost btn-xs w-full text-primary text-[10px] py-0 h-5 min-h-0"
+                         x-show="getSchedulesForDay(day.date).length >= 1"
+                         :href="getGoogleMapsRouteUrl(day.date)"
+                         target="_blank"
+                         title="Open route in Google Maps">
+                        <i class="bi bi-map text-xs"></i>
+                        <span>Maps</span>
+                      </a>
                     </div>
                   </template>
                 </div>
@@ -344,7 +358,7 @@
             <!-- Header -->
             <div class="epic-modal-header">
               <div class="epic-modal-subtitle">Calendar</div>
-              <h3 class="epic-modal-title" x-text="scheduleModal.mode === 'create' ? 'Schedule Job' : 'Edit Schedule'"></h3>
+              <h3 class="epic-modal-title" x-text="scheduleModal.mode === 'create' ? 'Add to Schedule' : 'Edit Schedule'"></h3>
               <button class="epic-modal-close" @click="closeScheduleModal()" aria-label="Close">
                 <i class="bi bi-x-lg"></i>
               </button>
@@ -353,49 +367,123 @@
             <form @submit.prevent="saveSchedule()">
             <!-- Body -->
             <div class="epic-modal-body">
-              <!-- Job Selection -->
-              <div class="epic-form-section">
-                <label class="epic-form-label">Job</label>
-                <template x-if="scheduleModal.mode === 'create'">
-                  <div class="relative" @keydown.escape="scheduleModal.showJobSuggestions = false">
-                    <input type="text"
-                           class="epic-input"
-                           placeholder="Search by job number, client, or address..."
-                           x-model="scheduleModal.jobSearch"
-                           @input="onScheduleJobSearchInput"
-                           @focus="onScheduleJobSearchInput"
-                           @keydown.arrow-down.prevent="moveScheduleSuggestion(1)"
-                           @keydown.arrow-up.prevent="moveScheduleSuggestion(-1)"
-                           @keydown.enter.prevent="applyScheduleHighlightedSuggestion()">
-                    <div class="absolute z-50 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto"
-                         x-show="scheduleModal.showJobSuggestions && scheduleModal.jobSuggestions.length > 0"
-                         x-transition
-                         @click.outside="scheduleModal.showJobSuggestions = false">
-                      <template x-for="(s, i) in scheduleModal.jobSuggestions" :key="s.value + '-' + s.type + '-' + i">
-                        <button class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors"
-                                :class="{'bg-gray-100': i === scheduleModal.suggestionIndex}"
-                                @click="selectScheduleSuggestion(s)">
-                          <span class="epic-tag-sm" :class="s.type === 'job_number' ? 'bg-primary text-white' : s.type === 'client' ? 'bg-secondary text-white' : s.type === 'address' ? 'bg-gray-200 text-gray-700' : 'bg-info text-white'" x-text="s.type"></span>
-                          <span x-text="s.label"></span>
-                        </button>
-                      </template>
-                    </div>
-                    <div class="mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"
-                         x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0">
-                      <template x-for="(job, idx) in scheduleModal.jobResults" :key="job.id || job.job_number || idx">
-                        <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
-                             @click.stop="selectJobForSchedule(job)">
-                          <div class="font-semibold text-gray-900" x-text="job.job_number"></div>
-                          <div class="text-sm text-gray-500" x-text="job.client"></div>
-                        </div>
-                      </template>
-                    </div>
+              <!-- Type Selector (only in create mode) -->
+              <template x-if="scheduleModal.mode === 'create'">
+                <div class="epic-form-section">
+                  <label class="epic-form-label">Type</label>
+                  <div class="flex gap-2">
+                    <button type="button"
+                            class="btn btn-sm flex-1"
+                            :class="scheduleModal.scheduleType === 'job' ? 'btn-primary' : 'btn-ghost'"
+                            @click="scheduleModal.scheduleType = 'job'; scheduleModal.data.poi_id = null;">
+                      <i class="bi bi-briefcase"></i> Job
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm flex-1"
+                            :class="scheduleModal.scheduleType === 'poi' ? 'btn-primary' : 'btn-ghost'"
+                            @click="scheduleModal.scheduleType = 'poi'; scheduleModal.data.job_id = null;">
+                      <i class="bi bi-geo-alt"></i> Location
+                    </button>
                   </div>
-                </template>
-                <template x-if="scheduleModal.mode === 'edit'">
-                  <div class="font-semibold text-gray-900 py-2" x-text="scheduleModal.data.job_number + ' - ' + scheduleModal.data.client"></div>
-                </template>
-              </div>
+                </div>
+              </template>
+
+              <!-- Job Selection (for job type) -->
+              <template x-if="scheduleModal.scheduleType === 'job'">
+                <div class="epic-form-section">
+                  <label class="epic-form-label">Job</label>
+                  <template x-if="scheduleModal.mode === 'create'">
+                    <div class="relative" @keydown.escape="scheduleModal.showJobSuggestions = false">
+                      <input type="text"
+                             class="epic-input"
+                             placeholder="Search by job number, client, or address..."
+                             x-model="scheduleModal.jobSearch"
+                             @input="onScheduleJobSearchInput"
+                             @focus="onScheduleJobSearchInput"
+                             @keydown.arrow-down.prevent="moveScheduleSuggestion(1)"
+                             @keydown.arrow-up.prevent="moveScheduleSuggestion(-1)"
+                             @keydown.enter.prevent="applyScheduleHighlightedSuggestion()">
+                      <div class="absolute z-50 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-auto"
+                           x-show="scheduleModal.showJobSuggestions && scheduleModal.jobSuggestions.length > 0"
+                           x-transition
+                           @click.outside="scheduleModal.showJobSuggestions = false">
+                        <template x-for="(s, i) in scheduleModal.jobSuggestions" :key="s.value + '-' + s.type + '-' + i">
+                          <button type="button" class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors"
+                                  :class="{'bg-gray-100': i === scheduleModal.suggestionIndex}"
+                                  @click="selectScheduleSuggestion(s)">
+                            <span class="epic-tag-sm" :class="s.type === 'job_number' ? 'bg-primary text-white' : s.type === 'client' ? 'bg-secondary text-white' : s.type === 'address' ? 'bg-gray-200 text-gray-700' : 'bg-info text-white'" x-text="s.type"></span>
+                            <span x-text="s.label"></span>
+                          </button>
+                        </template>
+                      </div>
+                      <div class="mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                           x-show="scheduleModal.showJobResults && scheduleModal.jobResults.length > 0">
+                        <template x-for="(job, idx) in scheduleModal.jobResults" :key="job.id || job.job_number || idx">
+                          <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                               @click.stop="selectJobForSchedule(job)">
+                            <div class="font-semibold text-gray-900" x-text="job.job_number"></div>
+                            <div class="text-sm text-gray-500" x-text="job.client"></div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="scheduleModal.mode === 'edit'">
+                    <div class="font-semibold text-gray-900 py-2" x-text="(scheduleModal.data.job_number || '') + (scheduleModal.data.client ? ' - ' + scheduleModal.data.client : '')"></div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- POI Selection (for poi type) -->
+              <template x-if="scheduleModal.scheduleType === 'poi'">
+                <div class="epic-form-section">
+                  <label class="epic-form-label">Location</label>
+                  <template x-if="scheduleModal.mode === 'create'">
+                    <div class="relative">
+                      <input type="text"
+                             class="epic-input"
+                             placeholder="Search locations..."
+                             x-model="scheduleModal.poiSearch"
+                             @input="scheduleModal.showPoiResults = true"
+                             @focus="scheduleModal.showPoiResults = true"
+                             @keydown.escape="scheduleModal.showPoiResults = false">
+                      <!-- Selected POI indicator -->
+                      <div x-show="scheduleModal.data.poi_id && !scheduleModal.showPoiResults"
+                           class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <span class="badge badge-success badge-sm">Selected</span>
+                      </div>
+                      <!-- POI Results Dropdown -->
+                      <div class="absolute z-50 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-60 overflow-y-auto"
+                           x-show="scheduleModal.showPoiResults && getFilteredPois().length > 0"
+                           x-transition
+                           @click.outside="scheduleModal.showPoiResults = false">
+                        <template x-for="poi in getFilteredPois()" :key="poi.id">
+                          <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors flex items-center gap-3"
+                               :class="{'bg-primary/10': scheduleModal.data.poi_id === poi.id}"
+                               @click.stop="selectPoiForSchedule(poi); scheduleModal.poiSearch = poi.name; scheduleModal.showPoiResults = false;">
+                            <i class="bi text-lg" :class="poi.icon || 'bi-geo-alt'" :style="'color:' + (poi.color || '#3b82f6')"></i>
+                            <div class="flex-1 min-w-0">
+                              <div class="font-semibold text-gray-900" x-text="poi.name"></div>
+                              <div class="text-sm text-gray-500 truncate" x-show="poi.address" x-text="poi.address"></div>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                      <!-- No results message -->
+                      <div class="absolute z-50 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl p-4 text-center text-gray-500"
+                           x-show="scheduleModal.showPoiResults && scheduleModal.poiSearch && getFilteredPois().length === 0">
+                        No locations found
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="scheduleModal.mode === 'edit'">
+                    <div class="font-semibold text-gray-900 py-2 flex items-center gap-2">
+                      <i class="bi" :class="scheduleModal.data.poi_icon || 'bi-geo-alt'" :style="'color:' + (scheduleModal.data.poi_color || '#3b82f6')"></i>
+                      <span x-text="scheduleModal.data.poi_name || scheduleModal.data.display_name"></span>
+                    </div>
+                  </template>
+                </div>
+              </template>
 
               <!-- Date/Time Grid -->
               <div class="epic-form-section">

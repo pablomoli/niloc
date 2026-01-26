@@ -6,6 +6,8 @@ from datetime import datetime, date, time, timedelta, timezone
 
 from flask import jsonify, request, session, make_response
 
+from sqlalchemy import or_
+
 from api import api_bp
 from auth_utils import login_required
 from models import db, Job, Schedule, POI, Tag, job_tags
@@ -143,8 +145,18 @@ def list_schedules():
         - start_date: range start
         - end_date: range end
         - job_id: filter by job
+        - poi_id: filter by POI
     """
-    query = Schedule.query.join(Job).filter(Job.deleted_at.is_(None))
+    # Use outer join to include both job and POI schedules
+    query = (
+        Schedule.query
+        .outerjoin(Job, Schedule.job_id == Job.id)
+        .outerjoin(POI, Schedule.poi_id == POI.id)
+        .filter(or_(
+            Schedule.job_id.is_(None),  # POI schedules
+            Job.deleted_at.is_(None)    # Job schedules (non-deleted jobs only)
+        ))
+    )
 
     # Filter by specific date
     date_filter = request.args.get("date")
@@ -173,6 +185,14 @@ def list_schedules():
         except ValueError:
             pass
 
+    # Filter by POI
+    poi_id = request.args.get("poi_id")
+    if poi_id:
+        try:
+            query = query.filter(Schedule.poi_id == int(poi_id))
+        except ValueError:
+            pass
+
     schedules = query.order_by(
         Schedule.scheduled_date, Schedule.route_order, Schedule.start_time
     ).all()
@@ -195,29 +215,41 @@ def get_schedule(schedule_id):
 @login_required
 def create_schedule():
     """
-    POST /api/schedules - Create new schedule.
+    POST /api/schedules - Create new schedule for a job or POI.
     Body: {
-        job_id or job_number: required
+        job_id or job_number: for job schedules
+        poi_id: for POI schedules
         scheduled_date: required (YYYY-MM-DD)
         start_time: optional (HH:MM)
         end_time: optional (HH:MM)
         estimated_duration: optional (hours as float)
         notes: optional
     }
+    Note: Provide either job_id/job_number OR poi_id, not both.
     """
     data = request.get_json()
     if not data:
         return jsonify({"error": "JSON data required"}), 400
 
-    # Find job by ID or job_number
+    # Find job or POI
     job = None
-    if data.get("job_id"):
-        job = Job.active().filter_by(id=data["job_id"]).first()
-    elif data.get("job_number"):
-        job = Job.active().filter_by(job_number=data["job_number"]).first()
+    poi = None
 
-    if not job:
-        return jsonify({"error": "Job not found"}), 404
+    if data.get("poi_id"):
+        # POI schedule
+        poi = POI.query.get(data["poi_id"])
+        if not poi:
+            return jsonify({"error": "POI not found"}), 404
+    elif data.get("job_id") or data.get("job_number"):
+        # Job schedule
+        if data.get("job_id"):
+            job = Job.active().filter_by(id=data["job_id"]).first()
+        elif data.get("job_number"):
+            job = Job.active().filter_by(job_number=data["job_number"]).first()
+        if not job:
+            return jsonify({"error": "Job not found"}), 404
+    else:
+        return jsonify({"error": "Either job_id, job_number, or poi_id required"}), 400
 
     # Parse scheduled date
     scheduled_date = parse_date(data.get("scheduled_date"))
@@ -244,11 +276,13 @@ def create_schedule():
 
     try:
         schedule = Schedule(
-            job_id=job.id,
+            job_id=job.id if job else None,
+            poi_id=poi.id if poi else None,
             scheduled_date=scheduled_date,
             start_time=start_time,
             end_time=end_time,
             estimated_duration=estimated_duration,
+            notes=data.get("notes"),
             created_by_id=session.get("user_id"),
         )
 
@@ -357,6 +391,7 @@ def get_week_schedules(date_str):
     """
     GET /api/schedules/week/<date> - Get all schedules for the week containing the date.
     Returns schedules grouped by day for calendar display.
+    Includes both job and POI schedules.
     """
     d = parse_date(date_str)
     if not d:
@@ -365,10 +400,15 @@ def get_week_schedules(date_str):
     week_start = get_week_start(d)
     week_end = week_start + timedelta(days=6)
 
+    # Use outer join to include both job and POI schedules
     schedules = (
         Schedule.query
-        .join(Job)
-        .filter(Job.deleted_at.is_(None))
+        .outerjoin(Job, Schedule.job_id == Job.id)
+        .outerjoin(POI, Schedule.poi_id == POI.id)
+        .filter(or_(
+            Schedule.job_id.is_(None),  # POI schedules
+            Job.deleted_at.is_(None)    # Job schedules (non-deleted jobs only)
+        ))
         .filter(Schedule.scheduled_date >= week_start)
         .filter(Schedule.scheduled_date <= week_end)
         .order_by(Schedule.scheduled_date, Schedule.route_order, Schedule.start_time)

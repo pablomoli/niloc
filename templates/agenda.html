@@ -4,6 +4,12 @@
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ static_version }}">
 <style>
+  /* Override body overflow:hidden from app.css (designed for map) */
+  body {
+    overflow: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
   .agenda-card {
     transition: all 0.2s ease;
   }
@@ -94,6 +100,11 @@
                   #<span x-text="schedule.route_order"></span>
                 </span>
                 <span class="font-bold text-lg text-primary" x-text="schedule.job_number"></span>
+                <!-- Logged time indicator -->
+                <span class="badge badge-success badge-sm gap-1" x-show="schedule.fieldwork && schedule.fieldwork.length > 0">
+                  <i class="bi bi-check-circle-fill text-xs"></i>
+                  <span x-text="getTotalLoggedTime(schedule) + 'h logged'"></span>
+                </span>
               </div>
               <div class="text-sm text-gray-600 mt-1" x-text="schedule.client"></div>
               <div class="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -132,6 +143,27 @@
         <div class="fieldwork-form border-t border-base-300 bg-base-100"
              :class="{'open': openForms[schedule.id]}">
           <div class="p-4">
+            <!-- Existing Fieldwork Entries -->
+            <template x-if="schedule.fieldwork && schedule.fieldwork.length > 0">
+              <div class="mb-4">
+                <div class="text-sm font-medium text-gray-600 mb-2">Logged Time</div>
+                <div class="space-y-2">
+                  <template x-for="fw in schedule.fieldwork" :key="fw.id">
+                    <div class="flex items-center justify-between bg-success/10 rounded-lg px-3 py-2 text-sm">
+                      <div class="flex items-center gap-2">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <span class="font-medium" x-text="fw.total_time + 'h'"></span>
+                        <span class="text-gray-400 text-xs" x-text="formatCompactDate(fw.work_date)"></span>
+                        <span class="text-gray-500" x-show="fw.crew" x-text="'by ' + fw.crew"></span>
+                      </div>
+                      <span class="text-xs text-gray-500 truncate max-w-[120px]" x-text="fw.notes || ''"></span>
+                    </div>
+                  </template>
+                </div>
+                <div class="divider text-xs text-gray-400 my-3">Add More Time</div>
+              </div>
+            </template>
+
             <div class="grid grid-cols-2 gap-3">
               <div class="form-control">
                 <label class="label py-1">
@@ -187,11 +219,6 @@
           </div>
         </div>
 
-        <!-- Submitted Badge -->
-        <div x-show="submitted[schedule.id]"
-             class="bg-success/10 text-success text-center py-2 text-sm font-medium">
-          <i class="bi bi-check-circle"></i> Time logged successfully
-        </div>
       </div>
     </template>
   </div>
@@ -231,7 +258,6 @@ function agendaApp() {
     openForms: {},
     formData: {},
     submitting: {},
-    submitted: {},
     batchSubmitting: false,
     toasts: [],
 
@@ -256,7 +282,6 @@ function agendaApp() {
         this.formData = {};
         this.openForms = {};
         this.submitting = {};
-        this.submitted = {};
         for (const s of this.schedules) {
           this.formData[s.id] = {
             work_date: this.selectedDate,
@@ -306,6 +331,17 @@ function agendaApp() {
       return `${hour12}:${m} ${ampm}`;
     },
 
+    getTotalLoggedTime(schedule) {
+      if (!schedule.fieldwork || schedule.fieldwork.length === 0) return 0;
+      return schedule.fieldwork.reduce((sum, fw) => sum + (fw.total_time || 0), 0);
+    },
+
+    formatCompactDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    },
+
     getGoogleMapsUrl(schedule) {
       if (schedule.lat && schedule.lng) {
         return `https://www.google.com/maps/dir/?api=1&destination=${schedule.lat},${schedule.lng}`;
@@ -342,7 +378,22 @@ function agendaApp() {
           throw new Error(err.error || 'Failed to submit');
         }
 
-        this.submitted[schedule.id] = true;
+        const result = await resp.json();
+
+        // Add the new fieldwork entry to the schedule's list
+        if (!schedule.fieldwork) schedule.fieldwork = [];
+        if (result.fieldwork) {
+          schedule.fieldwork.unshift(result.fieldwork);
+        }
+
+        // Clear form and close
+        this.formData[schedule.id] = {
+          work_date: this.selectedDate,
+          total_time: '',
+          crew: form.crew, // Keep crew for next entry
+          drone_card: form.drone_card, // Keep drone card for next entry
+          notes: ''
+        };
         this.openForms[schedule.id] = false;
         this.showToast(`Time logged for ${schedule.job_number}`, 'success');
       } catch (e) {
@@ -355,7 +406,7 @@ function agendaApp() {
 
     hasAnyFormData() {
       for (const id in this.formData) {
-        if (this.formData[id].total_time && !this.submitted[id]) {
+        if (this.formData[id].total_time) {
           return true;
         }
       }
@@ -366,8 +417,9 @@ function agendaApp() {
       const entries = [];
       for (const schedule of this.schedules) {
         const form = this.formData[schedule.id];
-        if (form.total_time && !this.submitted[schedule.id]) {
+        if (form.total_time) {
           entries.push({
+            schedule_id: schedule.id,
             job_number: schedule.job_number,
             work_date: form.work_date,
             total_time: form.total_time,
@@ -398,7 +450,20 @@ function agendaApp() {
             // Find schedule by job_number
             const schedule = this.schedules.find(s => s.job_number === item.job_number);
             if (schedule) {
-              this.submitted[schedule.id] = true;
+              // Add the new fieldwork to the schedule
+              if (!schedule.fieldwork) schedule.fieldwork = [];
+              if (item.fieldwork) {
+                schedule.fieldwork.unshift(item.fieldwork);
+              }
+              // Clear the form but keep crew/drone_card
+              const form = this.formData[schedule.id];
+              this.formData[schedule.id] = {
+                work_date: this.selectedDate,
+                total_time: '',
+                crew: form.crew,
+                drone_card: form.drone_card,
+                notes: ''
+              };
               this.openForms[schedule.id] = false;
             }
           }
