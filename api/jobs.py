@@ -412,8 +412,8 @@ def create_job():
         "is_parcel_job": data.get("is_parcel_job", False),
         "parcel_data": data.get("parcel_data", None),
         "parcel_geometry": _extract_parcel_geometry(data.get("parcel_data")),
-        "lat": str(lat) if lat else None,
-        "long": str(lng) if lng else None,
+        "lat": lat,  # NUMERIC column accepts numeric values directly
+        "long": lng,
         "county": county,
     }
 
@@ -644,8 +644,9 @@ def promote_parcel_to_address(job_number: str):
             else address
         )
         if geo:
-            job.lat = str(geo.get("lat")) if geo.get("lat") is not None else job.lat
-            job.long = str(geo.get("lng")) if geo.get("lng") is not None else job.long
+            # Coordinates are now NUMERIC columns, pass values directly
+            job.lat = geo.get("lat") if geo.get("lat") is not None else job.lat
+            job.long = geo.get("lng") if geo.get("lng") is not None else job.long
             if geo.get("county"):
                 job.county = geo.get("county")
         job.is_parcel_job = False
@@ -1265,8 +1266,8 @@ def get_nearby_jobs(job_number):
                 "is_parcel_job": nearby_job.is_parcel_job,
                 "distance_meters": round(distance, 1) if distance else None,
                 "distance_miles": round(distance_miles, 2) if distance_miles else None,
-                "lat": nearby_job.lat,
-                "lng": nearby_job.long
+                "lat": str(nearby_job.lat) if nearby_job.lat else None,
+                "lng": str(nearby_job.long) if nearby_job.long else None
             })
 
         return jsonify({

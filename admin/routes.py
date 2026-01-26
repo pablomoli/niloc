@@ -70,54 +70,88 @@ def admin_jobs_view():
 @admin_bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
-    """Dashboard data endpoint - SIMPLIFIED"""
+    """Dashboard data endpoint - uses materialized view for performance"""
     if session.get("role") != "admin":
         return jsonify({"error": "Unauthorized"}), 403
 
     try:
         from models import Job, User, db
+        from sqlalchemy import text
 
-        active_filter = Job.deleted_at.is_(None)
+        # Try to use materialized view for job stats (5 queries -> 1)
+        mv_stats = None
+        try:
+            result = db.session.execute(text("""
+                SELECT total_active_jobs, total_deleted_jobs, unique_clients,
+                       status_distribution, refreshed_at
+                FROM mv_job_dashboard_stats
+                LIMIT 1
+            """))
+            row = result.fetchone()
+            if row:
+                mv_stats = {
+                    "total_jobs": row.total_active_jobs or 0,
+                    "deleted_jobs": row.total_deleted_jobs or 0,
+                    "unique_clients": row.unique_clients or 0,
+                    "status_counts": dict(row.status_distribution) if row.status_distribution else {},
+                    "refreshed_at": row.refreshed_at.isoformat() if row.refreshed_at else None,
+                }
+        except Exception as mv_error:
+            # Materialized view doesn't exist yet, fall back to direct queries
+            logger.debug(f"Materialized view not available, using fallback: {mv_error}")
 
-        total_jobs = (
-            db.session.query(func.count(Job.id)).filter(active_filter).scalar() or 0
-        )
-        total_users = db.session.query(func.count(User.id)).scalar() or 0
+        if mv_stats:
+            # Use cached stats from materialized view
+            total_jobs = mv_stats["total_jobs"]
+            deleted_jobs_total = mv_stats["deleted_jobs"]
+            unique_clients = mv_stats["unique_clients"]
+            status_counts = mv_stats["status_counts"]
+        else:
+            # Fallback: direct queries (pre-migration compatibility)
+            active_filter = Job.deleted_at.is_(None)
 
-        status_rows = (
-            db.session.query(Job.status, func.count(Job.id))
-            .filter(active_filter)
-            .group_by(Job.status)
-            .all()
-        )
-        status_counts = {
-            (status or "Unknown"): count for status, count in status_rows
-        }
+            total_jobs = (
+                db.session.query(func.count(Job.id)).filter(active_filter).scalar() or 0
+            )
 
-        unique_clients = (
-            db.session.query(
-                func.count(
-                    func.distinct(
-                        func.lower(func.trim(Job.client))
+            status_rows = (
+                db.session.query(Job.status, func.count(Job.id))
+                .filter(active_filter)
+                .group_by(Job.status)
+                .all()
+            )
+            status_counts = {
+                (status or "Unknown"): count for status, count in status_rows
+            }
+
+            unique_clients = (
+                db.session.query(
+                    func.count(
+                        func.distinct(
+                            func.lower(func.trim(Job.client))
+                        )
                     )
                 )
+                .filter(
+                    active_filter,
+                    Job.client.isnot(None),
+                    func.trim(Job.client) != "",
+                )
+                .scalar()
+                or 0
             )
-            .filter(
-                active_filter,
-                Job.client.isnot(None),
-                func.trim(Job.client) != "",
+
+            deleted_jobs_total = (
+                db.session.query(func.count(Job.id))
+                .filter(Job.deleted_at.isnot(None))
+                .scalar()
+                or 0
             )
-            .scalar()
-            or 0
-        )
 
-        deleted_jobs_total = (
-            db.session.query(func.count(Job.id))
-            .filter(Job.deleted_at.isnot(None))
-            .scalar()
-            or 0
-        )
+        # These queries still run directly (not in materialized view)
+        total_users = db.session.query(func.count(User.id)).scalar() or 0
 
+        active_filter = Job.deleted_at.is_(None)
         recent_jobs_query = (
             db.session.query(
                 Job.job_number,
@@ -188,3 +222,34 @@ def api_users():
     from api.users import get_users
 
     return get_users()
+
+
+@admin_bp.route("/api/refresh-stats", methods=["POST"])
+@login_required
+def api_refresh_stats():
+    """Refresh the materialized view for dashboard statistics.
+
+    Call this after bulk job operations or periodically via cron.
+    Uses CONCURRENTLY so the view remains readable during refresh.
+    """
+    if session.get("role") != "admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        from models import db
+        from sqlalchemy import text
+
+        db.session.execute(text("SELECT refresh_dashboard_stats()"))
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Dashboard statistics refreshed"
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to refresh dashboard stats: {e}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500

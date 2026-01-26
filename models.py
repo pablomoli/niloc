@@ -38,9 +38,9 @@ class Job(db.Model):
     county = db.Column(db.String(50))
     notes = db.Column(db.Text)
 
-    # Coordinates
-    lat = db.Column(db.String(20))
-    long = db.Column(db.String(20))
+    # Coordinates (NUMERIC for type safety, auto-synced to geog via DB trigger)
+    lat = db.Column(db.Numeric(10, 7))
+    long = db.Column(db.Numeric(10, 7))
     # PostGIS geography column for spatial queries (SRID 4326, meters)
     geog = db.Column(Geography(geometry_type='POINT', srid=4326), nullable=True)
 
@@ -173,19 +173,12 @@ class Job(db.Model):
 
     def update_geog(self):
         """
-        Update the geography column from lat/long values.
-        Call this after setting lat/long to keep geog in sync.
+        DEPRECATED: The geog column is now auto-synced via database trigger (trg_sync_job_geog).
+        This method is kept for backwards compatibility but does nothing.
+        The trigger fires automatically on INSERT or UPDATE of lat/long columns.
         """
-        if self.lat and self.long:
-            try:
-                lat_val = float(self.lat)
-                long_val = float(self.long)
-                # Create WKT point string: POINT(longitude latitude)
-                self.geog = f'SRID=4326;POINT({long_val} {lat_val})'
-            except (ValueError, TypeError):
-                self.geog = None
-        else:
-            self.geog = None
+        # No-op: Database trigger handles geog synchronization automatically
+        pass
 
     @classmethod
     def within_radius(cls, lat, lng, radius_meters, include_deleted=False):
@@ -290,6 +283,10 @@ class Job(db.Model):
         deleted_at_iso = self.deleted_at.isoformat() if self.deleted_at else None
         due_date_iso = self.due_date.isoformat() if self.due_date else None
 
+        # Convert NUMERIC coordinates to string for JSON serialization
+        lat_str = str(self.lat) if self.lat is not None else None
+        long_str = str(self.long) if self.long is not None else None
+
         return {
             "id": self.id,
             "job_number": self.job_number,
@@ -300,10 +297,10 @@ class Job(db.Model):
             "status": self.status,
             "county": self.county,
             "notes": self.notes,
-            "lat": self.lat,
-            "latitude": self.lat,  # Keep for backward compatibility
-            "long": self.long,
-            "longitude": self.long,  # Keep for backward compatibility
+            "lat": lat_str,
+            "latitude": lat_str,  # Keep for backward compatibility
+            "long": long_str,
+            "longitude": long_str,  # Keep for backward compatibility
             "prop_appr_link": self.prop_appr_link,
             "plat_link": self.plat_link,
             "fema_link": self.fema_link,
@@ -531,8 +528,8 @@ class Schedule(db.Model):
             "address": job.address if job else None,
             "status": job.status if job else None,
             "tags": job_tags,
-            "lat": job.lat if job else None,
-            "lng": job.long if job else None,
+            "lat": str(job.lat) if job and job.lat is not None else None,
+            "lng": str(job.long) if job and job.long is not None else None,
             "is_parcel_job": job.is_parcel_job if job else False,
             "street_name": street_name,
             "scheduled_date": self.scheduled_date.isoformat() if self.scheduled_date else None,
