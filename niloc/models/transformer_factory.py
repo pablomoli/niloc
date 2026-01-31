@@ -44,8 +44,8 @@ class MyTransformerEncoder(nn.Module):
         self.enc_in_embedding = enc_in_embedding
         self.enc_out_embedding = enc_out_embedding
 
-        encoder_layers = TransformerEncoderLayer(d_model, nhead, d_feedforward, dropout)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, num_layers)
+        encoder_layers = TransformerEncoderLayer(d_model, nhead, d_feedforward, dropout, batch_first=False, enable_nested_tensor=False)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, num_layers, enable_nested_tensor=False)
 
     def get_num_params(self) -> int:
         """ Returns number of trainable paarameters """
@@ -95,7 +95,7 @@ class MyTransformer(nn.Module):
     ) -> None:
         super(MyTransformer, self).__init__()
 
-        self.transformer = Transformer(d_model, nhead, encoder_layers, decoder_layers, d_feedforward, dropout)
+        self.transformer = Transformer(d_model, nhead, encoder_layers, decoder_layers, d_feedforward, dropout, batch_first=False)
 
         self.enc_in_embedding = enc_in_embedding
         self.dec_in_embedding = dec_in_embedding

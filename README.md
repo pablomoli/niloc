@@ -9,9 +9,13 @@ This is the implementation of the approach described in the paper.
 
 >Herath, S., Caruso, D., Liu, C., Chen, Y. and Furukawa, Y., [Neural Inertial Localization](https://openaccess.thecvf.com/content/CVPR2022/html/Herath_Neural_Inertial_Localization_CVPR_2022_paper.html). In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) 2022.
 
-We provide the code for reproducing our results, datasets as well as pre-trained models.  
-- Dataset : [Dropbox](https://www.dropbox.com/scl/fo/uux0twqk7gsgwdpljkahd/h?dl=0&rlkey=0g8qi66jsl14ffbx6r7nfn3rx)  
+We provide the code for reproducing our results, datasets as well as pre-trained models.
+- Dataset : [Dropbox](https://www.dropbox.com/scl/fo/uux0twqk7gsgwdpljkahd/h?dl=0&rlkey=0g8qi66jsl14ffbx6r7nfn3rx)
 - Models : [Dropbox](https://www.dropbox.com/s/y198d1muh5lia8k/niloc_model_release.zip?dl=0)
+
+### iOS Companion App
+
+For collecting your own indoor trajectory data, see the [NilocCollector iOS app](https://github.com/pablomoli/niloc-collector). It uses ARKit LiDAR tracking to capture ground-truth trajectories and exports data in the format expected by this training pipeline.
 
 Please cite the following paper is you use the code, paper, models or data.
 

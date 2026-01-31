@@ -40,6 +40,7 @@ class Standard1branchModule(MyLightningModule):
         pred = self(feat)
         if self.sample > 1:
             targ = targ[:, self.sample - 1::self.sample]
+        pred = self.mask_logits(pred)
         loss = self.loss_func(pred, targ)
         loss = torch.mean(loss)
         self.log("train_loss", loss, on_epoch=True)
@@ -55,6 +56,7 @@ class Standard1branchModule(MyLightningModule):
         pred = self(feat)
         if self.sample > 1:
             targ = targ[:, self.sample - 1::self.sample]
+        pred = self.mask_logits(pred)
         loss = self.loss_func(pred, targ)
         loss = torch.mean(loss)
         self.log("val_loss", loss, on_epoch=True)
@@ -76,7 +78,7 @@ class Standard1branchModule(MyLightningModule):
 
         for feat, targ, _, frame_id in data_loader:
             pred = self(feat.to(self.device))
-            pred_softmax = torch.nn.functional.softmax(pred, 1).permute(0, 2, 1)
+            pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred), 1).permute(0, 2, 1)
             if self.sample > 1:
                 targ = targ[:, self.sample - 1::self.sample]
             loss = loss_func(pred, targ.to(self.device))

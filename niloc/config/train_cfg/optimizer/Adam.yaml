@@ -1,4 +1,4 @@
-# @package _group_
+# @package train_cfg.optimizer
 # see torch.pre_processing.Adam for details
 name: Adam
 eps: 1e-08

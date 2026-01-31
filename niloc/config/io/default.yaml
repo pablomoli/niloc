@@ -1,4 +1,4 @@
-# @package _group_
+# @package io
 # Output folder configuration
-root_path : <path>
+root_path : /Users/melocoton/Developer/niloc
 folder_name: models

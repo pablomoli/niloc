@@ -1,0 +1,1 @@
+best models/A/version_0/best_checkpoint.ckpt

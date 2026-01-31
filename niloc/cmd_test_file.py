@@ -67,7 +67,8 @@ if __name__ == "__main__":
         if arg.startswith("use_gpu="):
             linear = True
             gpu = int(arg.split('=')[1])
-            cmds[i] = "train_cfg.gpus=1"
+            # For Apple Silicon, use MPS; for CUDA, use gpus parameter
+            cmds[i] = "train_cfg.accelerator=auto train_cfg.devices=auto"
         if arg.startswith("linear="):
             linear = arg.split("=")[1] not in ['False', "False", False] or linear
             del_list.append(i)
@@ -89,7 +90,8 @@ if __name__ == "__main__":
         commands = cmds + tasks[task][key]
         commands[name_idx] += f"{ckpt}_{key}"
         commands[my_file_idx] = f"'test_cfg.model_path=\"{checkpoints[ckpt]}\"'"
-        cmd_string = f"CUDA_VISIBLE_DEVICES={gpu} " if gpu is not None else ""
+        # CUDA_VISIBLE_DEVICES not needed for Apple Silicon
+        cmd_string = f"CUDA_VISIBLE_DEVICES={gpu} " if gpu is not None and gpu >= 0 else ""
         cmd_string += "python3 niloc/evaluate.py "
         cmd_string += " ".join(commands)
         print(cmd_string)

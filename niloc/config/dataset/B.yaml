@@ -1,8 +1,8 @@
-# @package _group_
+# @package dataset
 name: universityB
 # Dataset paths
-root_dir : <path>
-train_list : <path>/train.txt
-val_list: <path>/val.txt
-test_list : <path>/test.txt
+root_dir : /Users/melocoton/Developer/niloc/data/universityB
+train_list : /Users/melocoton/Developer/niloc/data/universityB/train.txt
+val_list: /Users/melocoton/Developer/niloc/data/universityB/val.txt
+test_list : /Users/melocoton/Developer/niloc/data/universityB/test.txt
 

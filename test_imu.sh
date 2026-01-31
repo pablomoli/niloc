@@ -2,13 +2,21 @@
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
 then
-	echo "Testing script for NILoc"
+	echo "Testing script for NILoc (minimal evaluation - fast, no visualizations)"
 	echo "Usage: \"$0 [building] [checkpoint files]\""
 	echo "Buildings should be configured in niloc/config. Default options=[A, B, C]"
+	echo "Example: $0 A checkpoints_A.txt"
 	exit 0
 fi
 
+if [ $# -lt 2 ]; then
+	echo "Error: Both building and checkpoint file are required"
+	echo "Usage: $0 [building] [checkpoint_file]"
+	echo "Example: $0 A checkpoints_A.txt"
+	exit 1
+fi
+
 echo $1 'Building'
-echo $#
+echo "Checkpoint file: $2"
 
 python niloc/cmd_test_file.py run_name=$1 dataset=$1 grid=$1 data=test task=scheduled_2branch test_cfg.test_name=out test_cfg.minimal=true ckpt_file=${2}

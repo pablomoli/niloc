@@ -8,7 +8,7 @@ from typing import List
 
 import torch.nn as nn
 from torch import Tensor
-from torch.nn.utils import weight_norm
+from torch.nn.utils.parametrizations import weight_norm
 
 dict_activation = {"ReLU": nn.ReLU, "GELU": nn.GELU}
 

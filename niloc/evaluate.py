@@ -19,7 +19,7 @@ from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader
 
-warnings.filterwarnings("ignore", module="matplotlib\..*")
+warnings.filterwarnings("ignore", module=r"matplotlib\..*")
 matplotlib.use('Agg')
 
 sys.path.append(osp.join(osp.dirname(osp.abspath(__file__)), '..'))
@@ -178,8 +178,8 @@ def compute_error(
         fig = plt.figure(figsize=figsize)
         plt.subplot(311)
         plt.imshow(np.flipud(map_image.T), cmap="Greys", alpha=0.5, extent=cell_bounds)
-        plt.plot(gt[:, 0], gt[:, 1], c='r')
-        plt.plot(pred[:, 0], pred[:, 1], c='grey')
+        plt.plot(gt[:, 0], gt[:, 1], c='r', linewidth=2, label='gt')
+        plt.plot(pred[:, 0], pred[:, 1], c='b', linewidth=2, linestyle='--', label='prediction')
         sc = plt.scatter(pred[:, 0], pred[:, 1], c=dist, cmap='cool', vmin=0., vmax=_max_dist)  # normalize
         plt.colorbar(sc)
         plt.legend(["gt", "prediction"])
@@ -269,8 +269,9 @@ def plot_full_traj_heatmap(
         plt.plot(
             gt_traj[:, 0],
             gt_traj[:, 1],
-            "grey",
-            alpha=0.5,
+            "red",
+            linewidth=1.5,
+            alpha=0.7,
         )
         point = gt_traj[idx[i]]
         plt.scatter(
@@ -285,10 +286,10 @@ def plot_full_traj_heatmap(
         plt.ylim(cell_bounds[2:])
         plt.title(f"{idx[i]}")
         fig.canvas.draw()
-        image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        image_from_plot = image_from_plot.reshape(
-            fig.canvas.get_width_height()[::-1] + (3,)
-        )
+        # Use buffer_rgba() for newer matplotlib versions (replaces deprecated tostring_rgb())
+        buf = fig.canvas.buffer_rgba()
+        image_from_plot = np.asarray(buf)
+        # Convert RGBA to RGB by taking only first 3 channels
         images.append(image_from_plot[:, :, :3])
         plt.close(fig)
     images = np.expand_dims(np.stack(images, axis=0), axis=0)
@@ -322,8 +323,11 @@ def plot_individual_heatmap(
     losses = plot_dict["losses"]
     idx = plot_dict["frame_ids"]
 
-    cell_size = sequence.resolutions[-cfg.test_cfg.get("prediction_grid")][0] if "prediction_grid" in cfg.test_cfg \
-        else sequence.cell_size if sequence.compute_original else 1.0
+    cell_size = getattr(sequence, 'resolutions', None)
+    if cell_size and "prediction_grid" in cfg.test_cfg:
+        cell_size = cell_size[-cfg.test_cfg.get("prediction_grid")][0]
+    else:
+        cell_size = getattr(sequence, 'cell_size', 1.0)
     # cell_bounds = sequence.bounds
     cell_bounds = sequence.plot_bounds
     start, step, w = 0, cfg.data_window_cfg.step_size, cfg.data_window_cfg.window_size
@@ -355,7 +359,8 @@ def plot_individual_heatmap(
             plt.plot(
                 gt_traj[p: p + w, 0],
                 gt_traj[p: p + w, 1],
-                "grey",
+                "red",
+                linewidth=1.5,
                 alpha=0.9,
             )
             t = targ[i, j]
@@ -370,10 +375,10 @@ def plot_individual_heatmap(
             plt.ylim(cell_bounds[2:])
             plt.title(f"{i} : {losses[i, j]:.3f}\t {avg_loss}")
             fig.canvas.draw()
-            image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-            image_from_plot = image_from_plot.reshape(
-                fig.canvas.get_width_height()[::-1] + (3,)
-            )
+            # Use buffer_rgba() for newer matplotlib versions (replaces deprecated tostring_rgb())
+            buf = fig.canvas.buffer_rgba()
+            image_from_plot = np.asarray(buf)
+            # Convert RGBA to RGB by taking only first 3 channels
             images.append(image_from_plot[:, :, :3])
             plt.close(fig)
         images = np.expand_dims(np.stack(images, axis=0), axis=0)
@@ -501,7 +506,13 @@ def launch_test(cfg: DictConfig) -> None:
     test_list = get_datalist(cfg.dataset.test_list)
 
     assert cfg.test_cfg.model_path is not None, "Model path should be specified"
-    device = torch.device("cuda" if torch.cuda.is_available() and cfg.train_cfg.gpus > 0 else "cpu")
+    # Determine device: prefer MPS (Apple Silicon), then CUDA, then CPU
+    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available() and cfg.train_cfg.get("gpus", 0) > 0:
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     network = model_type.load_from_checkpoint(
         cfg.test_cfg.model_path,
         map_location=device,
@@ -651,7 +662,7 @@ def launch_test(cfg: DictConfig) -> None:
     json.dump(info, open(osp.join(osp.dirname(results_file), f"summary.json"), "w"))
 
 
-@hydra.main(config_path="config", config_name="defaults")
+@hydra.main(config_path="config", config_name="defaults", version_base=None)
 def run(cfg: DictConfig) -> None:
     logging.info(OmegaConf.to_yaml(cfg))
 

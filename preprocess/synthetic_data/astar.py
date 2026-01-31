@@ -131,7 +131,7 @@ class AStarPlanner:
             n = closed_set[parent_index]
             path.append([n.x, n.y])
             parent_index = n.parent_index
-        return np.asarray(path).astype(np.int)
+        return np.asarray(path).astype(int)
 
     @staticmethod
     def calc_heuristic(n1: Node, n2: Node) -> float:

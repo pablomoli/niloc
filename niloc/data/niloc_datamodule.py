@@ -114,6 +114,7 @@ class NilocDataModule(pl.LightningDataModule):
             batch_size=self._cfg.data.batch_size,
             num_workers=self._cfg.train_cfg.num_workers,
             shuffle=True,
+            persistent_workers=self._cfg.train_cfg.num_workers > 0,
         )
         return train_loader
 
@@ -122,6 +123,7 @@ class NilocDataModule(pl.LightningDataModule):
             self.val_dataset,
             batch_size=self._cfg.data.batch_size,
             num_workers=self._cfg.train_cfg.num_workers,
+            persistent_workers=self._cfg.train_cfg.num_workers > 0,
         )
         return val_loader
 

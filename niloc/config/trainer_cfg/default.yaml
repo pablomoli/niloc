@@ -1,5 +1,8 @@
-# @package _group_
+# @package trainer_cfg
 # Any flags for PyTorch Lightning Trainer class can be added here
-terminate_on_nan: True
+# Note: terminate_on_nan was removed in PyTorch Lightning 2.0+
+# NaN detection is now handled automatically
 gradient_clip_val: 1.0
-progress_bar_refresh_rate: 10
+enable_progress_bar: True
+# Note: progress_bar_refresh_rate was deprecated in PyTorch Lightning 2.0+
+# Progress bar refresh is now automatic

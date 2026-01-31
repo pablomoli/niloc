@@ -1,4 +1,4 @@
-# @package _group_
+# @package train_cfg.scheduler
 name: StepLR
 monitor: False
 

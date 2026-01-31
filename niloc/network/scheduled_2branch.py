@@ -91,7 +91,7 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                     memory[:, :, 0] = 1 / memory.size(1)
                 pass1 = self.network.forward_decoder(encoder, memory)  # [b, s, f]
                 idx = np.random.choice(np.arange(1, memory.size(-1)), s, replace=False)
-                memory[:, :, idx] = torch.nn.functional.softmax(pass1[:, (idx - 1), :].permute(0, 2, 1), 1)  # bsf->bfs
+                memory[:, :, idx] = torch.nn.functional.softmax(self.mask_logits(pass1)[:, (idx - 1), :].permute(0, 2, 1), 1)  # bsf->bfs
         if c[1] > 0.5:
             memory[:, :, 0] = 1 / memory.size(1)
         # actual pass
@@ -112,6 +112,8 @@ class Scheduled2branchModule(ScheduledSamplingModule):
 
         targ = targ[:, self.sample - 1 + self.zero::self.sample]
 
+        pred_enc = self.mask_logits(pred_enc)
+        pred_dec = self.mask_logits(pred_dec)
         enc_loss = torch.mean(self.loss_func(pred_enc, targ))
         dec_loss = torch.mean(self.loss_func(pred_dec, targ))
 
@@ -137,6 +139,8 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                                                     self.val_ratio, False)
         targ = targ[:, self.sample - 1 + self.zero::self.sample]
 
+        pred_enc = self.mask_logits(pred_enc)
+        pred_dec = self.mask_logits(pred_dec)
         enc_loss = torch.mean(self.loss_func(pred_enc, targ))
         dec_loss = torch.mean(self.loss_func(pred_dec, targ))
         loss = enc_loss * self.encoder_only_weight + dec_loss * (1 - self.encoder_only_weight)
@@ -171,13 +175,12 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                 memory = self.shift_and_sample_from_gt(targ.to(self.device),
                     self.zero)
                 pred_enc, pred_dec = self(feat[:, :, self.zero:].to(self.device), memory)
-                # print(pred_enc.shape, pred_dec.shape, memory.shape)
-                pred_enc_softmax = torch.nn.functional.softmax(pred_enc, 1)  # bfs
-                pred_dec_softmax = torch.nn.functional.softmax(pred_dec, 1)
+                pred_enc_softmax = torch.nn.functional.softmax(self.mask_logits(pred_enc), 1)  # bfs
+                pred_dec_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 1)
                 targ = targ[:, self.sample - 1 + self.zero::self.sample]
             elif cfg.test_cfg.get('individual', False):
                 pred_enc, mid_enc = self.forward_enc(feat[:, :, self.zero:].to(self.device))
-                pred_enc_softmax = torch.nn.functional.softmax(pred_enc, 1)
+                pred_enc_softmax = torch.nn.functional.softmax(self.mask_logits(pred_enc), 1)
                 targ_gt = targ[:, self.sample - 1 + self.zero::self.sample]
                 length = targ_gt.size(1)
                 memory = torch.ones(targ.size(0), self.hparams.grid.elements, length,
@@ -189,15 +192,14 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                     ss = cfg.test_cfg.start_gt - 1
                 for j in range(ss, length):
                     if j > ss:
-                        # memory[:, :, 1:j + 1] = pred_dec_softmax
                         memory[:, :, j] = pred_dec_softmax[:, :, -1]
                     pred_dec = self.forward_dec(mid_enc, memory[:, :, :j + 1])
-                    pred_dec_softmax = torch.nn.functional.softmax(pred_dec, 1)
+                    pred_dec_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 1)
                 targ = targ_gt
             else:
                 # propergate in time
                 pred_enc, mid_enc = self.forward_enc(feat[:, :, self.zero:].to(self.device))
-                pred_enc_softmax = torch.nn.functional.softmax(pred_enc, 1)
+                pred_enc_softmax = torch.nn.functional.softmax(self.mask_logits(pred_enc), 1)
 
                 targ_gt = targ[:, self.sample - 1 + self.zero::self.sample]
                 length = targ_gt.size(1)
@@ -214,11 +216,10 @@ class Scheduled2branchModule(ScheduledSamplingModule):
 
                 for j in range(ss, length):
                     if j > ss:
-                        # memory[:, :, 1:j + 1] = pred_dec_softmax
                         memory[:, :, j] = pred_dec_softmax[:, :, -1]
 
                     pred_dec = self.forward_dec(mid_enc, memory[:, :, :j + 1])
-                    pred_dec_softmax = torch.nn.functional.softmax(pred_dec, 1)
+                    pred_dec_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 1)
                 targ = targ_gt
 
             pred_dec_softmax_p = pred_dec_softmax.permute(0, 2, 1)  # bsf
@@ -277,7 +278,7 @@ class Scheduled2branchModule(ScheduledSamplingModule):
         for i, (feat, targ, _, frame_id) in enumerate(data_loader):
             if test_type == "enc":
                 pred, _ = self.network.forward_encoder(feat[:, :, self.zero:].to(self.device))
-                pred_softmax = torch.nn.functional.softmax(pred, 2)
+                pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred), 2)
                 targ = targ[:, self.sample - 1 + self.zero::self.sample]
 
             else:
@@ -285,7 +286,7 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                 if cfg.test_cfg.get('with_gt', False):
                     memory = self.shift_and_sample_from_gt(targ.to(self.device), self.zero)
                     pred = self.network.forward_decoder(mid_enc, memory)
-                    pred_softmax = torch.nn.functional.softmax(pred, 2)
+                    pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred), 2)
                     targ = targ[:, self.sample - 1 + self.zero::self.sample]
                 elif cfg.test_cfg.get('individual', False):
                     targ_gt = targ[:, self.sample - 1 + self.zero::self.sample]
@@ -302,7 +303,7 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                             # memory[:, :, 1:j + 1] = pred_dec_softmax
                             memory[:, :, j] = pred_softmax[:, :, -1]
                         pred_dec = self.network.forward_decoder(mid_enc, memory[:, :, :j + 1])
-                        pred_softmax = torch.nn.functional.softmax(pred_dec, 2)
+                        pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 2)
                     targ = targ_gt
                 else:
                     # propergate in time
@@ -325,11 +326,11 @@ class Scheduled2branchModule(ScheduledSamplingModule):
                             memory[:, :, j] = pred_softmax[:, -1, :]
 
                         pred_dec = self.network.forward_decoder_last(mid_enc, memory[:, :, :j + 1])
-                        pred_softmax = torch.nn.functional.softmax(pred_dec, 2)
+                        pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 2)
                     if length - 1 > ss:
                         memory[:, :, -1] = pred_softmax[:, -1, :]
                     pred_dec = self.network.forward_decoder(mid_enc, memory)
-                    pred_softmax = torch.nn.functional.softmax(pred_dec, 2)
+                    pred_softmax = torch.nn.functional.softmax(self.mask_logits(pred_dec), 2)
                     targ = targ_gt
 
             targets_all.append(self.torch_to_numpy(targ))

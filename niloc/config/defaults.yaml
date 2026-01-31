@@ -8,6 +8,7 @@ random_seed: 0
 
 # switch between configurations
 defaults:
+  - _self_
   ## dataset specific config
   # map details
   - grid: C

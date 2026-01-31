@@ -1,4 +1,4 @@
-# @package _group_
+# @package train_cfg.scheduler
 # see torch.pre_processing.lr_scheduler.ReduceLROnPlateau for details
 name: ReduceLROnPlateau
 monitor: val_loss

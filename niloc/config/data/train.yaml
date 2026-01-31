@@ -1,4 +1,4 @@
-# @package _group_
+# @package data
 batch_size: 128
 # frequency of data in dataset
 imu_base_freq : 10.0

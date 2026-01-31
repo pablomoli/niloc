@@ -10,9 +10,21 @@ fi
 
 echo $1 'Building'
 
-declare -A model_dim
-model_dim["A"]=432
-model_dim+=( ["B"]=704 ["C"]=672 )
+# Determine model dimension based on building (compatible with bash 3.2+)
+case $1 in
+  A)
+    model_dim=432
+    ;;
+  B)
+    model_dim=704
+    ;;
+  C)
+    model_dim=672
+    ;;
+  *)
+    echo "Unknown building: $1. Expected A, B, or C"
+    exit 1
+    ;;
+esac
 
-
-python niloc/trainer.py run_name=$1_syn dataset=$1_syn grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.gpus=4 train_cfg.accelerator=ddp data.batch_size=80 arch.d_model=${model_dim[$1]} train_cfg.scheduler.monitor=val_enc_loss
+python niloc/trainer.py run_name=$1_syn dataset=$1_syn grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.accelerator=auto +train_cfg.devices=auto data.batch_size=32 arch.d_model=${model_dim} train_cfg.scheduler.monitor=val_enc_loss

@@ -3,7 +3,6 @@ from typing import Tuple, Any, Dict, Type, Union
 
 import torch
 from omegaconf import DictConfig
-from pytorch_lightning.utilities import AttributeDict
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
 
@@ -130,6 +129,8 @@ class WarmupReduceLROnPlateau(ReduceLROnPlateau):
         self.multiplier = multiplier
         if self.multiplier < 1.:
             raise ValueError('multiplier should be greater thant or equal to 1.')
+        # Remove 'verbose' parameter as it was removed in newer PyTorch versions
+        kwargs.pop('verbose', None)
         super(WarmupReduceLROnPlateau, self).__init__(optimizer, **kwargs)
         self.warmup_epochs = warmup_epochs
         self.finished = False
@@ -181,7 +182,7 @@ _schedulers = {
 }
 
 
-def get_optimizer(cfg: Union[DictConfig, AttributeDict]) -> Tuple[Type[Optimizer], Dict[str, Any]]:
+def get_optimizer(cfg: Union[DictConfig, Dict[str, Any]]) -> Tuple[Type[Optimizer], Dict[str, Any]]:
     """
     Get optimizer class and the arguments from cfg.train_cfg.optimizer.
     To add new optimizers,
@@ -200,7 +201,7 @@ def get_optimizer(cfg: Union[DictConfig, AttributeDict]) -> Tuple[Type[Optimizer
     return _optimizers[cfg.train_cfg.optimizer.name], optimizer_cfg
 
 
-def get_scheduler(cfg: Union[DictConfig, AttributeDict]) -> Tuple[Type, Dict[str, Any]]:
+def get_scheduler(cfg: Union[DictConfig, Dict[str, Any]]) -> Tuple[Type, Dict[str, Any]]:
     """
     Get scheduler class and the arguments from cfg.train_cfg.optimizer.
     To add new optimizers,

@@ -1,4 +1,4 @@
-# @package _group_
+# @package arch
 
 name: 'transformer_2branch'
 # transformer feature size

@@ -194,3 +194,22 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 outputs
+
+# NILoc - Large data files
+data/**/*.hdf5
+*.zip
+
+# NILoc - Model checkpoints
+models/**/*.ckpt
+models/**/*.bak
+models/**/*.backup
+
+# NILoc - TensorBoard logs
+models/**/logs/
+*.tfevents.*
+
+# NILoc - NumPy cache
+*.npy
+
+# Misc
+<path>/

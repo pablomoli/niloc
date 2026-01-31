@@ -6,6 +6,8 @@ import faulthandler
 import logging
 from typing import List, Dict, Any
 
+import os
+
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -36,6 +38,21 @@ class MyLightningModule(pl.LightningModule):
         self.sample = self.hparams.arch.get('sample', 1)
         self.zero = self.hparams.train_cfg.get("with_zero", 0)  # 1 if include zero
 
+        # Load walkability mask if configured
+        mask_file = self.hparams.grid.get("mask_file", None)
+        if mask_file and os.path.exists(mask_file):
+            mask_np = np.load(mask_file)
+            mask_tensor = torch.from_numpy(mask_np).bool()
+            self.register_buffer("walkable_mask", mask_tensor)
+            # Allow loading old checkpoints that lack the walkable_mask key
+            self.strict_loading = False
+            walkable_count = mask_tensor.sum().item()
+            total = mask_tensor.shape[0]
+            logging.info(
+                f"Loaded walkability mask: {walkable_count}/{total} walkable "
+                f"({100 * walkable_count / total:.1f}%)"
+            )
+
     def configure_optimizers(self) -> Dict[str, Any]:
         # Return optimizer, scheduler, [metric to monitor]
 
@@ -57,6 +74,24 @@ class MyLightningModule(pl.LightningModule):
             logging.warn("No learning rate scheduler configured.")
 
         return optimizer_info
+
+    def mask_logits(self, logits: torch.Tensor) -> torch.Tensor:
+        """
+        Set logits for non-walkable grid cells to -1e9 so they get zero
+        probability after softmax. Handles both [batch, classes, seq] and
+        [batch, seq, classes] layouts by checking which dimension matches
+        the mask size.
+        """
+        if not hasattr(self, "walkable_mask"):
+            return logits
+        n = self.walkable_mask.shape[0]
+        if logits.shape[1] == n:
+            # [batch, classes, seq]
+            logits[:, ~self.walkable_mask, :] = -1e9
+        elif logits.shape[-1] == n:
+            # [batch, seq, classes]
+            logits[:, :, ~self.walkable_mask] = -1e9
+        return logits
 
     @staticmethod
     def torch_to_numpy(torch_arr: torch.Tensor) -> np.ndarray:
@@ -157,7 +192,8 @@ class ScheduledSamplingModule(MemoryModule):
             self.tr_ratio = checkpoint.get("tr_ratio", self.hparams.train_cfg.tr_ratio)
             logging.info(f"Restored tr_ratio {self.tr_ratio}")
 
-    def training_epoch_end(self, outputs: List[Any]):
+    def on_train_epoch_end(self):
+        """Called at the end of each training epoch. Replaces training_epoch_end in PyTorch Lightning 2.0+"""
         self.log("tr_ratio", self.tr_ratio)
 
         if self.current_epoch > self.hparams.train_cfg.get('tr_warmup', 0) and self.current_epoch % \
@@ -165,4 +201,4 @@ class ScheduledSamplingModule(MemoryModule):
             prev_tr = self.tr_ratio
             self.tr_ratio = max(0, self.tr_ratio - self.hparams.train_cfg.arrf)
             print(f"Changing teacher ratio {prev_tr}-->{self.tr_ratio}")
-        super(ScheduledSamplingModule, self).on_train_epoch_end(outputs)
+        super(ScheduledSamplingModule, self).on_train_epoch_end()
