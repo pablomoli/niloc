@@ -74,18 +74,34 @@ function fabMenu() {
             // Store reference to this component for event handlers
             const self = this;
 
-            // Filters are initialized in map.js which loads first
-            // Just sync local state with global state here
-            if (!window.activeStatusFilters) {
-                window.activeStatusFilters = new Set(['Needs Fieldwork']);
-            }
-            if (!window.activeTagFilters) {
-                window.activeTagFilters = new Set();
+            // Load filters directly from localStorage to avoid race condition
+            // (fab-menu.js loads sync, filters.js is deferred)
+            let initialStatusFilters = ['Needs Fieldwork'];
+            let initialTagFilters = [];
+            try {
+                const storedStatuses = localStorage.getItem('epicmap_status_filters');
+                if (storedStatuses) {
+                    initialStatusFilters = JSON.parse(storedStatuses);
+                }
+                const storedTags = localStorage.getItem('epicmap_tag_filters');
+                if (storedTags) {
+                    initialTagFilters = JSON.parse(storedTags);
+                }
+            } catch (e) {
+                console.warn('Failed to load filters from localStorage:', e);
             }
 
-            // Sync local reactive state with global state
-            this.selectedStatuses = new Set(window.activeStatusFilters);
-            this.selectedTags = new Set(window.activeTagFilters);
+            // Initialize global state if not already set
+            if (!window.activeStatusFilters) {
+                window.activeStatusFilters = new Set(initialStatusFilters);
+            }
+            if (!window.activeTagFilters) {
+                window.activeTagFilters = new Set(initialTagFilters);
+            }
+
+            // Sync local reactive state from localStorage (authoritative source)
+            this.selectedStatuses = new Set(initialStatusFilters);
+            this.selectedTags = new Set(initialTagFilters);
             
             // Sync map layer state
             this.clusteringSupported = typeof window.isMarkerClusteringSupported === 'function'
@@ -196,6 +212,62 @@ function fabMenu() {
 
             // Force Alpine reactivity by replacing the array
             this.availableStatuses.splice(0, this.availableStatuses.length, ...mergedStatuses);
+        },
+
+        /**
+         * Check if status filter is active (not showing all statuses).
+         * @returns {boolean} True if specific statuses are selected (not 'all').
+         */
+        hasActiveStatusFilter() {
+            return !this.selectedStatuses.has('all');
+        },
+
+        /**
+         * Check if any tag filters are active.
+         * @returns {boolean} True if any tags are selected.
+         */
+        hasActiveTagFilter() {
+            return this.selectedTags.size > 0;
+        },
+
+        /**
+         * Check if any filters are currently active (not showing all jobs).
+         * @returns {boolean} True if status filters (not 'all') or tag filters are active.
+         */
+        hasActiveFilters() {
+            return this.hasActiveStatusFilter() || this.hasActiveTagFilter();
+        },
+
+        /**
+         * Clear all filters (status and tags) and show all jobs.
+         */
+        clearAllFilters() {
+            // Reset status filters to 'all'
+            this.selectedStatuses.clear();
+            this.selectedStatuses.add('all');
+            window.activeStatusFilters.clear();
+            window.activeStatusFilters.add('all');
+
+            // Clear tag filters
+            this.selectedTags.clear();
+            window.activeTagFilters.clear();
+
+            // Persist to localStorage
+            try {
+                localStorage.setItem('epicmap_status_filters', JSON.stringify(['all']));
+                localStorage.setItem('epicmap_tag_filters', JSON.stringify([]));
+            } catch (e) {
+                console.warn('Failed to save filters to localStorage:', e);
+            }
+
+            // Apply filters
+            if (window.applyFilters) {
+                window.applyFilters();
+            }
+
+            if (window.showNotification) {
+                window.showNotification('All filters cleared', 'info');
+            }
         },
 
         setMenuOpen(value) {

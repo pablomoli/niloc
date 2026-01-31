@@ -98,9 +98,17 @@
         <button class="toolbar-btn filters-btn expandable-btn"
                 type="button"
                 aria-label="Open job filters"
-                title="Filters"
+                :title="hasActiveFilters() ? 'Filters (active)' : 'Filters'"
                 @click="openStatusFilter()">
             <i class="bi bi-funnel" aria-hidden="true"></i>
+            <!-- Status filter indicator (teal, top-right) -->
+            <span x-show="hasActiveStatusFilter()"
+                  class="filter-badge filter-badge-status">
+            </span>
+            <!-- Tag filter indicator (purple, bottom-right) -->
+            <span x-show="hasActiveTagFilter()"
+                  class="filter-badge filter-badge-tags">
+            </span>
         </button>
 
         <!-- Advanced Search Button (expandable) -->
