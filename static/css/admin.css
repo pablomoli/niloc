@@ -450,3 +450,233 @@ body.text-base-content {
     font-size: 0.875rem;
   }
 }
+
+/* Schedule drag-and-drop styles */
+.schedule-card-wrapper {
+  margin-bottom: 2px;
+}
+
+/* Schedule card transition */
+.schedule-card {
+  transition: transform 0.08s ease-out, opacity 0.08s ease-out, box-shadow 0.08s ease-out;
+  will-change: transform, opacity;
+}
+
+.schedule-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dragging state on body */
+body.schedule-dragging .schedule-day-column {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 23px,
+    rgba(0, 0, 0, 0.04) 23px,
+    rgba(0, 0, 0, 0.04) 24px
+  );
+}
+
+body.schedule-dragging .schedule-drag-target {
+  background-color: rgba(255, 19, 147, 0.08) !important;
+}
+
+/* Drop zone styling */
+.schedule-drop-zone {
+  height: 4px;
+  margin: 2px 0;
+  border-radius: 4px;
+  background-color: transparent;
+  border: 2px dashed transparent;
+  transition: height 0.1s ease, background-color 0.1s ease, border-color 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  position: relative;
+  will-change: height, background-color;
+}
+
+.schedule-drop-zone.active {
+  height: 32px;
+  background-color: rgba(255, 19, 147, 0.12);
+  border-color: rgba(255, 19, 147, 0.5);
+}
+
+.schedule-drop-zone.schedule-drop-tail {
+  min-height: 24px;
+  height: auto;
+  flex: 1;
+}
+
+.schedule-drop-zone.schedule-drop-tail.active {
+  background-color: rgba(255, 19, 147, 0.12);
+  border-color: rgba(255, 19, 147, 0.5);
+  min-height: 36px;
+}
+
+/* Time preview in drop zone */
+.schedule-drop-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FF1393;
+  background: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.06s ease-out, transform 0.06s ease-out;
+}
+
+.schedule-drop-zone.active .schedule-drop-time {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Dragging card state */
+.schedule-card-wrapper .schedule-card.opacity-50 {
+  opacity: 0.5;
+}
+
+.schedule-card-wrapper .schedule-card.scale-95 {
+  transform: scale(0.95);
+}
+
+/* Resize handle */
+.schedule-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  border-radius: 0 0 4px 4px;
+  transition: background-color 0.1s ease;
+}
+
+.schedule-resize-handle:hover,
+.schedule-resize-handle:active {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.schedule-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.4);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.schedule-card:hover .schedule-resize-handle::after {
+  opacity: 1;
+}
+
+/* Resizing state */
+.schedule-resizing {
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.schedule-resizing-active {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+
+body.schedule-resizing-active * {
+  cursor: ns-resize !important;
+}
+
+/* Schedule grid container for positioning */
+.schedule-grid-container {
+  position: relative;
+}
+
+/* Time scale on left edge */
+.schedule-time-scale {
+  position: absolute;
+  left: -28px;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.schedule-time-mark {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 500;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.schedule-time-mark::after {
+  content: '';
+  width: 4px;
+  height: 1px;
+  background: #d1d5db;
+}
+
+/* Floating time indicator */
+.schedule-time-indicator {
+  position: fixed !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important; /* Maximum z-index */
+  background: #FF1393 !important;
+  color: white !important;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Day column positioning */
+.schedule-day-column {
+  position: relative;
+}
+
+/* Horizontal time guides when dragging */
+body.schedule-dragging .schedule-day-column::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  /* 14 hours from 6am to 8pm, show lines at each hour */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(100% / 14 - 1px),
+    rgba(0, 0, 0, 0.08) calc(100% / 14 - 1px),
+    rgba(0, 0, 0, 0.08) calc(100% / 14)
+  );
+  z-index: 0;
+}
+
+body.schedule-dragging .schedule-day-column > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Highlight line at cursor position */
+body.schedule-dragging .schedule-drag-target {
+  background-color: rgba(255, 19, 147, 0.05) !important;
+}

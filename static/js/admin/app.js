@@ -247,6 +247,24 @@ window.adminAppComponent = function() {
       poiSearch: '',
       showPoiResults: false
     },
+    // Drag state for schedule calendar
+    _draggedSchedule: null,
+    _dragTargetDate: null,
+    _dragTargetIndex: null,
+    _dragPreviewTime: null,
+    _dragCursorX: 0,
+    _dragCursorY: 0,
+    _dragRafPending: false,
+    _dragColumnRect: null,
+    _dragDaySchedules: null,  // Cached schedules for target day
+    // Resize state
+    _resizingSchedule: null,
+    _resizeColumnRect: null,
+    _resizeStartY: 0,
+    _resizePreviewEndTime: null,
+    _resizeOriginals: null,      // Map of original values for rollback
+    _resizeDate: null,           // Date of the day being resized
+    _resizeDaySchedules: null,   // All schedules for that day
     _draggedSchedule: null,
     _scheduleJobSearchTimer: null,
     _scheduleJobSearchAbort: null,
@@ -2530,11 +2548,157 @@ window.adminAppComponent = function() {
 
     formatScheduleTime(schedule) {
       if (!schedule.start_time) return '';
-      const start = schedule.start_time.slice(0, 5);
+      const start = this.formatTime12Hour(schedule.start_time.slice(0, 5));
       if (schedule.end_time) {
-        return `${start} - ${schedule.end_time.slice(0, 5)}`;
+        const end = this.formatTime12Hour(schedule.end_time.slice(0, 5));
+        return `${start} - ${end}`;
       }
       return start;
+    },
+
+    /**
+     * Calculate time gap in minutes between two schedules.
+     * Returns null if times are not available or invalid.
+     */
+    getTimeGapMinutes(prevSchedule, nextSchedule) {
+      if (!prevSchedule || !nextSchedule) return null;
+
+      // Get end time of previous (or start + estimated duration, or just start)
+      let prevEnd = prevSchedule.end_time || prevSchedule.start_time;
+      if (!prevEnd) return null;
+
+      // If prev has start but no end, estimate end based on duration (default 30min)
+      if (!prevSchedule.end_time && prevSchedule.start_time) {
+        const duration = prevSchedule.estimated_duration || 0.5; // hours
+        const [h, m] = prevSchedule.start_time.split(':').map(Number);
+        const endMinutes = h * 60 + m + (duration * 60);
+        const endH = Math.floor(endMinutes / 60) % 24;
+        const endM = Math.floor(endMinutes % 60);
+        prevEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      }
+
+      const nextStart = nextSchedule.start_time;
+      if (!nextStart) return null;
+
+      // Parse times
+      const [prevH, prevM] = prevEnd.split(':').map(Number);
+      const [nextH, nextM] = nextStart.split(':').map(Number);
+
+      const prevMinutes = prevH * 60 + prevM;
+      const nextMinutes = nextH * 60 + nextM;
+
+      return nextMinutes - prevMinutes;
+    },
+
+    /**
+     * Format time gap for display.
+     * Returns null if gap is less than 15 minutes (not worth showing).
+     */
+    formatTimeGap(gapMinutes) {
+      if (gapMinutes === null || gapMinutes < 15) return null;
+      if (gapMinutes < 60) return `${gapMinutes}min gap`;
+      const hours = Math.floor(gapMinutes / 60);
+      const mins = gapMinutes % 60;
+      if (mins === 0) return `${hours}h gap`;
+      return `${hours}h ${mins}m gap`;
+    },
+
+    /**
+     * Get the time gap display between schedule at index and previous schedule.
+     */
+    getGapBeforeSchedule(daySchedules, index) {
+      if (index === 0) return null;
+      const prev = daySchedules[index - 1];
+      const current = daySchedules[index];
+      const gapMinutes = this.getTimeGapMinutes(prev, current);
+      return this.formatTimeGap(gapMinutes);
+    },
+
+    /**
+     * Calculate a suggested start time for an event being inserted at a position.
+     * Snaps to 15-minute increments.
+     * @param {Array} daySchedules - Schedules for the day (in order)
+     * @param {number} insertIndex - Where the event will be inserted
+     * @param {Object} draggedSchedule - The schedule being moved (to preserve its time if appropriate)
+     * @returns {string|null} Suggested start time in HH:MM format, or null to keep existing
+     */
+    calculateSuggestedTime(daySchedules, insertIndex, draggedSchedule) {
+      // If inserting at the beginning
+      if (insertIndex === 0) {
+        // If there's a next event, suggest 30min before it
+        if (daySchedules.length > 0 && daySchedules[0].start_time) {
+          const [h, m] = daySchedules[0].start_time.split(':').map(Number);
+          let newMinutes = h * 60 + m - 30;
+          if (newMinutes < 6 * 60) newMinutes = 6 * 60; // Don't go before 6am
+          return this.minutesToTimeString(this.snapTo15Min(newMinutes));
+        }
+        // Otherwise keep existing time or default to 8:00
+        return draggedSchedule.start_time || '08:00';
+      }
+
+      // Get the previous event
+      const prevSchedule = daySchedules[insertIndex - 1];
+      if (!prevSchedule) return draggedSchedule.start_time;
+
+      // Calculate end of previous event
+      let prevEndMinutes;
+      if (prevSchedule.end_time) {
+        const [h, m] = prevSchedule.end_time.split(':').map(Number);
+        prevEndMinutes = h * 60 + m;
+      } else if (prevSchedule.start_time) {
+        const [h, m] = prevSchedule.start_time.split(':').map(Number);
+        const duration = prevSchedule.estimated_duration || 0.5;
+        prevEndMinutes = h * 60 + m + (duration * 60);
+      } else {
+        return draggedSchedule.start_time;
+      }
+
+      // Add 15 min buffer after previous event
+      let suggestedMinutes = prevEndMinutes + 15;
+
+      // If there's a next event, make sure we don't overlap
+      if (insertIndex < daySchedules.length) {
+        const nextSchedule = daySchedules[insertIndex];
+        if (nextSchedule.start_time) {
+          const [nh, nm] = nextSchedule.start_time.split(':').map(Number);
+          const nextStartMinutes = nh * 60 + nm;
+          // If suggested time would overlap, place it in between
+          const draggedDuration = (draggedSchedule.estimated_duration || 0.5) * 60;
+          if (suggestedMinutes + draggedDuration > nextStartMinutes) {
+            // Not enough room, squeeze it in
+            suggestedMinutes = Math.max(prevEndMinutes, nextStartMinutes - draggedDuration - 15);
+          }
+        }
+      }
+
+      return this.minutesToTimeString(this.snapTo15Min(suggestedMinutes));
+    },
+
+    /**
+     * Snap minutes to nearest 15-minute increment.
+     */
+    snapTo15Min(minutes) {
+      return Math.round(minutes / 15) * 15;
+    },
+
+    /**
+     * Convert minutes since midnight to HH:MM string (24-hour for API).
+     */
+    minutesToTimeString(minutes) {
+      const h = Math.floor(minutes / 60) % 24;
+      const m = minutes % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    },
+
+    /**
+     * Convert HH:MM (24-hour) to 12-hour format for display.
+     */
+    formatTime12Hour(timeStr) {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':').map(Number);
+      const period = h >= 12 ? 'pm' : 'am';
+      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      return `${hour12}:${String(m).padStart(2, '0')}${period}`;
     },
 
     extractStreetName(address) {
@@ -2838,36 +3002,460 @@ window.adminAppComponent = function() {
 
     handleScheduleDragStart(event, schedule) {
       this._draggedSchedule = schedule;
+      this._draggedScheduleEl = event.target;
+      this._dragTargetDate = null;
+      this._dragTargetIndex = null;
+      this._dragPreviewTime = null;
       event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', schedule.id);
+      // Add dragging class for visual feedback
+      setTimeout(() => {
+        event.target.classList.add('opacity-50', 'scale-95');
+        document.body.classList.add('schedule-dragging');
+      }, 0);
+    },
+
+    handleScheduleDragEnd(event) {
+      event.target.classList.remove('opacity-50', 'scale-95');
+      document.body.classList.remove('schedule-dragging');
+      // Clear all drag state
+      this._draggedSchedule = null;
+      this._dragTargetDate = null;
+      this._dragTargetIndex = null;
+      this._dragPreviewTime = null;
+      this._dragCursorX = 0;
+      this._dragCursorY = 0;
+      this._dragRafPending = false;
+      this._dragColumnRect = null;
+      this._dragDaySchedules = null;
+    },
+
+    // Schedule time grid settings
+    _scheduleStartHour: 6,   // 6 AM
+    _scheduleEndHour: 20,    // 8 PM
+
+    calculateTimeFromPosition(event, columnEl) {
+      // Get position within the column
+      const rect = columnEl.getBoundingClientRect();
+      const y = event.clientY - rect.top;
+      const height = rect.height;
+
+      // Calculate percentage through the day
+      const percent = Math.max(0, Math.min(1, y / height));
+
+      // Map to time range (6 AM to 8 PM = 14 hours)
+      const totalMinutes = (this._scheduleEndHour - this._scheduleStartHour) * 60;
+      const minutesFromStart = percent * totalMinutes;
+      const snappedMinutes = this.snapTo15Min(minutesFromStart);
+      const totalMinutesFromMidnight = (this._scheduleStartHour * 60) + snappedMinutes;
+
+      return this.minutesToTimeString(totalMinutesFromMidnight);
+    },
+
+    calculateInsertIndex(date, time) {
+      // Use cached schedules if available, otherwise compute
+      const daySchedules = this._dragDaySchedules || this.schedules
+        .filter(s => s.scheduled_date === date && (!this._draggedSchedule || s.id !== this._draggedSchedule.id))
+        .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+
+      if (!time) return daySchedules.length;
+
+      const [h, m] = time.split(':').map(Number);
+      const targetMinutes = h * 60 + m;
+
+      for (let i = 0; i < daySchedules.length; i++) {
+        const s = daySchedules[i];
+        if (s.start_time) {
+          const [sh, sm] = s.start_time.split(':').map(Number);
+          const scheduleMinutes = sh * 60 + sm;
+          if (targetMinutes <= scheduleMinutes) {
+            return i;
+          }
+        }
+      }
+      return daySchedules.length;
+    },
+
+    handleDayColumnDragOver(event, date) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+
+      // Cache values for RAF callback
+      const x = event.clientX;
+      const y = event.clientY;
+      const columnEl = event.currentTarget;
+
+      // Cache column rect and schedules on first drag over this column
+      if (this._dragTargetDate !== date) {
+        this._dragColumnRect = columnEl.getBoundingClientRect();
+        this._dragTargetDate = date;
+        // Pre-compute and cache schedules for this day
+        this._dragDaySchedules = this.schedules
+          .filter(s => s.scheduled_date === date && (!this._draggedSchedule || s.id !== this._draggedSchedule.id))
+          .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+      }
+
+      // Throttle updates with requestAnimationFrame
+      if (!this._dragRafPending) {
+        this._dragRafPending = true;
+        requestAnimationFrame(() => {
+          this._dragRafPending = false;
+          this.updateDragState(x, y, date);
+        });
+      }
+    },
+
+    handleDayColumnDragLeave(event, date) {
+      // Only clear if actually leaving the column
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        if (this._dragTargetDate === date) {
+          this._dragTargetDate = null;
+          this._dragTargetIndex = null;
+          this._dragPreviewTime = null;
+          this._dragColumnRect = null;
+          this._dragDaySchedules = null;
+        }
+      }
+    },
+
+    handleScheduleDragOver(event, date, _scheduleId, _index) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = 'move';
+
+      // Cache values for RAF callback
+      const x = event.clientX;
+      const y = event.clientY;
+      const columnEl = event.currentTarget.closest('.schedule-day-column');
+
+      // Cache column rect and schedules on first drag over this column
+      if (this._dragTargetDate !== date) {
+        this._dragColumnRect = columnEl.getBoundingClientRect();
+        this._dragTargetDate = date;
+        // Pre-compute and cache schedules for this day
+        this._dragDaySchedules = this.schedules
+          .filter(s => s.scheduled_date === date && (!this._draggedSchedule || s.id !== this._draggedSchedule.id))
+          .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+      }
+
+      // Throttle updates with requestAnimationFrame
+      if (!this._dragRafPending) {
+        this._dragRafPending = true;
+        requestAnimationFrame(() => {
+          this._dragRafPending = false;
+          this.updateDragState(x, y, date);
+        });
+      }
+    },
+
+    handleScheduleDragLeave(_event) {
+      // Don't clear - let parent column handle state
+    },
+
+    updateDragState(x, y, date) {
+      if (!this._draggedSchedule || !this._dragColumnRect) return;
+
+      // Calculate time from cached rect (avoids layout thrashing)
+      const rect = this._dragColumnRect;
+      const relativeY = y - rect.top;
+      const percent = Math.max(0, Math.min(1, relativeY / rect.height));
+      const totalMinutes = (this._scheduleEndHour - this._scheduleStartHour) * 60;
+      const minutesFromStart = percent * totalMinutes;
+      const snappedMinutes = this.snapTo15Min(minutesFromStart);
+      const totalMinutesFromMidnight = (this._scheduleStartHour * 60) + snappedMinutes;
+      const time = this.minutesToTimeString(totalMinutesFromMidnight);
+
+      // Only update if time changed (reduces reactive updates)
+      if (time !== this._dragPreviewTime) {
+        this._dragPreviewTime = time;
+        this._dragTargetIndex = this.calculateInsertIndex(date, time);
+      }
+
+      // Direct DOM manipulation for indicator (bypasses Alpine reactivity)
+      const indicator = document.querySelector('.schedule-time-indicator');
+      if (indicator) {
+        indicator.textContent = this.formatTime12Hour(time);
+        indicator.style.left = `${x}px`;
+        indicator.style.top = `${y - 28}px`;
+      }
+    },
+
+    async handleScheduleDropBetween(event, targetDate, _targetScheduleId, _position) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!this._draggedSchedule) return;
+      const draggedSchedule = this._draggedSchedule;
+      const droppedTime = this._dragPreviewTime;
+      const insertIndex = this._dragTargetIndex;
+
+      // Clear drag state immediately
+      this._draggedSchedule = null;
+      this._dragTargetDate = null;
+      this._dragTargetIndex = null;
+      this._dragPreviewTime = null;
+      this._dragDaySchedules = null;
+
+      // Save original values for rollback
+      const originalDate = draggedSchedule.scheduled_date;
+      const originalTime = draggedSchedule.start_time;
+      const originalOrders = new Map();
+
+      // Calculate new order
+      const existingSchedules = this.schedules
+        .filter(s => s.scheduled_date === targetDate && s.id !== draggedSchedule.id)
+        .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+
+      // Save original orders for rollback
+      existingSchedules.forEach(s => originalOrders.set(s.id, s.route_order));
+      originalOrders.set(draggedSchedule.id, draggedSchedule.route_order);
+
+      // Build new order array
+      const newOrder = [...existingSchedules];
+      newOrder.splice(insertIndex, 0, draggedSchedule);
+      const newOrderIds = newOrder.map(s => s.id);
+
+      // OPTIMISTIC UPDATE - apply changes immediately
+      draggedSchedule.scheduled_date = targetDate;
+      if (droppedTime) {
+        draggedSchedule.start_time = droppedTime;
+      }
+      newOrder.forEach((s, i) => { s.route_order = i + 1; });
+
+      // Sync with server in background
+      const updateData = { scheduled_date: targetDate };
+      if (droppedTime && droppedTime !== originalTime) {
+        updateData.start_time = droppedTime;
+      }
+
+      try {
+        // Fire both requests in parallel
+        const [scheduleResp, orderResp] = await Promise.all([
+          fetch(`/api/schedules/${draggedSchedule.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+          }),
+          fetch(`/api/schedules/reorder/${targetDate}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ schedule_ids: newOrderIds })
+          })
+        ]);
+
+        if (!scheduleResp.ok || !orderResp.ok) {
+          throw new Error('Failed to save changes');
+        }
+      } catch (e) {
+        // ROLLBACK on error
+        console.error('Schedule drop error:', e);
+        draggedSchedule.scheduled_date = originalDate;
+        draggedSchedule.start_time = originalTime;
+        originalOrders.forEach((order, id) => {
+          const s = this.schedules.find(x => x.id === id);
+          if (s) s.route_order = order;
+        });
+        Alpine.store('notifications').add('Failed to save - changes reverted', 'error');
+      }
     },
 
     async handleScheduleDrop(event, newDate) {
+      // Fallback: drop on empty area of a day column (append to end)
       if (!this._draggedSchedule) return;
-      const schedule = this._draggedSchedule;
-      this._draggedSchedule = null;
+      await this.handleScheduleDropBetween(event, newDate, null, 'after');
+    },
 
-      if (schedule.scheduled_date === newDate) return;
+    // =========================================================================
+    // SCHEDULE RESIZE
+    // =========================================================================
 
-      const oldDate = schedule.scheduled_date;
-      // Optimistically update local state (no full repaint)
-      schedule.scheduled_date = newDate;
+    startResize(event, schedule, date) {
+      // Get the column element for calculating time from position
+      const columnEl = event.target.closest('.schedule-day-column');
+      if (!columnEl) return;
 
-      try {
-        const resp = await fetch(`/api/schedules/${schedule.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scheduled_date: newDate })
+      // Get all schedules for this day, sorted by route_order
+      const daySchedules = this.schedules
+        .filter(s => s.scheduled_date === date)
+        .sort((a, b) => (a.route_order || 999) - (b.route_order || 999));
+
+      // Save original values for all schedules (for rollback and cascade)
+      this._resizeOriginals = new Map();
+      daySchedules.forEach(s => {
+        this._resizeOriginals.set(s.id, {
+          start_time: s.start_time,
+          end_time: s.end_time,
+          estimated_duration: s.estimated_duration
         });
-        if (!resp.ok) {
-          // Revert on failure
-          schedule.scheduled_date = oldDate;
-          throw new Error('Move failed');
-        }
-        Alpine.store('notifications').add('Schedule moved', 'success');
-      } catch (e) {
-        console.error('Move schedule error:', e);
-        Alpine.store('notifications').add(e.message, 'error');
+      });
+
+      this._resizingSchedule = schedule;
+      this._resizeDate = date;
+      this._resizeDaySchedules = daySchedules;
+      this._resizeColumnRect = columnEl.getBoundingClientRect();
+      this._resizeStartY = event.clientY || event.touches?.[0]?.clientY;
+      this._resizePreviewEndTime = schedule.end_time;
+
+      document.body.classList.add('schedule-resizing-active');
+
+      // Bind handlers if not already bound
+      if (!this._boundResizeMove) {
+        this._boundResizeMove = this.handleResizeMove.bind(this);
+        this._boundResizeEnd = this.handleResizeEnd.bind(this);
       }
+
+      // Add listeners
+      document.addEventListener('mousemove', this._boundResizeMove);
+      document.addEventListener('mouseup', this._boundResizeEnd);
+      document.addEventListener('touchmove', this._boundResizeMove, { passive: false });
+      document.addEventListener('touchend', this._boundResizeEnd);
+    },
+
+    timeToMinutes(timeStr) {
+      if (!timeStr) return null;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    },
+
+    handleResizeMove(event) {
+      if (!this._resizingSchedule || !this._resizeColumnRect) return;
+      event.preventDefault();
+
+      const y = event.clientY || event.touches?.[0]?.clientY;
+      const rect = this._resizeColumnRect;
+
+      // Calculate time from Y position
+      const relativeY = y - rect.top;
+      const percent = Math.max(0, Math.min(1, relativeY / rect.height));
+      const totalMinutes = (this._scheduleEndHour - this._scheduleStartHour) * 60;
+      const minutesFromStart = percent * totalMinutes;
+      const snappedMinutes = this.snapTo15Min(minutesFromStart);
+      const newEndMinutes = (this._scheduleStartHour * 60) + snappedMinutes;
+
+      // Get ORIGINAL start time of resizing schedule
+      const resizingOriginal = this._resizeOriginals.get(this._resizingSchedule.id);
+      const startMinutes = this.timeToMinutes(resizingOriginal.start_time) || (8 * 60);
+
+      // Ensure end time is at least 15 min after start time
+      if (newEndMinutes <= startMinutes + 15) {
+        return;
+      }
+
+      const newEndTime = this.minutesToTimeString(newEndMinutes);
+
+      // Skip if no change
+      if (newEndTime === this._resizePreviewEndTime) return;
+
+      this._resizePreviewEndTime = newEndTime;
+
+      // Update the resizing schedule
+      this._resizingSchedule.end_time = newEndTime;
+      const durationHours = (newEndMinutes - startMinutes) / 60;
+      this._resizingSchedule.estimated_duration = durationHours;
+
+      // CASCADE: Recalculate ALL subsequent events from their ORIGINAL positions
+      const resizingIndex = this._resizeDaySchedules.findIndex(s => s.id === this._resizingSchedule.id);
+      let prevEndMinutes = newEndMinutes;
+
+      for (let i = resizingIndex + 1; i < this._resizeDaySchedules.length; i++) {
+        const s = this._resizeDaySchedules[i];
+        const original = this._resizeOriginals.get(s.id);
+        const originalStartMinutes = this.timeToMinutes(original.start_time);
+        const originalDuration = original.estimated_duration || 0.5;
+        const originalDurationMinutes = originalDuration * 60;
+
+        if (originalStartMinutes === null) {
+          break; // No start time, stop cascading
+        }
+
+        // Check if this event needs to be pushed (based on ORIGINAL position)
+        if (originalStartMinutes < prevEndMinutes + 15) {
+          // Push forward
+          const newStartMinutes = prevEndMinutes + 15;
+          s.start_time = this.minutesToTimeString(newStartMinutes);
+          s.end_time = this.minutesToTimeString(newStartMinutes + originalDurationMinutes);
+          s.estimated_duration = originalDuration;
+          prevEndMinutes = newStartMinutes + originalDurationMinutes;
+        } else {
+          // No push needed - restore to original position
+          s.start_time = original.start_time;
+          s.end_time = original.end_time;
+          s.estimated_duration = original.estimated_duration;
+          prevEndMinutes = originalStartMinutes + originalDurationMinutes;
+        }
+      }
+    },
+
+    async handleResizeEnd(_event) {
+      if (!this._resizingSchedule) return;
+
+      const originals = this._resizeOriginals;
+      const daySchedules = this._resizeDaySchedules;
+
+      // Clear resize state
+      this._resizingSchedule = null;
+      this._resizeColumnRect = null;
+      this._resizePreviewEndTime = null;
+      this._resizeDaySchedules = null;
+      this._resizeDate = null;
+
+      document.body.classList.remove('schedule-resizing-active');
+      document.removeEventListener('mousemove', this._boundResizeMove);
+      document.removeEventListener('mouseup', this._boundResizeEnd);
+      document.removeEventListener('touchmove', this._boundResizeMove);
+      document.removeEventListener('touchend', this._boundResizeEnd);
+
+      // Collect all changed schedules
+      const updates = [];
+      daySchedules.forEach(s => {
+        const orig = originals.get(s.id);
+        if (s.start_time !== orig.start_time || s.end_time !== orig.end_time) {
+          updates.push({
+            id: s.id,
+            start_time: s.start_time,
+            end_time: s.end_time,
+            estimated_duration: s.estimated_duration
+          });
+        }
+      });
+
+      // Skip if no changes
+      if (updates.length === 0) {
+        this._resizeOriginals = null;
+        return;
+      }
+
+      // Sync all changes with server in parallel
+      try {
+        const promises = updates.map(u =>
+          fetch(`/api/schedules/${u.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              start_time: u.start_time,
+              end_time: u.end_time,
+              estimated_duration: u.estimated_duration
+            })
+          })
+        );
+
+        const responses = await Promise.all(promises);
+        const allOk = responses.every(r => r.ok);
+
+        if (!allOk) throw new Error('Failed to save some changes');
+      } catch (e) {
+        // Rollback all schedules
+        console.error('Resize error:', e);
+        daySchedules.forEach(s => {
+          const orig = originals.get(s.id);
+          s.start_time = orig.start_time;
+          s.end_time = orig.end_time;
+          s.estimated_duration = orig.estimated_duration;
+        });
+        Alpine.store('notifications').add('Failed to save - changes reverted', 'error');
+      }
+
+      this._resizeOriginals = null;
     },
 
   };

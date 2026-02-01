@@ -273,77 +273,120 @@
                 </div>
 
                 <!-- Day Columns with Schedules -->
-                <div class="grid grid-cols-7 min-h-[180px]">
+                <div class="schedule-grid-container relative">
+                  <!-- Time scale on left edge -->
+                  <div class="schedule-time-scale" x-show="_draggedSchedule">
+                    <template x-for="hour in [6,8,10,12,14,16,18,20]" :key="hour">
+                      <div class="schedule-time-mark" :style="`top: ${((hour - 6) / 14) * 100}%`">
+                        <span x-text="hour <= 12 ? hour + 'a' : (hour - 12) + 'p'"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="grid grid-cols-7 min-h-[180px]" x-ref="scheduleGrid">
                   <template x-for="day in calendarDays" :key="day.date">
-                    <div class="p-1 border-r border-gray-100 last:border-r-0 flex flex-col gap-1"
-                         :class="{'bg-primary/5': day.isToday}"
-                         @dragover.prevent
+                    <div class="p-1 border-r border-gray-100 last:border-r-0 flex flex-col schedule-day-column"
+                         :class="{'bg-primary/5': day.isToday, 'schedule-drag-target': _draggedSchedule && _dragTargetDate === day.date}"
+                         :data-date="day.date"
+                         @dragover.prevent="handleDayColumnDragOver($event, day.date)"
+                         @dragleave="handleDayColumnDragLeave($event, day.date)"
                          @drop="handleScheduleDrop($event, day.date)">
 
-                      <template x-for="schedule in getSchedulesForDay(day.date)" :key="schedule.id">
-                        <div class="rounded p-1 text-[10px] border cursor-pointer transition-opacity hover:opacity-90"
-                             :style="getScheduleBlockStyle(schedule)"
-                             :class="getScheduleBlockTextClass(schedule)"
-                             draggable="true"
-                             @dragstart="handleScheduleDragStart($event, schedule)"
-                             @click="openScheduleModal(schedule)">
-                          <!-- Job Schedule -->
-                          <template x-if="schedule.type === 'job' || schedule.job_id">
-                            <div>
-                              <div class="font-semibold truncate">
-                                <span x-text="schedule.job_number"></span>
-                                <span class="opacity-75 font-normal" x-show="schedule.address || schedule.street_name" x-text="' - ' + (schedule.address ? extractStreetName(schedule.address) : schedule.street_name)"></span>
+                      <!-- Schedule items -->
+                      <div class="flex flex-col flex-1 schedule-items-container">
+                        <template x-for="(schedule, index) in getSchedulesForDay(day.date)" :key="schedule.id">
+                          <div class="schedule-card-wrapper relative"
+                               :data-schedule-id="schedule.id"
+                               @dragover="handleScheduleDragOver($event, day.date, schedule.id, index)"
+                               @dragleave="handleScheduleDragLeave($event)"
+                               @drop="handleScheduleDropBetween($event, day.date, schedule.id, 'before')">
+                            <!-- Drop zone with time preview -->
+                            <div class="schedule-drop-zone"
+                                 :class="{'active': _dragTargetDate === day.date && _dragTargetIndex === index}">
+                              <span class="schedule-drop-time" x-text="_dragTargetDate === day.date && _dragTargetIndex === index ? formatTime12Hour(_dragPreviewTime) : ''"></span>
+                            </div>
+                            <!-- Schedule card -->
+                            <div class="schedule-card rounded p-1 text-[10px] border cursor-grab transition-all hover:opacity-90 overflow-hidden active:cursor-grabbing relative"
+                                 :style="getScheduleBlockStyle(schedule)"
+                                 :class="[getScheduleBlockTextClass(schedule), {'schedule-resizing': _resizingSchedule?.id === schedule.id}]"
+                                 draggable="true"
+                                 @dragstart="handleScheduleDragStart($event, schedule)"
+                                 @dragend="handleScheduleDragEnd($event)"
+                                 @click="openScheduleModal(schedule)">
+                            <!-- Job Schedule -->
+                            <template x-if="schedule.type === 'job' || schedule.job_id">
+                              <div>
+                                <div class="font-semibold truncate">
+                                  <span x-text="schedule.job_number"></span>
+                                  <span class="opacity-75 font-normal" x-show="schedule.address || schedule.street_name" x-text="' - ' + (schedule.address ? extractStreetName(schedule.address) : schedule.street_name)"></span>
+                                </div>
+                                <div class="truncate opacity-90" x-text="schedule.client"></div>
                               </div>
-                              <div class="truncate opacity-90" x-text="schedule.client"></div>
-                            </div>
-                          </template>
-                          <!-- POI Schedule -->
-                          <template x-if="schedule.type === 'poi' || schedule.poi_id">
-                            <div>
-                              <div class="font-semibold truncate flex items-center gap-1">
-                                <i class="bi" :class="schedule.poi_icon || 'bi-geo-alt'"></i>
-                                <span x-text="schedule.poi_name || schedule.display_name"></span>
+                            </template>
+                            <!-- POI Schedule -->
+                            <template x-if="schedule.type === 'poi' || schedule.poi_id">
+                              <div>
+                                <div class="font-semibold truncate flex items-center gap-1">
+                                  <i class="bi" :class="schedule.poi_icon || 'bi-geo-alt'"></i>
+                                  <span x-text="schedule.poi_name || schedule.display_name"></span>
+                                </div>
+                                <div class="truncate opacity-90" x-show="schedule.address" x-text="schedule.address"></div>
                               </div>
-                              <div class="truncate opacity-90" x-show="schedule.address" x-text="schedule.address"></div>
+                            </template>
+                            <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
+                            <template x-if="(schedule.tags || []).length">
+                              <div class="flex flex-wrap gap-0.5 mt-1 overflow-hidden">
+                                <template x-for="(t, idx) in (schedule.tags || []).slice(0,2)" :key="t.id">
+                                  <span class="epic-tag-sm text-[9px] px-1.5 py-0.5 truncate max-w-full"
+                                        :class="getTagTextColor(t.color)"
+                                        :style="`background-color:${t.color||'#007bff'};`"
+                                        x-text="t.name"></span>
+                                </template>
+                                <template x-if="(schedule.tags || []).length > 2">
+                                  <span class="epic-tag-sm text-[9px] px-1.5 py-0.5"
+                                        style="background-color: rgba(255,255,255,0.6); color: #1f2937;">
+                                    +<span x-text="(schedule.tags||[]).length - 2"></span>
+                                  </span>
+                                </template>
+                              </div>
+                            </template>
+                            <!-- Resize handle -->
+                            <div class="schedule-resize-handle"
+                                 draggable="false"
+                                 @mousedown.stop.prevent="startResize($event, schedule, day.date)"
+                                 @touchstart.stop.prevent="startResize($event, schedule, day.date)">
                             </div>
-                          </template>
-                          <div class="opacity-80" x-show="schedule.start_time" x-text="formatScheduleTime(schedule)"></div>
-                          <template x-if="(schedule.tags || []).length">
-                            <div class="flex flex-wrap gap-0.5 mt-1">
-                              <template x-for="(t, idx) in (schedule.tags || []).slice(0,2)" :key="t.id">
-                                <span class="epic-tag-sm text-[9px] px-1.5 py-0.5"
-                                      :class="getTagTextColor(t.color)"
-                                      :style="`background-color:${t.color||'#007bff'};`"
-                                      x-text="t.name"></span>
-                              </template>
-                              <template x-if="(schedule.tags || []).length > 2">
-                                <span class="epic-tag-sm text-[9px] px-1.5 py-0.5"
-                                      style="background-color: rgba(255,255,255,0.6); color: #1f2937;">
-                                  +<span x-text="(schedule.tags||[]).length - 2"></span>
-                                </span>
-                              </template>
-                            </div>
-                          </template>
+                          </div>
+                          </div><!-- /schedule-card-wrapper -->
+                        </template>
+                        <!-- Drop zone after last card -->
+                        <div class="schedule-drop-zone schedule-drop-tail flex-1 min-h-[24px]"
+                             :class="{'active': _dragTargetDate === day.date && _dragTargetIndex === getSchedulesForDay(day.date).length}"
+                             @dragover.prevent="handleScheduleDragOver($event, day.date, null, getSchedulesForDay(day.date).length)"
+                             @dragleave="handleScheduleDragLeave($event)"
+                             @drop="handleScheduleDropBetween($event, day.date, null, 'after')">
+                          <span class="schedule-drop-time" x-text="_dragTargetDate === day.date && _dragTargetIndex === getSchedulesForDay(day.date).length ? formatTime12Hour(_dragPreviewTime) : ''"></span>
                         </div>
-                      </template>
+                      </div>
 
-                      <button class="btn btn-ghost btn-xs w-full opacity-40 hover:opacity-100 text-[10px] py-0 h-5 min-h-0"
-                              @click="openNewScheduleModal(day.date)"
-                              title="Add job to schedule">
-                        <i class="bi bi-plus text-xs"></i> Add
-                      </button>
-
-                      <a class="btn btn-ghost btn-xs w-full text-primary text-[10px] py-0 h-5 min-h-0"
-                         x-show="getSchedulesForDay(day.date).length >= 1"
-                         :href="getGoogleMapsRouteUrl(day.date)"
-                         target="_blank"
-                         title="Open route in Google Maps">
-                        <i class="bi bi-map text-xs"></i>
-                        <span>Maps</span>
-                      </a>
+                      <!-- Bottom actions (clamped to bottom) -->
+                      <div class="mt-auto pt-1 flex items-center gap-1">
+                        <button class="btn btn-ghost btn-xs flex-1 opacity-40 hover:opacity-100 text-[10px] py-0 h-5 min-h-0"
+                                @click="openNewScheduleModal(day.date)"
+                                title="Add job to schedule">
+                          <i class="bi bi-plus text-xs"></i> Add
+                        </button>
+                        <a class="btn btn-ghost btn-xs btn-square text-primary text-[10px] h-5 min-h-0 w-5"
+                           x-show="getSchedulesForDay(day.date).length >= 1"
+                           :href="getGoogleMapsRouteUrl(day.date)"
+                           target="_blank"
+                           title="Open route in Google Maps">
+                          <i class="bi bi-map text-xs"></i>
+                        </a>
+                      </div>
                     </div>
                   </template>
                 </div>
+                </div><!-- /schedule-grid-container -->
               </div>
             </div>
           </div>
@@ -354,7 +397,7 @@
              :class="{'hidden': !scheduleModal.show}"
              id="scheduleModal"
              @click.self="closeScheduleModal()">
-          <div class="epic-modal" style="max-width: 520px; min-width: 320px;">
+          <div class="epic-modal" style="max-width: 600px; min-width: 320px;">
             <!-- Header -->
             <div class="epic-modal-header">
               <div class="epic-modal-subtitle">Calendar</div>
@@ -429,7 +472,23 @@
                     </div>
                   </template>
                   <template x-if="scheduleModal.mode === 'edit'">
-                    <div class="font-semibold text-gray-900 py-2" x-text="(scheduleModal.data.job_number || '') + (scheduleModal.data.client ? ' - ' + scheduleModal.data.client : '')"></div>
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                          <div class="font-semibold text-gray-900" x-text="scheduleModal.data.job_number"></div>
+                          <div class="text-sm text-gray-600" x-text="scheduleModal.data.client"></div>
+                          <div class="text-xs text-gray-500 truncate mt-1"
+                               x-show="scheduleModal.data.address || scheduleModal.data.street_name"
+                               x-text="scheduleModal.data.street_name || scheduleModal.data.address"></div>
+                        </div>
+                        <a class="btn btn-ghost btn-sm btn-square flex-shrink-0"
+                           :href="'/admin/?tab=jobs&job=' + scheduleModal.data.job_number"
+                           target="_blank"
+                           title="View job details">
+                          <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                      </div>
+                    </div>
                   </template>
                 </div>
               </template>
@@ -2290,6 +2349,12 @@
     </div>
 
     <div id="poi-icon-portal" class="fixed inset-0 z-[9999] hidden"></div>
+
+    <!-- Floating time indicator for schedule drag (at body level to avoid stacking context issues) -->
+    <div class="schedule-time-indicator"
+         x-show="_draggedSchedule && _dragPreviewTime"
+         x-text="formatTime12Hour(_dragPreviewTime)">
+    </div>
 
 {% endblock %}
 
