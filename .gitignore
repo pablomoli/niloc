@@ -194,3 +194,6 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 outputs
+
+niloc/data
+niloc/checkpoints/*.ckpt

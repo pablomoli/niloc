@@ -1,8 +1,8 @@
 # @package _group_
 name: universityA
-# Dataset paths
-root_dir : <path>
-train_list : <path>/train.txt
-val_list: <path>/val.txt
-test_list : <path>/test.txt
 
+# Dataset paths
+root_dir: /home/anastasia/Desktop/Repos/niloc/niloc/data/universityA
+train_list: /home/anastasia/Desktop/Repos/niloc/niloc/data/universityA/train.txt
+val_list: /home/anastasia/Desktop/Repos/niloc/niloc/data/universityA/val.txt
+test_list: /home/anastasia/Desktop/Repos/niloc/niloc/data/universityA/test.txt

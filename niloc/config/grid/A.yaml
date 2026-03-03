@@ -1,12 +1,6 @@
-# Floorplan grid information
-grid:
-  size: [ 211, 157 ]
-  # grid bounds for location mapping in data input
-  bounds: [ 0, 211, 0, 157 ]
-  # distance unit conversion for location mapping in data input
-  cell_length: 1.0
-  # number of grid cells
-  elements: 33127
-  image_file: <path>
-  # image pixels per meter
-  dpi: 2.5
+size: [ 184, 136 ]
+bounds: [ 0, 184, 0, 136 ]
+cell_length: 1.0
+elements: 25024
+image_file: ../niloc/data/universityA/floorplan.png
+dpi: 2.5
