@@ -74,8 +74,8 @@ test_cfg:
   save_output_trajectory: true
 
   # save plots/videos
-  full_traj_heatmap: false
-  individual_traj_heatmap: false
+  full_traj_heatmap: true
+  individual_traj_heatmap: true
   full_error_bar: true
   # [Optional] required for tensorboard-video
-  ffmpeg_path: null
+  ffmpeg_path: /home/anastasia/miniconda3/envs/niloc/bin/ffmpeg
