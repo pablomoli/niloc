@@ -8,7 +8,7 @@ imu_freq : 10.0
 # Configuration for input data sampling
 window:
   # values in seconds
-  window_time : 20.1
+  window_time : 5.0
   # sampling in training (Hz)
   sample_freq : 0.5
 

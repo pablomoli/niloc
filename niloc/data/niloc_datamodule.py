@@ -108,6 +108,8 @@ class NilocDataModule(pl.LightningDataModule):
         )
         logging.info(f"Validation dataset loaded. Length: {len(self.val_dataset)}")
 
+        print(len(self.train_dataset), len(self.val_dataset))
+
     def train_dataloader(self) -> DataLoader:
         train_loader = DataLoader(
             self.train_dataset,

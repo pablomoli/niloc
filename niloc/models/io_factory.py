@@ -382,29 +382,33 @@ class OutputCNNDecoder(nn.Module):
         self.flatten_output = flatten_output
         self.interim_dim = interim_dim
 
+
     def forward(self, x: torch.Tensor):
         """
         :param x: shape (sequence_length, batch_size, d_model)
-        :return: y: shape (batch_size, sequence_length, d_model) if flatten output else
-                          (batch_size, sequence_length, height, width)
+        :return: y: shape (batch_size, sequence_length, d_output)
         """
-        # change to batch x sequence, 1, interim_dim[0], interim_dim[1]
-        img_in = x.permute(1, 0, 2).reshape(x.size(0) * x.size(1), -1, self.interim_dim[0], self.interim_dim[1])
-        img_out = self.cnn_decoder(img_in)  # bs x c x w x h
+        seq_len, bs, _ = x.size()
 
-        # # change to bs x c x wh
-        # y = img_out.reshape(img_out.size(0), img_out.size(1), -1)
+        # reshape to batch*seq, channels, H, W
+        img_in = x.permute(1, 0, 2).reshape(bs * seq_len, -1, self.interim_dim[0], self.interim_dim[1])
 
-        # change to batch, sequence, w x h
-        y = img_out.reshape(x.size(1), x.size(0), img_out.size(2), img_out.size(3))
-        if self.flatten_output:
-            # change to batch, sequence, d_output
-            return y.reshape(x.size(1), x.size(0), -1)
+        # forward through CNN
+        img_out = self.cnn_decoder(img_in)
 
-        else:
-            # change to batch, sequence, width, height
-            return y
+        # upsample to target HxW
+        img_out = torch.nn.functional.interpolate(
+            img_out, size=(self.target_H, self.target_W), mode="bilinear", align_corners=False
+        )
 
+        # flatten and pass through linear layer
+        img_flat = img_out.reshape(bs * seq_len, -1)
+        y = self.fc(img_flat)
+
+        # reshape back to batch x seq x d_output
+        y = y.reshape(bs, seq_len, self.d_output)
+
+        return y
 
 class OutputCNNFCDecoder(OutputCNNDecoder):
     def __init__(

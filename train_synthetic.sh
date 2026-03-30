@@ -37,6 +37,6 @@ python niloc/trainer.py \
   +arch/output@arch.encoder_output=cnnfc_$1 \
   +arch/input@arch.decoder_input=cnn1d_$1 \
   +arch/output@arch.decoder_output=cnnfc_$1 \
-  data.batch_size=16 \
+  data.batch_size=4 \
   arch.d_model=${model_dim[$1]} \
   train_cfg.scheduler.monitor=val_enc_loss
