@@ -1,0 +1,6 @@
+# niloc/config/dataset/avalon_syn.yaml
+name: avalon_synthetic
+data_root: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/synthetic_output
+train_list: train.txt
+val_list: val.txt
+#test
