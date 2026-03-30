@@ -195,5 +195,5 @@ fabric.properties
 
 outputs
 
-niloc/data
+niloc/data/universityA
 niloc/checkpoints/*.ckpt

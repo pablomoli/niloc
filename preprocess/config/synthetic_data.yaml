@@ -3,15 +3,15 @@
 # corridors.
 floorplan:
   # image file path
-  path: <path>
+  path: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/floorplan.png
   resize_factor: 1.0
 
 # output
-folder: <path>
+folder: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/synthetic_output
 
 # unique tag to prevent overwriting between runs
-file_tag: 'a'
-save_plot: False
+file_tag: 'avalon_run_1'
+save_plot: True
 # number of trajectories to generate per neighbourhood size
 num_agents: 10
 # minimum trajectory length
@@ -40,10 +40,10 @@ planner:
 # trajectory characteristics
 trajectory:
   # avg_speed in pixels
-  avg_speed: 1.0
+  avg_speed: 14.0
   # sample frequency
   frequency: 1.0
   # standard deviation for speed perturbation
-  speed_std: 0.005
+  speed_std: 0.5
   # bspline smoothing factor
   smooth: 5.0
