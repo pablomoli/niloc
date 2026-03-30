@@ -17,7 +17,7 @@ model_dim["A"]=432
 model_dim+=( ["B"]=704 ["C"]=672 )
 
 if [ $# -eq 2 ]; then
-  python niloc/trainer.py run_name=$1 dataset=$1 grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.gpus=4 train_cfg.accelerator=ddp data.batch_size=80 arch.d_model=${model_dim[$1]} train_cfg.scheduler.monitor=val_enc_loss train_cfg.tr_ratio=0.8 train_cfg.tr_warmup=5 +train_cfg.restore_tr_ratio=False "train_cfg.load_weights_only=\"${2}\""
+  python niloc/trainer.py run_name=$1 dataset=$1 grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.gpus=1 train_cfg.accelerator=ddp data.batch_size=80 arch.d_model=${model_dim[$1]} train_cfg.scheduler.monitor=val_enc_loss train_cfg.tr_ratio=0.8 train_cfg.tr_warmup=5 +train_cfg.restore_tr_ratio=False "train_cfg.load_weights_only=\"${2}\""
 else
-  python niloc/trainer.py run_name=$1 dataset=$1 grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.gpus=4 train_cfg.accelerator=ddp data.batch_size=80 arch.d_model=${model_dim[$1]} train_cfg.scheduler.monitor=val_enc_loss
+  python niloc/trainer.py run_name=$1 dataset=$1 grid=$1 +arch/input@arch.encoder_input=tcn +arch/output@arch.encoder_output=cnnfc_$1 +arch/input@arch.decoder_input=cnn1d_$1 +arch/output@arch.decoder_output=cnnfc_$1 train_cfg.gpus=1 train_cfg.accelerator=ddp data.batch_size=80 arch.d_model=${model_dim[$1]} train_cfg.scheduler.monitor=val_enc_loss
 fi

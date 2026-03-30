@@ -1,0 +1,10 @@
+# @package _group_
+name: 'cnnfc'
+
+channels: [2, 8, 8, 3]
+stride: [2, 2, 2]
+kernel_size : [3, 3, 3]
+padding : [1, 1, 1]
+out_padding : [1, 1, 1]
+
+interim_dim: [8, 8]

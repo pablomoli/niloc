@@ -1,0 +1,6 @@
+# @package _group_
+gpus: 1
+accelerator: null
+tr_ratio: 1.0
+epochs: 800
+lr: 0.0003
