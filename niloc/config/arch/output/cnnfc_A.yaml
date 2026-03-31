@@ -8,4 +8,4 @@ padding : [0, [0, 1], [0, 1]]
 out_padding : [1, 1, 0]
 
 # model dim 432
-interim_dim: [24, 18]
+interim_dim: [24, 18]grid_dim: True

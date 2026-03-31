@@ -437,21 +437,21 @@ class OutputCNNFCDecoder(OutputCNNDecoder):
             padding: List[int],
             out_padding: List[int],
             interim_dim: List[int],
+            grid_dim: List[int],
             dropout: float = 0.5,
     ) -> None:
         super(OutputCNNFCDecoder, self).__init__(d_input, d_output, channels, kernel_size, stride, padding,
-                                                 out_padding, interim_dim, dropout, flatten_output=True)
+                                                 out_padding, interim_dim, dropout, flatten_output=False)
         self.activation = output_activation()
         self.d_output = d_output
-
-        # Determine the flattened CNN output size by running a dummy forward.
-        # This decouples the architecture from any requirement that CNN spatial
-        # output size matches grid elements, which was true for A/B/C by design
-        # but does not hold for arbitrary floorplan grids like Avalon.
-        with torch.no_grad():
-            dummy = torch.zeros(1, channels[0], interim_dim[0], interim_dim[1])
-            cnn_flat = self.cnn_decoder(dummy).numel()
-        self.flat_fc = nn.Linear(cnn_flat, d_output)
+        # grid_dim is [width, height]; target spatial size for bilinear upsample
+        self.target_W = grid_dim[0]
+        self.target_H = grid_dim[1]
+        # 1x1 conv reduces CNN output to a single-channel heatmap (negligible params),
+        # then bilinear upsample to the full grid resolution. This avoids the enormous
+        # FC matrix that would result from flattening CNN output before projecting to
+        # d_output (grid elements), which for Avalon would be ~12k x 90k = 4.5 GB.
+        self.channel_reduce = nn.Conv2d(channels[-1], 1, kernel_size=1)
 
     def forward(self, x: torch.Tensor):
         """
@@ -461,8 +461,11 @@ class OutputCNNFCDecoder(OutputCNNDecoder):
         seq_len, bs, _ = x.size()
         img_in = x.permute(1, 0, 2).reshape(bs * seq_len, -1, self.interim_dim[0], self.interim_dim[1])
         img_out = self.activation(self.cnn_decoder(img_in))
-        y = self.flat_fc(img_out.reshape(bs * seq_len, -1))
-        return y.reshape(bs, seq_len, self.d_output)
+        img_out = self.channel_reduce(img_out)
+        img_out = torch.nn.functional.interpolate(
+            img_out, size=(self.target_H, self.target_W), mode="bilinear", align_corners=False
+        )
+        return img_out.reshape(bs, seq_len, self.d_output)
 
 
 output_embeddings = {

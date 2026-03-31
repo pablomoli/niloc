@@ -8,3 +8,4 @@ padding : [1, 1, 1]
 out_padding : [1, 1, 1]
 
 interim_dim: [8, 8]
+grid_dim: True

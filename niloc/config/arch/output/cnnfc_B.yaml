@@ -9,3 +9,4 @@ out_padding : [0, 1, 1]
 
 # model_dim 704
 interim_dim: [16, 44]
+grid_dim: True

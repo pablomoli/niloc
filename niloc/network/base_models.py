@@ -165,4 +165,4 @@ class ScheduledSamplingModule(MemoryModule):
             prev_tr = self.tr_ratio
             self.tr_ratio = max(0, self.tr_ratio - self.hparams.train_cfg.arrf)
             print(f"Changing teacher ratio {prev_tr}-->{self.tr_ratio}")
-        super(ScheduledSamplingModule, self).on_train_epoch_end(outputs)
+        super(ScheduledSamplingModule, self).on_train_epoch_end()
