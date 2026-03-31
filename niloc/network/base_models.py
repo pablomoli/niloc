@@ -4,7 +4,7 @@ This file includes the main libraries for training with reloc probability as tar
 
 import faulthandler
 import logging
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 import numpy as np
 import pytorch_lightning as pl
@@ -157,7 +157,7 @@ class ScheduledSamplingModule(MemoryModule):
             self.tr_ratio = checkpoint.get("tr_ratio", self.hparams.train_cfg.tr_ratio)
             logging.info(f"Restored tr_ratio {self.tr_ratio}")
 
-    def training_epoch_end(self, outputs: List[Any]):
+    def on_train_epoch_end(self):
         self.log("tr_ratio", self.tr_ratio)
 
         if self.current_epoch > self.hparams.train_cfg.get('tr_warmup', 0) and self.current_epoch % \
