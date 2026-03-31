@@ -1,7 +1,6 @@
-#these values are from another map, and need to be updated.
 size: [ 411, 221 ] # Coordinate boundaries [min_x, max_x, min_y, max_y]  Usually matches [0, Width, 0, Height] to align with image pixels
 bounds: [ 0, 411, 0, 221 ] #grid bounds, defines boundaries of walkable area, from understanding this can match the imagr resolution.
 cell_length: 1.0 # Physical size of one grid cell relative to DPI (1.0 = 1 pixel unit)
 elements: 90831 #total area (res multiplied)
 image_file: ../niloc/data/avalon/floorplan.png
-dpi: 10  #Critical !!! Scale factor: Number of pixels that represent 1.0 meter in the real world
+dpi: 10  # Real measured value — Ana took physical measurements of the building. May be tweaked during validation.

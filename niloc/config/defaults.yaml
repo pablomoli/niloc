@@ -78,4 +78,4 @@ test_cfg:
   individual_traj_heatmap: true
   full_error_bar: true
   # [Optional] required for tensorboard-video
-  ffmpeg_path: /home/anastasia/miniconda3/envs/niloc/bin/ffmpeg
+  ffmpeg_path: null

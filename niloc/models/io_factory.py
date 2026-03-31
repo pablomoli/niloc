@@ -426,24 +426,27 @@ class OutputCNNFCDecoder(OutputCNNDecoder):
         super(OutputCNNFCDecoder, self).__init__(d_input, d_output, channels, kernel_size, stride, padding,
                                                  out_padding, interim_dim, dropout, flatten_output=True)
         self.activation = output_activation()
-        self.fc_weights = nn.Parameter(torch.randn(channels[-1], d_output))
-        self.fc_bias = nn.Parameter(torch.randn(d_output))
+        self.d_output = d_output
+
+        # Determine the flattened CNN output size by running a dummy forward.
+        # This decouples the architecture from any requirement that CNN spatial
+        # output size matches grid elements, which was true for A/B/C by design
+        # but does not hold for arbitrary floorplan grids like Avalon.
+        with torch.no_grad():
+            dummy = torch.zeros(1, channels[0], interim_dim[0], interim_dim[1])
+            cnn_flat = self.cnn_decoder(dummy).numel()
+        self.flat_fc = nn.Linear(cnn_flat, d_output)
 
     def forward(self, x: torch.Tensor):
         """
         :param x: shape (sequence_length, batch_size, d_model)
-        :return: y: shape (batch_size, sequence_length, d_model) if flatten output else
-                          (batch_size, sequence_length, height, width)
+        :return: y: shape (batch_size, sequence_length, d_output)
         """
-        # change to batch x sequence, 1, interim_dim[0], interim_dim[1]
-        img_in = x.permute(1, 0, 2).reshape(x.size(0) * x.size(1), -1, self.interim_dim[0], self.interim_dim[1])
-        img_out = self.activation(self.cnn_decoder(img_in))  # bs x c x w x h
-
-        # add element-wise params [shape bs x c(=1) x wh]
-        y = torch.sum(img_out.reshape(img_out.size(0), img_out.size(1), -1) * self.fc_weights, dim=1) + self.fc_bias
-
-        # change to batch, sequence, d_output
-        return y.reshape(x.size(1), x.size(0), -1)
+        seq_len, bs, _ = x.size()
+        img_in = x.permute(1, 0, 2).reshape(bs * seq_len, -1, self.interim_dim[0], self.interim_dim[1])
+        img_out = self.activation(self.cnn_decoder(img_in))
+        y = self.flat_fc(img_out.reshape(bs * seq_len, -1))
+        return y.reshape(bs, seq_len, self.d_output)
 
 
 output_embeddings = {

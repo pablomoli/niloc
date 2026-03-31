@@ -1,5 +1,5 @@
-# niloc/config/dataset/avalon_syn.yaml
+# @package _group_
 name: avalon_synthetic
-root_dir: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/synthetic_output
-train_list: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/synthetic_output/train.txt
-val_list: /home/anastasia/Desktop/Repos/niloc/niloc/data/avalon/synthetic_output/val.txt
+root_dir: /Users/melocoton/Developer/niloc-fork/niloc/data/avalon/synthetic_output
+train_list: /Users/melocoton/Developer/niloc-fork/niloc/data/avalon/synthetic_output/train.txt
+val_list: /Users/melocoton/Developer/niloc-fork/niloc/data/avalon/synthetic_output/val.txt
