@@ -8,7 +8,7 @@ dependencies = [
     "scikit-image",
     "scikit-learn",
     "setuptools<72",
-    "pytorch-lightning==1.2.6",
+    "pytorch-lightning==1.9.5",
     "tensorboard",
     "matplotlib",
     "moviepy",

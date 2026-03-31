@@ -10,6 +10,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning.strategies import DDPStrategy
 from omegaconf import open_dict
 
 sys.path.append(osp.join(osp.dirname(osp.abspath(__file__)), '..'))
@@ -179,7 +180,7 @@ def launch_train(cfg: DictConfig) -> None:
         dirpath=filepath,
         filename=ckpt_format,
         save_top_k=-1,  # save all checkpoints
-        period=cfg.train_cfg.get("periodic_save_interval", 10),
+        every_n_epochs=cfg.train_cfg.get("periodic_save_interval", 10),
     )
     lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
     early_stopping = pl.callbacks.EarlyStopping(
@@ -193,10 +194,22 @@ def launch_train(cfg: DictConfig) -> None:
         trainer_cfg[key] = cfg.trainer_cfg[key]
     logging.info(f"{trainer_cfg}")
 
+    # Detect device: CUDA (Ana, Linux+NVIDIA) → GPU, MPS (Pablo, Apple Silicon) → MPS, else CPU.
+    n_gpus = cfg.train_cfg.get("gpus", 0) or 0
+    if torch.cuda.is_available() and n_gpus > 0:
+        device_args = dict(
+            accelerator="gpu",
+            devices=n_gpus,
+            strategy=DDPStrategy(find_unused_parameters=True) if n_gpus > 1 else None,
+        )
+    elif torch.backends.mps.is_available():
+        device_args = dict(accelerator="mps", devices=1)
+    else:
+        device_args = dict(accelerator="cpu", devices=1)
+
     # construct trainer
     trainer = pl.Trainer(
-        gpus=cfg.train_cfg.gpus,
-        distributed_backend=cfg.train_cfg.accelerator,
+        **device_args,
         max_epochs=cfg.train_cfg.epochs,
         resume_from_checkpoint=cfg.train_cfg.resume_from_checkpoint,
         logger=tb_logger,
@@ -206,7 +219,6 @@ def launch_train(cfg: DictConfig) -> None:
             periodic_checkpoint_callback,
             early_stopping,
         ],
-        plugins=pl.plugins.DDPPlugin(find_unused_parameters=True),
         **trainer_cfg,
     )
 

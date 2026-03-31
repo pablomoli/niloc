@@ -290,14 +290,30 @@ class InputCNNEncoder(InputCNNImgEncoder):
             f"CNN encoder input dimension mismatch {d_input}: {channels[0]} * {grid_dim}"
         self.grid_dim = grid_dim
 
+        # The CNN output spatial size depends on grid_dim and may not equal d_output (d_model).
+        # Compute the actual flat CNN output size and add a projection if needed, so any
+        # grid dimensions work regardless of how d_model was chosen.
+        with torch.no_grad():
+            dummy = torch.zeros(1, channels[0], grid_dim[0], grid_dim[1])
+            cnn_flat = self.cnn_encoder(dummy).numel()
+        self.proj = nn.Linear(cnn_flat, d_output) if cnn_flat != d_output else nn.Identity()
+
     def forward(self, x: torch.Tensor):
         """
         :param x: shape (batch_size, d_input, seq_length)
         :return: y: shape (sequence_length, batch_size, d_model) where d_model = d_output (+ d_pos_encoding)
         """
-        # change to batch, sequence, grid_dim[0], grid_dim[1]
-        img_in = x.permute(0, 2, 1).reshape(x.size(0), x.size(2), self.grid_dim[0], self.grid_dim[1])
-        return super(InputCNNEncoder, self).forward(img_in)
+        bs, _, seq_len = x.size()
+        # reshape to (batch*seq, channels[0], H, W) for CNN
+        # channels[0] is inferred by -1 since d_input == channels[0]*H*W (asserted in __init__)
+        img_in = x.permute(0, 2, 1).reshape(bs * seq_len, -1, self.grid_dim[0], self.grid_dim[1])
+        img_out = self.cnn_encoder(img_in)
+        # project to d_output then apply positional encoding
+        y = self.proj(img_out.reshape(bs, seq_len, -1)).permute(1, 0, 2)
+        y = self.pos_encoder(y * math.sqrt(self.d_output))
+        if self.sample > 1:
+            y = y[self.sample - 1::self.sample]
+        return y
 
 
 input_embeddings = {
