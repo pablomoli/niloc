@@ -1,0 +1,42 @@
+[project]
+name = "niloc"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "scikit-learn",
+    "setuptools<72",
+    "pytorch-lightning==1.2.6",
+    "tensorboard",
+    "matplotlib",
+    "moviepy",
+    "h5py",
+    "omegaconf==2.1.1",
+    "hydra-core==1.1.1",
+]
+
+[project.optional-dependencies]
+# Apple Silicon (MPS) — default for local dev on M-series Macs
+mps = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+# Linux + NVIDIA CUDA — Ana's machine.
+# Install with: uv pip install -e ".[cuda]" --index-url https://download.pytorch.org/whl/cu118
+cuda = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+
+[tool.setuptools.packages.find]
+include = ["niloc*", "preprocess*"]
+
+[tool.uv]
+# On Apple Silicon the standard PyPI torch wheel includes MPS support.
+# No extra index needed. On Linux+CUDA, override at install time:
+#   uv pip install torch torchvision torchaudio \
+#     --index-url https://download.pytorch.org/whl/cu118
