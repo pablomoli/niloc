@@ -242,14 +242,15 @@ def plot_trajectories_on_floorplan(trajs: dict[str, np.ndarray], out: Path) -> N
     colors = plt.cm.tab10(np.linspace(0, 1, len(sample)))  # type: ignore[attr-defined]
     for name, color in zip(sample, colors):
         traj = trajs[name]
-        ax.plot(traj[:, GTX], traj[:, GTY], linewidth=1.2, color=color,
+        # gt_x = row index, gt_y = col index; imshow x-axis = col, y-axis = row
+        ax.plot(traj[:, GTY], traj[:, GTX], linewidth=1.2, color=color,
                 alpha=0.85, label=f'{name} GT')
-        ax.plot(traj[:, X],   traj[:, Y],   linewidth=0.7, color=color,
+        ax.plot(traj[:, Y],   traj[:, X],   linewidth=0.7, color=color,
                 alpha=0.4, linestyle='--')
     ax.legend(fontsize=7, ncol=2, loc='upper right')
     ax.set_title('8 train trajectories on universityA floorplan\nsolid=GT, dashed=VIO')
-    ax.set_xlabel('x (px)')
-    ax.set_ylabel('y (px)')
+    ax.set_xlabel('col (gt_y)')
+    ax.set_ylabel('row (gt_x)')
     plt.tight_layout()
     plt.savefig(out, dpi=150)
     plt.close(fig)
