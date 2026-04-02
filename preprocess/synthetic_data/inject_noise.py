@@ -64,38 +64,50 @@ def load_noise_library(
 # Core injection
 # ---------------------------------------------------------------------------
 
-def _tile_segment(segment: np.ndarray, n_frames: int) -> np.ndarray:
+def _build_noise(
+    segments: np.ndarray,
+    n_frames: int,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, int]:
     """
-    Extend a noise segment to cover n_frames by tiling with drift continuity.
+    Build a noise signal of length n_frames from the segment library.
 
-    Each tiled copy is shifted by the final drift of the previous copy so
-    the noise signal remains continuous across tile boundaries.
+    For paths shorter than or equal to the window, a single randomly chosen
+    segment is truncated. For longer paths, independently sampled segments are
+    concatenated with a continuity offset so the signal never jumps — each new
+    segment is drawn fresh from the library so the drift direction can reverse,
+    modelling VIO loop-closure events that pull the estimate back toward GT.
 
     Parameters
     ----------
-    segment : (window_size, 2)
-    n_frames : target length
+    segments : (N, window_size, 2)
+    n_frames : desired output length
+    rng      : numpy Generator
 
     Returns
     -------
-    tiled : (n_frames, 2)
+    noise   : (n_frames, 2)
+    seg_idx : int  index of the first segment drawn (for logging)
     """
-    window = len(segment)
-    if n_frames <= window:
-        return segment[:n_frames]
+    window = segments.shape[1]
+    seg_idx = int(rng.integers(len(segments)))
 
-    tiles = [segment]
-    offset = segment[-1].copy()  # drift at end of first tile
+    if n_frames <= window:
+        return segments[seg_idx, :n_frames].copy(), seg_idx
+
+    chunks: list[np.ndarray] = [segments[seg_idx]]
+    offset = segments[seg_idx, -1].copy()
     remaining = n_frames - window
 
     while remaining > 0:
         take = min(window, remaining)
-        tile = segment[:take] + offset
-        tiles.append(tile)
-        offset = tile[-1].copy()
+        new_idx = int(rng.integers(len(segments)))
+        chunk = segments[new_idx, :take] + offset
+        chunks.append(chunk)
+        offset = chunk[-1].copy()
         remaining -= take
 
-    return np.concatenate(tiles, axis=0)
+    return np.concatenate(chunks, axis=0)[:n_frames], seg_idx
 
 
 def inject(
@@ -119,23 +131,17 @@ def inject(
     Returns
     -------
     noisy_xy   : (T, 2)  gt_xy + scaled noise
-    seg_idx    : int  index of the segment used (for logging/reproducibility)
+    seg_idx    : int  index of the first segment used (for logging/reproducibility)
     """
     if rng is None:
         rng = np.random.default_rng()
 
     T = len(gt_xy)
-    seg_idx = int(rng.integers(len(segments)))
-    raw_seg = segments[seg_idx]  # (window_size, 2)
-
-    # Tile or truncate to match GT path length
-    noise = _tile_segment(raw_seg, T)  # (T, 2)
+    noise, seg_idx = _build_noise(segments, T, rng)
 
     # Scale from source DPI to target DPI
     scale = target_dpi / source_dpi
-    noise_scaled = noise * scale
-
-    noisy_xy = gt_xy + noise_scaled
+    noisy_xy = gt_xy + noise * scale
     return noisy_xy, seg_idx
 
 

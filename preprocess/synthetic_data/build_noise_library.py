@@ -22,6 +22,8 @@ preprocess/data/noise_library.npy      shape (N, window_size, 2)
 preprocess/data/noise_library_meta.json  per-segment provenance + statistics
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import sys
