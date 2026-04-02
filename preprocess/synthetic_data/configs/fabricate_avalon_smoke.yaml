@@ -1,0 +1,14 @@
+# Smoke test config — 20 trajectories, validates all 4 checks in issue #12
+gt_paths_dir: data/avalon/synthetic_output
+gt_glob: "floorplan_avalon_*.txt"
+noise_library: preprocess/data/noise_library.npy
+source_dpi: 2.5
+target_dpi: 10.0
+n_trajectories: 20
+aug_mult: 1
+freq: 1.0
+file_tag: fab
+seed: 42
+out_dir: outputs/smoke_test/avalon_2nd_floor
+validate: true
+n_validate: 20
