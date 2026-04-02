@@ -166,7 +166,7 @@ def plot_segment_gallery(library_path: Path, out: Path) -> None:
     ax.set_xlabel('Frame within segment')
     ax.set_ylabel('|drift| (px)')
     ax.set_title(f'Noise library: drift magnitude — 20 random segments\n'
-                 f'({len(segments)} total, window=400 frames)')
+                 f'({len(segments)} total, window={segments.shape[1]} frames)')
 
     ax2 = axes[1]
     for seg in sample:
