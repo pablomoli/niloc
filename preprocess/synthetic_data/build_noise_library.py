@@ -5,8 +5,16 @@ Each segment is a window of (noise_x, noise_y) offsets normalized to start
 at (0, 0), extracted by sliding a fixed-length window over each train-split
 trajectory with a fixed stride.
 
-Scaling to a target floorplan DPI happens at injection time (issue #6), not
-here — segments are stored in universityA pixel units (dpi=2.5 px/m).
+Coordinate convention
+---------------------
+In universityA .txt files: gt_x = row index, gt_y = col index.
+Noise is extracted as (x - gt_x, y - gt_y) — a relative offset that is
+independent of the row/col axis convention. Scaling to a target floorplan
+DPI happens at injection time (issue #6), not here.
+
+Noise values can be negative: VIO loop closure and recalibration events pull
+the estimated position back past ground truth. Segments are stored as-is;
+no sign correction is applied.
 
 Output
 ------

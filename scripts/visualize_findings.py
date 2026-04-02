@@ -1,11 +1,23 @@
 """
 Visualize findings from sprint issues #2, #3, and #8.
 
+Coordinate convention
+---------------------
+universityA .txt columns: ts, x, y, gt_x, gt_y where
+  gt_x = row index (height dimension, 0-184)
+  gt_y = col index (width dimension,  0-136)
+
+matplotlib imshow maps x-axis -> columns, y-axis -> rows. All floorplan
+overlays in this script therefore plot (gt_y, gt_x) — col on x, row on y.
+Plotting (gt_x, gt_y) causes a 90-degree rotation and pushes trajectories
+outside the floorplan bounds.
+
 Outputs saved to outputs/viz/:
   noise_magnitude_over_time.png   — issue #2: drift growth across trajectories
   noise_autocorrelation.png       — issue #2: ACF of raw noise signal
+  trajectories_on_floorplan.png   — issue #2: GT and VIO overlaid on building map
   noise_segment_gallery.png       — issue #3: sample segments from noise library
-  junction_smoothing.png          — issue #8: before/after smoothing on a real trajectory
+  junction_smoothing.png          — issue #8: before/after smoothing on a synthetic A* path
 
 Usage
 -----

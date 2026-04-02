@@ -10,6 +10,18 @@ Pipeline position
                ->  inject_noise (this module)
                ->  output formatter (#9)
 
+Coordinate convention
+---------------------
+In universityA .txt files the columns are ts, x, y, gt_x, gt_y where:
+  gt_x = row index into the floorplan image  (height dimension)
+  gt_y = col index into the floorplan image  (width dimension)
+
+Noise is computed as (x - gt_x, y - gt_y) — a relative offset that is valid
+regardless of axis convention. Noise values can be negative: real VIO systems
+perform loop closure and recalibration events that pull the estimate back past
+ground truth. This module works entirely with relative offsets and is
+unaffected by the row/col convention.
+
 Public API
 ----------
   load_noise_library(path) -> (segments, meta)
