@@ -1,18 +1,19 @@
 """
 Visualize the end-to-end fabrication pipeline (issues #6 + #8 + #9).
 
-Runs: noise library -> inject at AVALON_DPI=10 -> write_dataset -> plot.
+Uses Ana's real Avalon synthetic GT paths (data/avalon/synthetic_output/)
+rather than artificially generated corridor paths.
 
 Coordinate convention (same as universityA):
   gt_x = row index (height, 0-221), gt_y = col index (width, 0-411)
   Plot as (gt_y, gt_x) — col on x-axis, row on y-axis — to align with imshow.
 
-Avalon grid (from niloc-fork niloc/config/grid/avalon_2nd_floor.yaml):
-  size: [411, 221]  dpi: 10.0 px/m  cell_length: 1.0
+Avalon grid (niloc-fork niloc/config/grid/avalon_2nd_floor.yaml):
+  size: [411, 221]  width=411  height=221  dpi: 10.0 px/m
 
 Outputs saved to outputs/viz/:
-  fabrication_pipeline.png    — GT paths vs VIO-noisy paths + drift histogram
-  fabrication_drift_scale.png — side-by-side: wrong DPI (3.5) vs correct DPI (10)
+  fabrication_pipeline.png    — GT paths on floorplan + noise signal + drift hist
+  fabrication_drift_scale.png — wrong DPI (3.5) vs correct DPI (10) comparison
 
 Usage
 -----
@@ -34,79 +35,44 @@ from preprocess.synthetic_data.inject_noise import (
     fabricate,
     load_noise_library,
 )
-from preprocess.synthetic_data.smooth_junctions import smooth_junctions
 
 matplotlib.use("Agg")
 
-LIBRARY       = Path("preprocess/data/noise_library.npy")
-FLOORPLAN     = Path("../niloc-fork/niloc/data/avalon/floorplan.png")
-OUT_DIR       = Path("outputs/viz")
+LIBRARY      = Path("preprocess/data/noise_library.npy")
+FLOORPLAN    = Path("data/avalon/floorplan.png")
+AVALON_DIR   = Path("data/avalon/synthetic_output")
+OUT_DIR      = Path("outputs/viz")
 
-# Avalon 2nd floor — from niloc-fork niloc/config/grid/avalon_2nd_floor.yaml
-# size:[411,221], bounds:[0,411,0,221], dpi:10, cell_length:1.0
-# The PNG is 411x221 so grid coordinates map 1:1 to image pixels.
-AVALON_COLS = 411   # width  (gt_y range)
-AVALON_ROWS = 221   # height (gt_x range)
+# Avalon grid dimensions (from niloc-fork niloc/config/grid/avalon_2nd_floor.yaml)
+AVALON_COLS = 411   # width  (gt_y range 0-411)
+AVALON_ROWS = 221   # height (gt_x range 0-221)
 
 
 # ---------------------------------------------------------------------------
-# Synthetic GT path generation
+# Data loading
 # ---------------------------------------------------------------------------
 
-# Approximate corridor centerlines for Avalon 2nd floor based on floorplan.
-# These are horizontal/vertical corridor runs that keep paths inside walkable area.
-# Row numbers (gt_x): main corridors run roughly at rows 50, 110, 170.
-# Col numbers (gt_y): vertical runs at cols 80, 200, 320.
-_CORRIDOR_ROWS = [50, 80, 110, 140, 170]
-_CORRIDOR_COLS = [60, 130, 200, 280, 360]
-
-
-def _make_gt_paths(n: int = 10, seed: int = 42) -> list[np.ndarray]:
+def _load_avalon_gt_paths() -> list[np.ndarray]:
     """
-    Generate n synthetic piecewise-linear GT paths mimicking A* corridor paths.
+    Load real Avalon synthetic GT paths from Ana's simulator output.
 
-    Paths are axis-aligned (horizontal or vertical moves between corridor
-    intersections) to reflect real building navigation, then junction-smoothed.
-    Each path is a (T, 5) array with columns ts, x, y, gt_x, gt_y (x == gt_x).
+    Files have columns: ts_seconds, smooth_x, smooth_y, gt_x, gt_y
+    smooth_x == gt_x (no noise injected yet — clean A* paths).
+    Returns list of (T, 5) arrays in the same format as universityA .txt files.
     """
-    rng = np.random.default_rng(seed)
-    intersections = [
-        (r, c) for r in _CORRIDOR_ROWS for c in _CORRIDOR_COLS
-    ]
     paths = []
-    for _ in range(n):
-        n_stops = rng.integers(3, 7)
-        chosen = [intersections[i] for i in rng.choice(len(intersections),
-                                                        size=n_stops, replace=False)]
-        pts: list[np.ndarray] = []
-        for i in range(len(chosen) - 1):
-            r0, c0 = chosen[i]
-            r1, c1 = chosen[i + 1]
-            # Axis-aligned: first move along row, then along column
-            corner = (r0, c1)
-            for p0, p1 in [(np.array([r0, c0], dtype=float),
-                            np.array([corner[0], corner[1]], dtype=float)),
-                           (np.array([corner[0], corner[1]], dtype=float),
-                            np.array([r1, c1], dtype=float))]:
-                dist = np.linalg.norm(p1 - p0)
-                if dist < 1.0:
-                    continue
-                n_frames = max(int(dist * 2), 5)
-                pts.append(np.linspace(p0, p1, n_frames, endpoint=False))
-        if not pts:
+    for txt in sorted(AVALON_DIR.glob("floorplan_avalon_*.txt")):
+        data = np.loadtxt(txt, comments="#")
+        if data.ndim == 1:
+            data = data.reshape(1, -1)
+        if data.shape[1] != 5:
             continue
-        raw = np.concatenate(pts, axis=0)
-        smoothed, _ = smooth_junctions(raw, angle_threshold_deg=15.0, half_window=20)
-        T = len(smoothed)
-        ts = np.arange(T, dtype=np.float64)
-        # columns: ts, x, y, gt_x, gt_y  (x == gt_x, y == gt_y — no noise yet)
-        traj = np.column_stack([ts, smoothed, smoothed])
-        paths.append(traj)
+        paths.append(data)
     return paths
 
 
 # ---------------------------------------------------------------------------
-# Plot 1: pipeline overview — GT vs noisy, drift histogram
+# Plot 1: pipeline overview — GT on floorplan, noise signal, drift histogram
 # ---------------------------------------------------------------------------
 
 def plot_pipeline(
@@ -118,66 +84,55 @@ def plot_pipeline(
 
     floorplan = mpimg.imread(str(FLOORPLAN)) if FLOORPLAN.exists() else None
 
-    def _bg(ax: plt.Axes) -> None:
-        if floorplan is not None:
-            # PNG is 411x221, matches grid 1:1 — no extent rescaling needed
-            ax.imshow(floorplan, origin="upper",
-                      extent=[0, AVALON_COLS, AVALON_ROWS, 0], alpha=0.5)
-
-    # Left: GT paths on floorplan
+    # Left: GT paths on Avalon floorplan
     ax = axes[0]
-    _bg(ax)
-    for traj in gt_paths:
-        # gt_x=col3 (row), gt_y=col4 (col) — plot (col, row) = (gt_y, gt_x)
-        ax.plot(traj[:, 4], traj[:, 3], linewidth=1.5, alpha=0.85)
-    ax.set_title("GT paths (synthetic A* + junction smoothing)")
+    if floorplan is not None:
+        ax.imshow(floorplan, origin="upper",
+                  extent=[0, AVALON_COLS, AVALON_ROWS, 0], alpha=0.6)
+    colors = plt.cm.tab10(np.linspace(0, 1, min(len(results), 10)))  # type: ignore[attr-defined]
+    for r, color in zip(results[:10], colors):
+        gt = r["gt_xy"]  # col0=gt_x(row), col1=gt_y(col)
+        ax.plot(gt[:, 1], gt[:, 0], linewidth=1.5, color=color, alpha=0.9)
+    ax.set_title(f"GT paths on Avalon floorplan\n"
+                 f"({len(gt_paths)} real simulator paths, 1 fps)")
     ax.set_xlabel("gt_y (col, 0-411)")
     ax.set_ylabel("gt_x (row, 0-221)")
     ax.set_xlim(0, AVALON_COLS)
     ax.set_ylim(AVALON_ROWS, 0)
 
-    # Middle: noisy paths overlaid on GT — axes follow the data, not the building bounds.
-    # VIO drift genuinely pushes paths outside the building; NILOC uses relative motion
-    # steps, not absolute position, so out-of-bounds noisy paths are valid training data.
+    # Middle: noise signal over time for sample trajectories
+    # Plotting absolute noisy positions is misleading since open-loop VIO
+    # drifts far outside building bounds. Show drift magnitude instead.
     ax2 = axes[1]
-    colors = plt.cm.tab10(np.linspace(0, 1, len(results)))  # type: ignore[attr-defined]
-    for r, color in zip(results, colors):
-        gt  = r["gt_xy"]
-        nxy = r["noisy_xy"]
-        ax2.plot(gt[:, 1],  gt[:, 0],  linewidth=1.5, color=color, alpha=0.9)
-        ax2.plot(nxy[:, 1], nxy[:, 0], linewidth=0.8, color=color, alpha=0.4,
-                 linestyle="--")
-    # Draw building outline for reference
-    from matplotlib.patches import Rectangle  # noqa: PLC0415
-    ax2.add_patch(Rectangle((0, 0), AVALON_COLS, AVALON_ROWS,
-                             fill=False, edgecolor="white", linewidth=1.5,
-                             linestyle=":", label="building bounds"))
-    ax2.legend(fontsize=7, loc="upper right")
-    ax2.set_title(
-        f"Fabricated trajectories (AVALON_DPI={AVALON_DPI})\n"
-        f"solid=GT  dashed=VIO  scale={AVALON_DPI/SOURCE_DPI:.1f}x  "
-        f"(VIO may exceed building bounds — normal for open-loop)"
-    )
-    ax2.set_xlabel("gt_y (col)")
-    ax2.set_ylabel("gt_x (row)")
-    ax2.invert_yaxis()
-    ax2.set_aspect("equal")
+    for r, color in zip(results[:10], colors):
+        drift_mag = np.linalg.norm(r["noisy_xy"] - r["gt_xy"], axis=1)
+        ax2.plot(drift_mag, linewidth=1.0, color=color, alpha=0.7)
+    mean_drift_m = np.mean([
+        np.mean(np.linalg.norm(r["noisy_xy"] - r["gt_xy"], axis=1))
+        for r in results
+    ]) / AVALON_DPI
+    ax2.axhline(mean_drift_m * AVALON_DPI, color="crimson", linestyle="--",
+                linewidth=1.2, label=f"mean {mean_drift_m:.1f} m")
+    ax2.set_title(f"VIO drift magnitude over session\n"
+                  f"noise scale={AVALON_DPI/SOURCE_DPI:.1f}x  (open-loop, no loop closure)")
+    ax2.set_xlabel("Frame")
+    ax2.set_ylabel("Drift magnitude (px at Avalon DPI)")
+    ax2.legend()
 
-    # Right: drift distribution
+    # Right: drift distribution in meters
     ax3 = axes[2]
-    mean_drifts = [
+    mean_drifts_px = [
         float(np.mean(np.linalg.norm(r["noisy_xy"] - r["gt_xy"], axis=1)))
         for r in results
     ]
-    ax3.hist(mean_drifts, bins=15, color="steelblue", edgecolor="white", linewidth=0.5)
-    ax3.axvline(float(np.mean(mean_drifts)), color="crimson", linestyle="--",
-                label=f"mean {np.mean(mean_drifts):.1f} px "
-                      f"({np.mean(mean_drifts)/AVALON_DPI:.1f} m)")
-    ax3.set_xlabel("Mean drift per trajectory (px)")
+    mean_drifts_m = [d / AVALON_DPI for d in mean_drifts_px]
+    ax3.hist(mean_drifts_m, bins=12, color="steelblue", edgecolor="white", linewidth=0.5)
+    ax3.axvline(float(np.mean(mean_drifts_m)), color="crimson", linestyle="--",
+                label=f"mean {np.mean(mean_drifts_m):.1f} m")
+    ax3.set_xlabel("Mean drift per trajectory (m)")
     ax3.set_ylabel("Count")
-    ax3.set_title(f"Drift at Avalon DPI={AVALON_DPI} px/m\n"
-                  f"({len(results)} fabricated trajectories)\n"
-                  f"NILOC uses relative VIO steps — absolute drift is expected")
+    ax3.set_title(f"Drift distribution — {len(results)} fabricated trajectories\n"
+                  f"(NILOC uses relative VIO steps, not absolute position)")
     ax3.legend()
 
     plt.tight_layout()
@@ -197,14 +152,14 @@ def plot_dpi_comparison(
 ) -> None:
     rng_a = np.random.default_rng(0)
     rng_b = np.random.default_rng(0)
-    wrong   = fabricate(gt_paths, segments, n_out=10, aug_mult=1,
+    wrong   = fabricate(gt_paths, segments, n_out=15, aug_mult=1,
                         target_dpi=3.5, rng=rng_a)
-    correct = fabricate(gt_paths, segments, n_out=10, aug_mult=1,
+    correct = fabricate(gt_paths, segments, n_out=15, aug_mult=1,
                         target_dpi=AVALON_DPI, rng=rng_b)
 
     floorplan = mpimg.imread(str(FLOORPLAN)) if FLOORPLAN.exists() else None
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     entries = [
         (axes[0], wrong,   3.5,        "Wrong DPI=3.5  (sprint planning assumption)"),
         (axes[1], correct, AVALON_DPI, f"Correct DPI={AVALON_DPI}  (Ana, commit 260a09a)"),
@@ -212,31 +167,26 @@ def plot_dpi_comparison(
     for ax, results, dpi, label in entries:
         if floorplan is not None:
             ax.imshow(floorplan, origin="upper",
-                      extent=[0, AVALON_COLS, AVALON_ROWS, 0], alpha=0.5)
+                      extent=[0, AVALON_COLS, AVALON_ROWS, 0], alpha=0.6)
         colors = plt.cm.tab10(np.linspace(0, 1, len(results)))  # type: ignore[attr-defined]
         for r, color in zip(results, colors):
             gt  = r["gt_xy"]
-            nxy = r["noisy_xy"]
-            ax.plot(gt[:, 1],  gt[:, 0],  linewidth=1.5, color=color, alpha=0.9)
-            ax.plot(nxy[:, 1], nxy[:, 0], linewidth=0.8, color=color, alpha=0.45,
-                    linestyle="--")
-        mean_d = float(np.mean([
+            ax.plot(gt[:, 1], gt[:, 0], linewidth=1.5, color=color, alpha=0.9)
+        mean_d_m = float(np.mean([
             np.mean(np.linalg.norm(r["noisy_xy"] - r["gt_xy"], axis=1))
             for r in results
-        ]))
+        ])) / dpi
         scale = dpi / SOURCE_DPI
-        from matplotlib.patches import Rectangle  # noqa: PLC0415
-        ax.add_patch(Rectangle((0, 0), AVALON_COLS, AVALON_ROWS,
-                                fill=False, edgecolor="white", linewidth=1.2,
-                                linestyle=":", zorder=5))
-        ax.set_title(f"{label}\nscale={scale:.2f}x  mean drift={mean_d:.0f} px "
-                     f"({mean_d/dpi:.1f} m)")
-        ax.set_xlabel("gt_y (col)")
-        ax.set_ylabel("gt_x (row)")
-        ax.invert_yaxis()
-        ax.set_aspect("equal")
+        ax.set_title(f"{label}\nscale={scale:.2f}x  mean drift={mean_d_m:.1f} m")
+        ax.set_xlabel("gt_y (col, 0-411)")
+        ax.set_ylabel("gt_x (row, 0-221)")
+        ax.set_xlim(0, AVALON_COLS)
+        ax.set_ylim(AVALON_ROWS, 0)
 
-    plt.suptitle("DPI mismatch impact on fabricated VIO drift", fontsize=13)
+    plt.suptitle(
+        "GT paths on Avalon floorplan — DPI only affects noise scale, not GT",
+        fontsize=12,
+    )
     plt.tight_layout()
     plt.savefig(out, dpi=150)
     plt.close(fig)
@@ -255,18 +205,24 @@ def main() -> None:
         return
 
     if not FLOORPLAN.exists():
-        print(f"WARNING: Avalon floorplan not found at {FLOORPLAN} — plotting without background")
+        print(f"WARNING: Avalon floorplan not found at {FLOORPLAN}")
+
+    if not AVALON_DIR.exists() or not list(AVALON_DIR.glob("*.txt")):
+        print(f"ERROR: No Avalon GT paths found at {AVALON_DIR}")
+        return
 
     print("Loading noise library ...")
     segments, _ = load_noise_library(LIBRARY)
     print(f"  {len(segments)} segments  shape={segments.shape}")
 
-    print("Generating synthetic GT paths ...")
-    gt_paths = _make_gt_paths(n=10)
-    print(f"  {len(gt_paths)} paths, lengths: {[len(p) for p in gt_paths]}")
+    print("Loading real Avalon GT paths ...")
+    gt_paths = _load_avalon_gt_paths()
+    lengths = [len(p) for p in gt_paths]
+    print(f"  {len(gt_paths)} paths  lengths: min={min(lengths)} max={max(lengths)} "
+          f"mean={int(np.mean(lengths))}")
 
     print(f"Fabricating trajectories at AVALON_DPI={AVALON_DPI} ...")
-    results = fabricate(gt_paths, segments, n_out=20, aug_mult=2,
+    results = fabricate(gt_paths, segments, n_out=len(gt_paths) * 3, aug_mult=3,
                         target_dpi=AVALON_DPI, rng=np.random.default_rng(7))
     print(f"  {len(results)} fabricated trajectories")
 
