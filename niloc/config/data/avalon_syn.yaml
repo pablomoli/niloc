@@ -1,0 +1,36 @@
+# @package _group_
+# Training data config for fabricated Avalon synthetic trajectories.
+#
+# Key difference from train.yaml: fabricated files are at 1 Hz (Avalon
+# simulator outputs 1 frame/sec). Setting imu_base_freq and imu_freq to 1.0
+# gives window_size = window_time * imu_freq = 5 * 1 = 5 frames, ensuring
+# all fabricated trajectories (30-150 frames) contribute training windows.
+# Using train.yaml (10 Hz) would give window_size=50, starving the shortest
+# files of any training windows.
+
+batch_size: 64
+# Avalon fabricated data is 1 fps (A* simulator + noise injection at freq=1.0)
+imu_base_freq: 1.0
+imu_freq: 1.0
+
+# Configuration for input data sampling
+window:
+  # values in seconds — at 1 Hz, window_size = 5 * 1 = 5 frames
+  window_time: 5.0
+  # sampling in training (Hz)
+  sample_freq: 0.5
+
+# Transformation parameters — same as real data
+transform:
+  accel_bias_range: 0.2
+  gyro_bias_range: 0.05
+  scale_sigma: 0.01
+  yaw_drift_sigma: 0.05
+
+# Data transformers
+transformers:
+  yaw_drift: true
+  perturb_scale: true
+  do_bias_shift: false
+  reverse_direction: false
+  rotate_yaw: random
