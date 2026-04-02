@@ -42,7 +42,7 @@ python niloc/trainer.py \
   +arch/output@arch.encoder_output=cnnfc_${BUILDING} \
   +arch/input@arch.decoder_input=cnn1d_${BUILDING} \
   +arch/output@arch.decoder_output=cnnfc_${BUILDING} \
-  data.batch_size=4 \
+  data.batch_size=32 \
   arch.d_model=${model_dim[$BUILDING]} \
   train_cfg.scheduler.monitor=val_enc_loss \
   $EXTRA_OVERRIDES
