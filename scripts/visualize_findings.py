@@ -249,24 +249,31 @@ def plot_trajectories_on_floorplan(trajs: dict[str, np.ndarray], out: Path) -> N
     rng = np.random.default_rng(99)
     sample = rng.choice(list(trajs.keys()), size=8, replace=False)
 
-    h, w = floorplan.shape[:2]
-    fig, ax = plt.subplots(figsize=(10, int(10 * h / w) + 1))
-    ax.imshow(floorplan, origin='upper', extent=[0, w, h, 0])
+    # Grid coordinate space for universityA (from niloc/config/grid/A.yaml):
+    #   size: [211, 157]  bounds: [0, 211, 0, 157]  cell_length: 1.0
+    # Trajectory gt_x ∈ [0, 211), gt_y ∈ [0, 157).
+    # The PNG (184x136) is a scaled render of this grid -- use extent to stretch
+    # it into grid space so trajectory coordinates align correctly.
+    # extent=[left, right, bottom, top] with origin='upper' -> x: [0,157], y: [0,211]
+    GRID_ROWS, GRID_COLS = 211, 157
+    extent = [0, GRID_COLS, GRID_ROWS, 0]
+
+    fig, ax = plt.subplots(figsize=(8, 11))
+    ax.imshow(floorplan, origin='upper', extent=extent)
     colors = plt.cm.tab10(np.linspace(0, 1, len(sample)))  # type: ignore[attr-defined]
     for name, color in zip(sample, colors):
         traj = trajs[name]
-        # gt_x = row index, gt_y = col index; imshow x-axis = col, y-axis = row
+        # gt_x = row (dim 0, range [0,211)), gt_y = col (dim 1, range [0,157))
         ax.plot(traj[:, GTY], traj[:, GTX], linewidth=1.2, color=color,
                 alpha=0.85, label=f'{name} GT')
         ax.plot(traj[:, Y],   traj[:, X],   linewidth=0.7, color=color,
                 alpha=0.4, linestyle='--')
-    # Clamp axes to floorplan bounds so VIO drift outside the building doesn't stretch the plot
-    ax.set_xlim(0, w)
-    ax.set_ylim(h, 0)  # inverted: row 0 at top
+    ax.set_xlim(0, GRID_COLS)
+    ax.set_ylim(GRID_ROWS, 0)  # inverted: row 0 at top
     ax.legend(fontsize=7, ncol=2, loc='upper right')
     ax.set_title('8 train trajectories on universityA floorplan\nsolid=GT, dashed=VIO')
-    ax.set_xlabel('col (gt_y)')
-    ax.set_ylabel('row (gt_x)')
+    ax.set_xlabel('gt_y (col, 0-157)')
+    ax.set_ylabel('gt_x (row, 0-211)')
     plt.tight_layout()
     plt.savefig(out, dpi=150)
     plt.close(fig)
