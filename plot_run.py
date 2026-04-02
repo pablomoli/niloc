@@ -40,25 +40,35 @@ FG_FAINT = "#3a4468"
 BORDER   = "#1e2540"
 
 
-def _find_floorplan(config_path: Path):
-    """Return (floorplan_array, dpi) from a saved run config.yaml, or (None, 1.0)."""
-    if not config_path.exists() or not _HAVE_OMEGACONF:
+def _find_floorplan(config_path: Path, grid_yaml: Path = None):
+    """Return (floorplan_array, dpi) from a saved run config.yaml or a grid yaml, or (None, 1.0).
+
+    grid_yaml, if given, is a niloc grid config (e.g. niloc/config/grid/avalon_2nd_floor.yaml)
+    and takes priority over config_path.
+    """
+    sources = []
+    if grid_yaml is not None and grid_yaml.exists():
+        sources.append(grid_yaml)
+    if config_path is not None and config_path.exists():
+        sources.append(config_path)
+    if not sources or not _HAVE_OMEGACONF:
         return None, 1.0
-    try:
-        cfg = OmegaConf.load(config_path)
-        raw = cfg.grid.image_file          # e.g. "../niloc/data/avalon/floorplan.png"
-        dpi = float(cfg.grid.dpi)
-        # Try resolving relative to repo root, then by name search
-        candidates = [
-            REPO / raw,
-            (config_path.parent / raw).resolve(),
-        ]
-        candidates += list(REPO.rglob(Path(raw).name))
-        for p in candidates:
-            if p.exists():
-                return mpimg.imread(str(p)), dpi
-    except Exception:
-        pass
+    for src in sources:
+        try:
+            cfg = OmegaConf.load(src)
+            # grid yaml has image_file/dpi at top level; run config.yaml nests under cfg.grid
+            raw = cfg.get("image_file") or cfg.grid.image_file
+            dpi = float(cfg.get("dpi") or cfg.grid.dpi)
+            candidates = [
+                REPO / raw,
+                (src.parent / raw).resolve(),
+            ]
+            candidates += list(REPO.rglob(Path(raw).name))
+            for p in candidates:
+                if p.exists():
+                    return mpimg.imread(str(p)), dpi
+        except Exception:
+            continue
     return None, 1.0
 
 
@@ -71,7 +81,7 @@ def _style_ax(ax):
         sp.set_linewidth(0.6)
 
 
-def plot_run(run_dir: Path) -> Path:
+def plot_run(run_dir: Path, grid_yaml: Path = None, max_trajs: int = None) -> Path:
     out_dir = run_dir / "out"
     traj_files = sorted(out_dir.glob("*_traj.txt")) if out_dir.exists() else []
 
@@ -80,15 +90,31 @@ def plot_run(run_dir: Path) -> Path:
         traj_files = sorted(run_dir.glob("*_traj.txt"))
 
     if not traj_files:
-        print(f"No *_traj.txt files found under {run_dir}")
+        # Also accept fabricated trajectory files (fab_*.txt)
+        traj_files = sorted(run_dir.glob("fab_*.txt"))
+
+    if not traj_files:
+        print(f"No trajectory files found under {run_dir}")
         return None
 
-    floorplan, dpi = _find_floorplan(run_dir / "config.yaml")
+    # Find config.yaml: in run_dir, or walk up two levels (fabricated layout has
+    # no config.yaml in the data dir itself; grid config must be passed separately).
+    config_path = run_dir / "config.yaml"
+    if not config_path.exists():
+        for parent in run_dir.parents:
+            candidate = parent / "config.yaml"
+            if candidate.exists():
+                config_path = candidate
+                break
+    floorplan, dpi = _find_floorplan(config_path, grid_yaml=grid_yaml)
 
     summary = None
     summary_path = run_dir / "summary.json"
     if summary_path.exists():
         summary = json.loads(summary_path.read_text())
+
+    if max_trajs is not None:
+        traj_files = traj_files[:max_trajs]
 
     n = len(traj_files)
     ncols = min(4, n)
@@ -158,7 +184,7 @@ def plot_run(run_dir: Path) -> Path:
     header = run_dir.name
     if errors_m:
         header += f"   |   mean {np.mean(errors_m):.1f} m over {n} trajectories"
-    if summary:
+    if summary and "distance" in summary:
         d1  = summary["distance"][1] * 100 if len(summary["distance"]) > 1 else None
         d5  = summary["distance"][9] * 100 if len(summary["distance"]) > 9 else None
         parts = []
@@ -190,7 +216,13 @@ def plot_run(run_dir: Path) -> Path:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
-    plot_run(Path(sys.argv[1]))
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("run_dir", type=Path, help="Run directory containing trajectory files")
+    parser.add_argument("--grid", type=Path, default=None,
+                        help="Path to a niloc grid yaml (e.g. niloc/config/grid/avalon_2nd_floor.yaml). "
+                             "Use this when plotting fabricated data that has no config.yaml.")
+    parser.add_argument("--max", type=int, default=None, dest="max_trajs",
+                        help="Maximum number of trajectories to plot (default: all).")
+    args = parser.parse_args()
+    plot_run(args.run_dir, grid_yaml=args.grid, max_trajs=args.max_trajs)
