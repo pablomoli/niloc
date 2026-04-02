@@ -5,16 +5,16 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from preprocess.synthetic_data.inject_noise import (
+    AVALON_DPI,
+    SOURCE_DPI,
     _tile_segment,
     fabricate,
     inject,
     load_noise_library,
     validate,
 )
-
 
 # ---------------------------------------------------------------------------
 # _tile_segment
@@ -85,13 +85,19 @@ class TestInject:
         gt_xy = np.zeros((500, 2))
         rng = np.random.default_rng(0)
 
-        noisy_1x, idx = inject(gt_xy, noise_segments, target_dpi=2.5, rng=rng)
+        noisy_1x, _idx = inject(gt_xy, noise_segments, target_dpi=2.5, rng=rng)
         rng2 = np.random.default_rng(0)
         noisy_2x, _ = inject(gt_xy, noise_segments, target_dpi=5.0, rng=rng2)
 
         drift_1x = np.linalg.norm(noisy_1x, axis=1).mean()
         drift_2x = np.linalg.norm(noisy_2x, axis=1).mean()
         np.testing.assert_allclose(drift_2x / drift_1x, 2.0, rtol=1e-4)
+
+    def test_avalon_dpi_scale_factor(self, noise_segments: np.ndarray) -> None:
+        """AVALON_DPI / SOURCE_DPI must equal 4.0 — Ana's physically measured value."""
+        assert AVALON_DPI == 10.0, f"AVALON_DPI changed: expected 10.0, got {AVALON_DPI}"
+        assert SOURCE_DPI == 2.5, f"SOURCE_DPI changed: expected 2.5, got {SOURCE_DPI}"
+        assert AVALON_DPI / SOURCE_DPI == 4.0
 
     def test_seg_idx_in_valid_range(self, noise_segments: np.ndarray) -> None:
         gt_xy = np.zeros((500, 2))

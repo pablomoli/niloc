@@ -35,7 +35,8 @@ from pathlib import Path
 
 import numpy as np
 
-SOURCE_DPI = 2.5  # universityA px/m — noise library was built at this DPI
+SOURCE_DPI = 2.5   # universityA px/m — noise library was built at this DPI
+AVALON_DPI = 10.0  # Avalon 2nd floor px/m — physically measured (Ana's commit 260a09a)
 
 # ---------------------------------------------------------------------------
 # Library loading
@@ -111,7 +112,7 @@ def inject(
     ----------
     gt_xy      : (T, 2) clean ground-truth x, y in target floorplan pixels
     segments   : (N, window_size, 2) noise library
-    target_dpi : px/m of the target floorplan (e.g. 3.5 for Avalon)
+    target_dpi : px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
     source_dpi : px/m the noise library was extracted at (default 2.5)
     rng        : numpy Generator for reproducibility; created if None
 
@@ -165,7 +166,7 @@ def fabricate(
     segments  : (N, window_size, 2) noise library
     n_out     : total number of fabricated trajectories to produce
     aug_mult  : noise samples per GT path (augmentation multiplier)
-    target_dpi: px/m of the target floorplan
+    target_dpi: px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
     source_dpi: px/m of the noise library source
     rng       : numpy Generator
 
