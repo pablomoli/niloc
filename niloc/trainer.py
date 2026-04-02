@@ -211,7 +211,6 @@ def launch_train(cfg: DictConfig) -> None:
     trainer = pl.Trainer(
         **device_args,
         max_epochs=cfg.train_cfg.epochs,
-        resume_from_checkpoint=cfg.train_cfg.resume_from_checkpoint,
         logger=tb_logger,
         callbacks=[
             lr_monitor,
@@ -222,7 +221,7 @@ def launch_train(cfg: DictConfig) -> None:
         **trainer_cfg,
     )
 
-    trainer.fit(network, datamodule=datamodule)
+    trainer.fit(network, datamodule=datamodule, ckpt_path=cfg.train_cfg.resume_from_checkpoint)
     logging.info("Done")
 
 
