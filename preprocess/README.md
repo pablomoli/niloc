@@ -1,62 +1,137 @@
 # Data Preprocessing
 
-### Data 
-The dataset used by this project is collected using an [App for Google Tango Device](https://drive.google.com/file/d/1xJHZ_O-uDSJdESJhZ3Kpy86kWaGX9K2g/view) and optionally, app for Android Devices from [RoNIN](https://github.com/Sachini/ronin) or [Fusion-DHL](https://github.com/Sachini/Fusion-DHL), and pre_processed to the data format specified [here](https://www.dropbox.com/s/8m0x0yvhtbt86q1/README.txt?dl=0) 
-The code for pre-processing raw data from apps are not included in this repository.
+Two preprocessing paths exist depending on whether you have real IMU recordings or are starting from scratch on a new building.
 
-You can download the NILoc dataset from our [project website](https://sachini.github.io/niloc) or [HERE](https://www.dropbox.com/scl/fo/uux0twqk7gsgwdpljkahd/h?dl=0&rlkey=0g8qi66jsl14ffbx6r7nfn3rx).
-
-The data pre-processing is two-fold:
-1. [Real data](#1-real-data) : pre-process by performing distance based sampling of relative velocity from IMU
-2. [Synthetic data](#2-synthetic-data) \[Optional]: generate synthetic trajectory data and perform similar pre-processing
+---
 
 ## 1. Real data
-This outlines the data pre-procecssing for real world dataset where we have IMU signals, and ground-truth trajectories (aligned across sequences to a common coordinate frame).
 
-We use a data-collection app (while skipping the pre-calibration steps) and pre-processing procedure similar to [RoNIN](https://github.com/Sachini/ronin). Inertial tracking trajectory is computed using RoNIN ResNet checkpoint and added to the data file as `computed/ronin` 
-(This can be in any *arbitary* gravity aligned reference coordinate frame). We use Tango Are Description (ADF) file to align ground-truth pose to a common coordinate frame, and the trajectory position in horizontal plane (2D) is saved as `computed/aligned_pos`.
+This applies when you have real IMU recordings collected with a compatible app (Google Tango, RoNIN Android app, or Fusion-DHL) and ground-truth trajectories aligned to a common coordinate frame.
 
-Our dataset can be downloaded from [Dropbox](https://www.dropbox.com/scl/fo/uux0twqk7gsgwdpljkahd/h?dl=0&rlkey=0g8qi66jsl14ffbx6r7nfn3rx).
+Raw data must be in HDF5 format containing:
+- `computed/ronin` — inertial odometry trajectory computed from a RoNIN ResNet checkpoint
+- `computed/aligned_pos` — ground-truth positions aligned across sequences
+
+The original dataset (universityA, B, C) can be downloaded from the [NILoc project page](https://sachini.github.io/niloc).
 
 ### 1.1 Generate occupancy map
 
-If a floorplan is unavailble,  we generate an occupancy map from ground-truth trajectories
+If no floorplan image is available, generate one from ground-truth trajectories:
+
+```bash
+python real_data/map_creation.py <data folder containing hdf5 files> --map_dpi <pixels per meter>
 ```
-python real_data/map_creation.py <data folder containing hdf5 files> --map_dpi <resolution - pixels per meter>
-```
-The result `floorplan.png` will be saved in the data folder.
+
+The result `floorplan.png` is saved in the data folder.
 
 ### 1.2 Flood-fill
 
-Flood-filled map is used in synthetic data generation (Supplementary Sec 1.1 optimizing with floorplan)
+Used during synthetic data generation to determine walkable space:
+
+```bash
+python real_data/flood_fill.py <path to floorplan image>
 ```
-python real_data/flood_fill.py <Path to occupancy map or floorplan image>
+
+### 1.3 Distance-based sampling
+
+Produces the `.txt` training files used by the NiLoc dataloader:
+
+```bash
+python preprocess/real_data/distance_sample.py \
+    --data_dir <folder with .hdf5 files> \
+    --map_dpi <pixels per meter> \
+    --out_dir <output folder>
 ```
 
-### 1.3 Distance based sampling
-We perform distance-based sampling on input trajectories, selecting one sample for each `1/<resolution>` meters travelled.
+Output format per trajectory (one row per sample):
+```
+ts_seconds   x   y   gt_x   gt_y
+```
+
+`x, y` are VIO (RoNIN) estimates; `gt_x, gt_y` are ground truth. All coordinates in pixels at `map_dpi` scale.
+
+---
+
+## 2. Fabricated data (noise injection pipeline)
+
+This is the preferred approach for new buildings where no real IMU data has been collected. The pipeline generates realistic training data by injecting real VIO drift noise (extracted from existing recordings) onto A*-generated synthetic paths.
+
+**When to use this:** When you have a floorplan for a new building but no real sensor recordings yet.
+
+### Overview
 
 ```
-python preprocess/real_data/distance_sample.py --data_dir <data folder containing hdf5 files> --map_dpi <resolution - pixels per meter> --out_dir <folder to save results>
+Floorplan image
+      │
+      ▼
+A* path generation ──► 28 GT paths (Avalon)
+      │
+      ▼
+Noise injection  ◄─── Noise library (2,924 segments from universityA)
+      │
+      ▼
+500 fabricated .txt files  ──► train_synthetic.sh
 ```
-The program outputs a txt file per trajectory containing following columns:
- - time (seconds)
- - trajectory from ronin x, y (pixels) 
- - ground-truth trajectory x,y (pixels)
 
-## 2. Synthetic data
+### 2.1 Build the noise library (one-time per noise source)
 
-We generate synthetic data using A* algorithm and smooth the results using B-spline approximations. Complete steps 1.1 and 1.2 above, to get the occupancy maps.
+Extracts VIO drift segments from real recordings:
 
-The configurations for data generation is in `config/synthetic_data.yaml`
+```bash
+uv run python -m preprocess.synthetic_data.build_noise_library \
+    --data_dir data/universityA \
+    --out_path preprocess/data/noise_library.npy \
+    --source_dpi 2.5
 ```
-python preprocess/gen_synthic_data.py
+
+A pre-built noise library from universityA is already checked in at `preprocess/data/noise_library.npy` (2,924 segments, window=150 frames).
+
+### 2.2 Run fabrication
+
+```bash
+uv run python -m preprocess.synthetic_data.fabricate \
+    --config preprocess/synthetic_data/configs/fabricate_avalon.yaml
 ```
-The program outputs a txt file similar to 1.3. where timestamp is the frame number and trajectory from ronin is the smoothed synthetic trajectory.
 
-## 3. Configuration setup
+Config for Avalon is at `preprocess/synthetic_data/configs/fabricate_avalon.yaml`. Key parameters:
 
-Configuration includes dataset and floorplan image paths for each building X:
-    1. set path to relevant `floorplan.png` in `niloc/config/grid/<X>.yaml`
-    2. The train/ validation/ test split for real IMU data are provided with the datasets. Set data folder and file list path in `niloc/config/dataset/<X>.yaml`  
-    3. [Optional] You can divide generated synthetic data imu train/ validation sets and merge with provided IMU data lists for pretraining. Create a new configuration file `niloc/config/dataset/<X>_syn.yaml` for pretraining.   
+| Parameter | Value | Notes |
+|---|---|---|
+| `target_dpi` | 10.0 | Avalon px/m (Ana's physical measurement) |
+| `source_dpi` | 2.5 | universityA px/m — scales noise to target building |
+| `aug_mult` | 5 | Noise augmentation multiplier |
+| `n_trajectories` | 500 | Total fabricated trajectories |
+
+Output goes to `outputs/fabricated/avalon_2nd_floor/` — 500 `.txt` files plus `train.txt` and `val.txt` split lists.
+
+### 2.3 Train on fabricated data
+
+```bash
+./train_synthetic.sh avalon_2nd_floor /absolute/path/to/outputs/fabricated/avalon_2nd_floor
+```
+
+The data path must be absolute because Hydra changes the working directory at runtime.
+
+### Pipeline internals
+
+| Module | Role |
+|---|---|
+| `astar.py` | A* pathfinding on the flood-filled floorplan |
+| `smooth_trajectory.py` | B-spline smoothing for uniform step size |
+| `smooth_junctions.py` | Junction-aware smoothing to remove 90° artifacts |
+| `build_noise_library.py` | Extracts and indexes VIO drift segments |
+| `inject_noise.py` | Applies sampled noise segments onto GT paths |
+| `format_output.py` | Writes niloc-compatible `.txt` files |
+| `fabricate.py` | Orchestrates the full pipeline |
+| `launcher.py` | CLI entry point |
+
+---
+
+## 3. Configuration
+
+| File | What to set |
+|---|---|
+| `niloc/config/grid/<building>.yaml` | `image_file` path to floorplan, `dpi`, grid `size` and `bounds` |
+| `niloc/config/dataset/<building>_syn.yaml` | `root_dir`, `train_list`, `val_list` — pass as CLI overrides for fabricated data |
+| `niloc/config/arch/input/cnn1d_<building>.yaml` | CNN input architecture (kernel sizes, channels) |
+| `niloc/config/arch/output/cnnfc_<building>.yaml` | CNN output architecture (interim dims determine `d_model`) |
