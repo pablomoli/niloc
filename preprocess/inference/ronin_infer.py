@@ -54,6 +54,7 @@ import h5py
 import numpy as np
 import quaternion as Q
 import torch
+from scipy.interpolate import interp1d
 
 _LOG = logging.getLogger(__name__)
 
@@ -121,10 +122,16 @@ def _add_ronin_source(ronin_source: Path) -> None:
         sys.path.insert(0, src)
 
 
-def load_resnet(checkpoint_path: Path, ronin_source: Path, window_size: int = _RESNET_WINDOW) -> torch.nn.Module:
+def load_resnet(
+    checkpoint_path: Path, ronin_source: Path, window_size: int = _RESNET_WINDOW
+) -> torch.nn.Module:
     """Load the RoNIN ResNet18 model from a checkpoint."""
     _add_ronin_source(ronin_source)
-    from model_resnet1d import ResNet1D, BasicBlock1D, FCOutputModule  # type: ignore[import]
+    from model_resnet1d import (  # type: ignore[import]  # noqa: PLC0415
+        BasicBlock1D,
+        FCOutputModule,
+        ResNet1D,
+    )
 
     fc_cfg = dict(_RESNET_FC_CFG)
     fc_cfg['in_dim'] = window_size // 32 + 1
@@ -141,7 +148,7 @@ def load_resnet(checkpoint_path: Path, ronin_source: Path, window_size: int = _R
 def load_lstm(checkpoint_path: Path, ronin_source: Path) -> torch.nn.Module:
     """Load the RoNIN Bilinear LSTM model from a checkpoint."""
     _add_ronin_source(ronin_source)
-    from model_temporal import BilinearLSTMSeqNetwork  # type: ignore[import]
+    from model_temporal import BilinearLSTMSeqNetwork  # type: ignore[import]  # noqa: PLC0415
 
     device = torch.device('cpu')
     network = BilinearLSTMSeqNetwork(
@@ -158,7 +165,7 @@ def load_lstm(checkpoint_path: Path, ronin_source: Path) -> torch.nn.Module:
 def load_tcn(checkpoint_path: Path, ronin_source: Path) -> torch.nn.Module:
     """Load the RoNIN TCN model from a checkpoint."""
     _add_ronin_source(ronin_source)
-    from model_temporal import TCNSeqNetwork  # type: ignore[import]
+    from model_temporal import TCNSeqNetwork  # type: ignore[import]  # noqa: PLC0415
 
     network = TCNSeqNetwork(
         input_channel=6, output_channel=2,
@@ -246,8 +253,6 @@ def integrate_velocities(pred_vel: np.ndarray, step_frames: np.ndarray,
     -------
     pos : (T, 2) trajectory in metres, starting at (0, 0)
     """
-    from scipy.interpolate import interp1d
-
     n = len(pred_vel)
     if n == 0:
         _LOG.warning("No velocity predictions — returning zero trajectory")
