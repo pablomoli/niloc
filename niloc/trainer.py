@@ -96,8 +96,9 @@ def configure_output(cfg: DictConfig) -> Tuple[str, pl.loggers.TensorBoardLogger
     logging.info(f"Identified current run as version {version_str}")
 
     # setup output directory and logger
+    # Training logs go under {run}/train/{version}/ — separate from eval logs.
     filepath = osp.join(cfg.io.root_path, cfg.io.folder_name, cfg.run_name, version_str)
-    tb_logger = pl.loggers.TensorBoardLogger(save_dir=root_dir, name="logs", version=version_str)
+    tb_logger = pl.loggers.TensorBoardLogger(save_dir=root_dir, name="train", version=version_str)
     logging.info(f"Training output will be written to {filepath}")
 
     if cfg.train_cfg.resume_from_checkpoint is not None and osp.exists(cfg.train_cfg.resume_from_checkpoint):
@@ -169,10 +170,13 @@ def launch_train(cfg: DictConfig) -> None:
 
     # set model save callbacks
     ckpt_format = "{epoch}-{tr_ratio:.1f}" if issubclass(model_type, ScheduledSamplingModule) else "{epoch}"
+    # Use the same metric the LR scheduler watches — guarantees the metric exists whether
+    # or not a validation set is present (fabricated data has no val split).
+    monitor_metric = cfg.train_cfg.scheduler.monitor
     validation_checkpoint_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
         dirpath=filepath,
-        monitor="val_loss",
-        filename=ckpt_format + "-{val_loss:.2f}",
+        monitor=monitor_metric,
+        filename=ckpt_format + "-{" + monitor_metric + ":.2f}",
         save_top_k=10,
     )
 

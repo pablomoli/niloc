@@ -453,11 +453,11 @@ def configure_output(
         - results_file:file path to save results file if any
         - epoch: epoch of checkpoint
     """
-    version_str = (
-            osp.split(osp.split(cfg.test_cfg.model_path)[0])[1]
-            + "/"
-            + cfg.test_cfg.test_name
-    )
+    # version_str: "{checkpoint_dir}_{test_name}" — flat, no path separators.
+    # Eval logs go under {run}/eval/{version_str}/, completely separate from
+    # training logs at {run}/train/{version}/.
+    ckpt_dir = osp.split(osp.split(cfg.test_cfg.model_path)[0])[1]
+    version_str = f"{ckpt_dir}_{cfg.test_cfg.test_name}"
 
     try:
         epoch = int(
@@ -470,17 +470,15 @@ def configure_output(
         epoch = network.global_step
 
     logging.info(f"version {version_str} | {epoch}")
+    run_root = osp.join(cfg.io.root_path, cfg.io.folder_name, cfg.run_name)
+    eval_dir = osp.join(run_root, "eval", version_str)
     results_file = osp.join(
-        cfg.io.root_path,
-        cfg.io.folder_name,
-        cfg.run_name,
-        "logs",
-        version_str,
+        eval_dir,
         osp.split(cfg.test_cfg.model_path)[1].rsplit(".", 1)[0] + ".json",
     )
     tb_logger = pl.loggers.TensorBoardLogger(
-        save_dir=osp.join(cfg.io.root_path, cfg.io.folder_name, cfg.run_name),
-        name="logs",
+        save_dir=run_root,
+        name="eval",
         version=version_str,
     )
     return tb_logger, results_file, epoch
