@@ -15,8 +15,11 @@ imu_freq: 1.0
 
 # Configuration for input data sampling
 window:
-  # values in seconds — at 1 Hz, window_size = 5 * 1 = 5 frames
-  window_time: 5.0
+  # At 1 Hz, window_size = window_time * imu_freq.
+  # TCN encoder has receptive field=13, so window_size must be >= 13.
+  # 20s gives window_size=20, comfortably above the minimum.
+  # Fabricated trajectories are 30-150 frames so they all support this.
+  window_time: 20.0
   # sampling in training (Hz)
   sample_freq: 0.5
 
