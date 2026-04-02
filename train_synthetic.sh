@@ -28,6 +28,13 @@ data_config["avalon_2nd_floor"]="avalon_syn"
 
 DATA_CFG=${data_config[$BUILDING]:-train}
 
+# Fabricated datasets have no validation split — monitor train loss instead.
+# Real datasets have a val split so val_enc_loss is available.
+declare -A scheduler_monitor
+scheduler_monitor["avalon_2nd_floor"]="train_enc_loss_epoch"
+
+SCHEDULER_MONITOR=${scheduler_monitor[$BUILDING]:-val_enc_loss}
+
 EXTRA_OVERRIDES=""
 if [[ -n "$DATA_DIR" ]]; then
 	EXTRA_OVERRIDES="dataset.root_dir=$DATA_DIR dataset.train_list=$DATA_DIR/train.txt dataset.val_list=$DATA_DIR/val.txt"
@@ -44,5 +51,5 @@ python niloc/trainer.py \
   +arch/output@arch.decoder_output=cnnfc_${BUILDING} \
   data.batch_size=32 \
   arch.d_model=${model_dim[$BUILDING]} \
-  train_cfg.scheduler.monitor=val_enc_loss \
+  train_cfg.scheduler.monitor=${SCHEDULER_MONITOR} \
   $EXTRA_OVERRIDES
