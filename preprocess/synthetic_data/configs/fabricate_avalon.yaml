@@ -1,0 +1,14 @@
+# Fabrication pipeline config — Avalon 2nd floor
+gt_paths_dir: data/avalon/synthetic_output
+gt_glob: "floorplan_avalon_*.txt"
+noise_library: preprocess/data/noise_library.npy
+source_dpi: 2.5        # universityA px/m — noise library was built at this DPI
+target_dpi: 10.0       # Avalon px/m (Ana's measured value, commit 260a09a)
+n_trajectories: 500    # total fabricated trajectories to produce
+aug_mult: 5            # noise samples per GT path
+freq: 1.0              # Hz — Avalon simulator runs at 1 fps
+file_tag: fab
+seed: 42
+out_dir: outputs/fabricated/avalon_2nd_floor
+validate: true         # run validate_outputs() after writing
+n_validate: 20         # number of files to spot-check

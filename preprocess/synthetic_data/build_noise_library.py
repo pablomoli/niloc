@@ -1,5 +1,5 @@
 """
-Build a reusable VIO noise segment library from real universityA recordings.
+Build a reusable VIO noise segment library from real indoor localization recordings.
 
 Each segment is a window of (noise_x, noise_y) offsets normalized to start
 at (0, 0), extracted by sliding a fixed-length window over each train-split
@@ -11,6 +11,12 @@ In universityA .txt files: gt_x = row index, gt_y = col index.
 Noise is extracted as (x - gt_x, y - gt_y) — a relative offset that is
 independent of the row/col axis convention. Scaling to a target floorplan
 DPI happens at injection time (issue #6), not here.
+
+For HDF5 sources (universityB, officeC), coordinates are in metres. The
+``dpi`` parameter converts them to pixels so that noise magnitudes are
+comparable across sources. Noise is extracted as
+``(ronin_aligned - aligned_pos) * dpi`` after aligning the RoNIN starting
+position to the ground-truth starting position.
 
 Noise values can be negative: VIO loop closure and recalibration events pull
 the estimated position back past ground truth. Segments are stored as-is;
@@ -29,6 +35,7 @@ import json
 import sys
 from pathlib import Path
 
+import h5py
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,6 +68,59 @@ def load_train_trajectories(data_dir: Path) -> dict[str, np.ndarray]:
         if name not in train:
             continue
         trajs[name] = np.loadtxt(txt, comments='#')
+    return trajs
+
+
+def load_train_trajectories_hdf5(data_dir: Path, dpi: float) -> dict[str, np.ndarray]:
+    """Load trajectory HDF5 files listed in train.txt.
+
+    Only ``_t.hdf5`` (trajectory) files are read; ``_i.hdf5`` (IMU-only)
+    entries are ignored.  Each file is converted to the same ``(T, 5)`` array
+    layout as the universityA ``.txt`` files: ``[ts, x, y, gt_x, gt_y]``.
+
+    The RoNIN column (``computed/ronin``) represents the VIO estimate in
+    metres.  Its starting position is aligned to the ground-truth starting
+    position before scaling to pixels (same alignment used by
+    ``preprocess/real_data/distance_sample.py``).
+
+    Parameters
+    ----------
+    data_dir:
+        Directory containing the ``_t.hdf5`` files and ``train.txt``.
+    dpi:
+        Pixels per metre for this dataset (used to scale metres to pixels so
+        noise magnitudes match the universityA convention).
+
+    Returns
+    -------
+    dict mapping trajectory name to ``(T, 5)`` float64 array.
+    """
+    train_entries = set((data_dir / 'train.txt').read_text().splitlines())
+    # Keep only _t entries that have a corresponding file on disk.
+    train_t = {e for e in train_entries if e.endswith('_t')}
+
+    trajs: dict[str, np.ndarray] = {}
+    for name in sorted(train_t):
+        hdf5_path = data_dir / f'{name}.hdf5'
+        if not hdf5_path.exists():
+            print(f'  warning: {hdf5_path} not found, skipping')
+            continue
+        with h5py.File(hdf5_path, 'r') as f:
+            ts     = np.array(f['synced/time'])          # (T,)
+            ronin  = np.array(f['computed/ronin'])       # (T, 2) metres
+            gt     = np.array(f['computed/aligned_pos']) # (T, 2) metres
+
+        # Align RoNIN to start at the same position as ground truth.
+        ronin = ronin + (gt[0] - ronin[0])
+
+        # Scale from metres to pixels.
+        x_px   = ronin[:, 0] * dpi
+        y_px   = ronin[:, 1] * dpi
+        gtx_px = gt[:, 0] * dpi
+        gty_px = gt[:, 1] * dpi
+
+        trajs[name] = np.stack([ts, x_px, y_px, gtx_px, gty_px], axis=1)
+
     return trajs
 
 
@@ -190,6 +250,37 @@ def plot_gallery(segments: np.ndarray, out_path: Path, n: int = 20) -> None:
     plt.close(fig)
 
 
+def _parse_extra_source(spec: str) -> tuple[Path, float]:
+    """Parse a ``data_dir:dpi`` extra-source specification.
+
+    Parameters
+    ----------
+    spec:
+        String of the form ``<path>:<dpi>``, e.g. ``data/universityB:2.5``.
+
+    Returns
+    -------
+    Tuple of ``(Path, float)``.
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the format is invalid or ``dpi`` cannot be parsed as a float.
+    """
+    parts = spec.rsplit(':', 1)
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError(
+            f'Extra source must be formatted as <path>:<dpi>, got: {spec!r}'
+        )
+    try:
+        dpi = float(parts[1])
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f'DPI value in {spec!r} is not a valid float: {parts[1]!r}'
+        ) from exc
+    return Path(parts[0]), dpi
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description='Build VIO noise segment library.')
     parser.add_argument('--data-dir',  type=Path,
@@ -204,11 +295,32 @@ def main(argv: list[str] | None = None) -> None:
                         help='Sliding window stride in frames.')
     parser.add_argument('--plot',      action='store_true',
                         help='Save a visual gallery of sample segments.')
+    parser.add_argument(
+        '--extra-sources',
+        nargs='+',
+        metavar='DATA_DIR:DPI',
+        default=[],
+        help=(
+            'Additional HDF5 data sources to include, each specified as '
+            '<path>:<dpi>.  Example: data/universityB:2.5 data/officeC:10.0'
+        ),
+    )
     args = parser.parse_args(argv)
 
     print(f'Loading trajectories from {args.data_dir} ...')
     trajs = load_train_trajectories(args.data_dir)
     print(f'  {len(trajs)} train trajectories loaded')
+
+    for spec in args.extra_sources:
+        extra_dir, extra_dpi = _parse_extra_source(spec)
+        print(f'Loading HDF5 trajectories from {extra_dir} (dpi={extra_dpi}) ...')
+        extra_trajs = load_train_trajectories_hdf5(extra_dir, extra_dpi)
+        print(f'  {len(extra_trajs)} train trajectories loaded')
+        # Prefix names with the directory name to avoid collisions.
+        prefix = extra_dir.name
+        trajs.update({f'{prefix}/{k}': v for k, v in extra_trajs.items()})
+
+    print(f'Total trajectories: {len(trajs)}')
 
     print(f'Extracting segments (window={args.window}, stride={args.stride}) ...')
     segments, meta = extract_segments(trajs, args.window, args.stride)
