@@ -195,6 +195,8 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 outputs
+!outputs/presentation/
+!outputs/presentation/build_pdf.py
 
 # conda environment file removed — project uses uv + pyproject.toml
 niloc_env.yml
