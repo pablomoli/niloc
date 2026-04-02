@@ -11,19 +11,85 @@ Managed with [uv](https://github.com/astral-sh/uv). Python 3.9 is required (pinn
 **Do not use conda.** The project has been fully migrated to uv + `pyproject.toml`. There is no `niloc_env.yml` and no conda environment to activate.
 
 ```bash
-# First time — uv will pick up .python-version automatically
-uv sync
-
 # Apple Silicon (MPS)
-uv sync --extra mps
+uv sync
+uv pip install -e ".[mps]"
 
 # Linux + NVIDIA GPU (match your installed CUDA version)
-uv sync --extra cuda
-uv pip install torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cu118
+uv sync
+uv pip install -e ".[cuda]" --index-url https://download.pytorch.org/whl/cu118
 ```
 
 Device is auto-detected at runtime: CUDA if available, MPS on Apple Silicon, CPU otherwise. No flags needed.
+
+---
+
+## End-to-end workflows
+
+### Avalon 2nd floor (fabricated data — no real recordings needed)
+
+This is the workflow for training on a new building using synthetic data fabrication.
+
+**Prerequisites — these files must exist:**
+
+| File | Status |
+|---|---|
+| `niloc/data/avalon/floorplan.png` | Checked in |
+| `data/avalon/synthetic_output/` (GT path `.txt` files) | Checked in |
+| `preprocess/data/noise_library.npy` | Checked in |
+| `niloc/config/grid/avalon_2nd_floor.yaml` | Checked in |
+| `niloc/config/arch/input/cnn1d_avalon_2nd_floor.yaml` | Checked in |
+| `niloc/config/arch/output/cnnfc_avalon_2nd_floor.yaml` | Checked in |
+
+**Steps:**
+
+```bash
+# 1. Install dependencies
+uv sync && uv pip install -e ".[mps]"          # Mac (MPS)
+# or:
+uv sync && uv pip install -e ".[cuda]" --index-url https://download.pytorch.org/whl/cu118  # Linux + NVIDIA
+
+# 2. Generate fabricated training data (~1–2 min)
+uv run python -m preprocess.synthetic_data.fabricate \
+    --config preprocess/synthetic_data/configs/fabricate_avalon.yaml
+# Output: outputs/fabricated/avalon_2nd_floor/  (500 trajectories)
+
+# 3. Train (use absolute path — Hydra changes working directory at runtime)
+uv run bash train_synthetic.sh avalon_2nd_floor $(pwd)/outputs/fabricated/avalon_2nd_floor
+
+# 4. Monitor in TensorBoard (separate terminal)
+bash watch.sh models/avalon_2nd_floor
+```
+
+---
+
+### Buildings A / B / C (real IMU data)
+
+**Prerequisites:**
+- Download the NILoc dataset from the [project website](https://sachini.github.io/niloc)
+- Raw HDF5 files must contain `computed/ronin` and `computed/aligned_pos`
+- Set `root_path` in `niloc/config/io/default.yaml` to your checkpoint output directory
+
+```bash
+# 1. Install dependencies
+uv sync && uv pip install -e ".[mps]"   # Mac; use [cuda] on Linux+NVIDIA
+
+# 2. Preprocess raw HDF5 → .txt training files
+python preprocess/real_data/distance_sample.py \
+    --data_dir <folder with .hdf5 files> \
+    --map_dpi <pixels per meter> \
+    --out_dir <output folder>
+
+# 3. Set data paths in niloc/config/dataset/<building>.yaml
+#    (root_dir, train_list, val_list)
+
+# 4. Train
+uv run bash train_synthetic.sh <building>   # pretrain on synthetic data first (optional)
+uv run bash train_imu.sh <building>          # train on real IMU data
+
+# 5. Evaluate
+uv run bash test_imu.sh <building> <checkpoint_list_file>
+```
 
 ---
 
