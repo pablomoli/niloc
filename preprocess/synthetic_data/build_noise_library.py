@@ -20,9 +20,10 @@ import sys
 from pathlib import Path
 
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+
+matplotlib.use('Agg')
 
 # ---------------------------------------------------------------------------
 # Defaults (match A* min_length and issue #3 spec)
@@ -179,7 +180,7 @@ def plot_gallery(segments: np.ndarray, out_path: Path, n: int = 20) -> None:
     plt.close(fig)
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description='Build VIO noise segment library.')
     parser.add_argument('--data-dir',  type=Path,
                         default=Path('data/universityA'),
