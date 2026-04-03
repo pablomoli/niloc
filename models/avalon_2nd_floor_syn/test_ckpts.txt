@@ -1,0 +1,2 @@
+# epoch  checkpoint_path (relative to this file's directory)
+99 version_0/epoch=99-tr_ratio=1.0.ckpt

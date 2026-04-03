@@ -1,0 +1,10 @@
+# @package _group_
+# Dataset config for real Avalon 2nd floor walking sessions.
+# Inference-only: test_list points to 1 Hz resampled niloc_input files.
+# train_list and val_list are unused during evaluation but required by the schema.
+name: avalon_2nd_floor
+
+root_dir: outputs/niloc_input_1hz
+train_list: outputs/niloc_input_1hz/test.txt
+val_list: outputs/niloc_input_1hz/test.txt
+test_list: outputs/niloc_input_1hz/test.txt
