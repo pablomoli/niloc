@@ -23,7 +23,9 @@ uv run python niloc/cmd_test_file.py \
     arch.d_model=128 \
     task=scheduled_2branch \
     test_cfg.test_name=out \
-    test_cfg.minimal=true \
+    test_cfg.full_traj_heatmap=true \
+    test_cfg.individual_traj_heatmap=true \
     ckpt_file=models/avalon_2nd_floor_syn/test_ckpts.txt \
     "dataset.root_dir=${REPO_ROOT}/outputs/niloc_input_1hz" \
-    "dataset.test_list=${REPO_ROOT}/outputs/niloc_input_1hz/test.txt"
+    "dataset.test_list=${REPO_ROOT}/outputs/niloc_input_1hz/test.txt" \
+    "grid.image_file=${REPO_ROOT}/niloc/data/avalon/floorplan.png"

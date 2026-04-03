@@ -331,7 +331,7 @@ def plot_individual_heatmap(
     idx = plot_dict["frame_ids"]
 
     cell_size = sequence.resolutions[-cfg.test_cfg.get("prediction_grid")][0] if "prediction_grid" in cfg.test_cfg \
-        else sequence.cell_size if sequence.compute_original else 1.0
+        else sequence.cell_size if getattr(sequence, "compute_original", False) else 1.0
     # cell_bounds = sequence.bounds
     cell_bounds = sequence.plot_bounds
     start, step, w = 0, cfg.data_window_cfg.step_size, cfg.data_window_cfg.window_size
