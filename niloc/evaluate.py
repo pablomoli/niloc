@@ -15,6 +15,14 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from omegaconf import open_dict, DictConfig, OmegaConf
+# PyTorch 2.6 changed torch.load default to weights_only=True, which rejects
+# OmegaConf objects stored in pytorch-lightning 1.x checkpoints. Patch torch.load
+# to preserve the pre-2.6 behaviour for checkpoint loading.
+_torch_load = torch.load
+def _load_compat(f, *args, **kwargs):
+    kwargs.setdefault("weights_only", False)
+    return _torch_load(f, *args, **kwargs)
+torch.load = _load_compat
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
 from torch.utils.data import DataLoader

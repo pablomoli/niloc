@@ -9,7 +9,9 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     exit 0
 fi
 
-python niloc/cmd_test_file.py \
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+uv run python niloc/cmd_test_file.py \
     run_name=avalon_2nd_floor_syn \
     dataset=avalon_2nd_floor \
     grid=avalon_2nd_floor \
@@ -22,4 +24,6 @@ python niloc/cmd_test_file.py \
     task=scheduled_2branch \
     test_cfg.test_name=out \
     test_cfg.minimal=true \
-    ckpt_file=models/avalon_2nd_floor_syn/test_ckpts.txt
+    ckpt_file=models/avalon_2nd_floor_syn/test_ckpts.txt \
+    "dataset.root_dir=${REPO_ROOT}/outputs/niloc_input_1hz" \
+    "dataset.test_list=${REPO_ROOT}/outputs/niloc_input_1hz/test.txt"
