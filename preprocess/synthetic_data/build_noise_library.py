@@ -5,18 +5,21 @@ Each segment is a window of (noise_x, noise_y) offsets normalized to start
 at (0, 0), extracted by sliding a fixed-length window over each train-split
 trajectory with a fixed stride.
 
+All noise is stored in **metres** regardless of the source DPI or sampling
+rate. This makes the library DPI-agnostic: injection simply multiplies by the
+target floorplan's DPI. A ``--target-freq`` argument resamples all sources to
+a common frequency before windowing so that every library segment represents
+the same real-world duration.
+
 Coordinate convention
 ---------------------
 In universityA .txt files: gt_x = row index, gt_y = col index.
-Noise is extracted as (x - gt_x, y - gt_y) — a relative offset that is
-independent of the row/col axis convention. Scaling to a target floorplan
-DPI happens at injection time (issue #6), not here.
+Noise is (x - gt_x, y - gt_y) in pixels; divided by ``source_dpi`` to
+convert to metres before storage.
 
-For HDF5 sources (universityB, officeC), coordinates are in metres. The
-``dpi`` parameter converts them to pixels so that noise magnitudes are
-comparable across sources. Noise is extracted as
-``(ronin_aligned - aligned_pos) * dpi`` after aligning the RoNIN starting
-position to the ground-truth starting position.
+For HDF5 sources (universityB, officeC), ``computed/ronin`` and
+``computed/aligned_pos`` are already in metres. Noise is extracted directly
+as (ronin_aligned - aligned_pos), with no DPI conversion required.
 
 Noise values can be negative: VIO loop closure and recalibration events pull
 the estimated position back past ground truth. Segments are stored as-is;
@@ -24,7 +27,7 @@ no sign correction is applied.
 
 Output
 ------
-preprocess/data/noise_library.npy      shape (N, window_size, 2)
+preprocess/data/noise_library.npy      shape (N, window_size, 2)  units: metres
 preprocess/data/noise_library_meta.json  per-segment provenance + statistics
 """
 
@@ -43,60 +46,103 @@ import numpy as np
 matplotlib.use('Agg')
 
 # ---------------------------------------------------------------------------
-# Defaults (match A* min_length and issue #3 spec)
+# Defaults
 # ---------------------------------------------------------------------------
-DEFAULT_WINDOW   = 400   # frames — matches synthetic_data.yaml min_length
+DEFAULT_WINDOW   = 150   # frames at target_freq — 150 s at 1 Hz covers typical paths
 DEFAULT_STRIDE   = 50    # frames — maximizes segment count without heavy overlap
 OUTLIER_FACTOR   = 3.0   # segments where max|drift| > factor * p95 are discarded
-SOURCE_DPI       = 2.5   # px/m for universityA
 
 TS, X, Y, GTX, GTY = 0, 1, 2, 3, 4
 
 
-def load_train_trajectories(data_dir: Path) -> dict[str, np.ndarray]:
-    """Load .txt files that appear in train.txt, excluding val/test."""
-    train = set((data_dir / 'train.txt').read_text().splitlines())
-    excluded = (
-        set((data_dir / 'val.txt').read_text().splitlines()) |
-        set((data_dir / 'test.txt').read_text().splitlines())
-    )
-    trajs = {}
-    for txt in sorted(data_dir.glob('*.txt')):
-        name = txt.stem
-        if name in ('train', 'val', 'test') or name in excluded:
-            continue
-        if name not in train:
-            continue
-        trajs[name] = np.loadtxt(txt, comments='#')
-    return trajs
-
-
-def load_train_trajectories_hdf5(data_dir: Path, dpi: float) -> dict[str, np.ndarray]:
-    """Load trajectory HDF5 files listed in train.txt.
-
-    Only ``_t.hdf5`` (trajectory) files are read; ``_i.hdf5`` (IMU-only)
-    entries are ignored.  Each file is converted to the same ``(T, 5)`` array
-    layout as the universityA ``.txt`` files: ``[ts, x, y, gt_x, gt_y]``.
-
-    The RoNIN column (``computed/ronin``) represents the VIO estimate in
-    metres.  Its starting position is aligned to the ground-truth starting
-    position before scaling to pixels (same alignment used by
-    ``preprocess/real_data/distance_sample.py``).
+def _resample(arr: np.ndarray, ts_col: np.ndarray, target_freq: float) -> np.ndarray:
+    """Downsample ``arr`` from its native rate to ``target_freq`` Hz.
 
     Parameters
     ----------
-    data_dir:
-        Directory containing the ``_t.hdf5`` files and ``train.txt``.
-    dpi:
-        Pixels per metre for this dataset (used to scale metres to pixels so
-        noise magnitudes match the universityA convention).
+    arr        : (T, ...) array to downsample
+    ts_col     : (T,) timestamps in seconds
+    target_freq: desired output frequency in Hz
 
     Returns
     -------
-    dict mapping trajectory name to ``(T, 5)`` float64 array.
+    (T', ...) downsampled array where T' = T / step
+    """
+    if len(ts_col) < 2:
+        return arr
+    source_freq = (len(ts_col) - 1) / (ts_col[-1] - ts_col[0])
+    step = max(1, round(source_freq / target_freq))
+    return arr[::step]
+
+
+def load_train_trajectories(
+    data_dir: Path,
+    source_dpi: float,
+    target_freq: float,
+) -> dict[str, np.ndarray]:
+    """Load .txt files from train.txt, resample to target_freq, convert noise to metres.
+
+    Parameters
+    ----------
+    data_dir   : directory containing .txt trajectories and split lists
+    source_dpi : pixels per metre for this dataset (used to convert noise to metres)
+    target_freq: desired output frequency in Hz
+    """
+    split_files = ('train.txt', 'val.txt', 'test.txt')
+    train_path = data_dir / 'train.txt'
+    if train_path.exists():
+        train = set(train_path.read_text().splitlines())
+        excluded = set()
+        for name in ('val.txt', 'test.txt'):
+            p = data_dir / name
+            if p.exists():
+                excluded |= set(p.read_text().splitlines())
+    else:
+        # No split files — use all .txt files in the directory.
+        train = None
+        excluded = set()
+
+    trajs = {}
+    for txt in sorted(data_dir.glob('*.txt')):
+        name = txt.stem
+        if name in split_files or name in excluded:
+            continue
+        if train is not None and name not in train:
+            continue
+        arr = np.loadtxt(txt, comments='#')
+        arr = _resample(arr, arr[:, TS], target_freq)
+        # Convert pixel columns to metres so noise is DPI-agnostic.
+        arr = arr.copy()
+        arr[:, X]   /= source_dpi
+        arr[:, Y]   /= source_dpi
+        arr[:, GTX] /= source_dpi
+        arr[:, GTY] /= source_dpi
+        trajs[name] = arr
+    return trajs
+
+
+def load_train_trajectories_hdf5(
+    data_dir: Path,
+    target_freq: float,
+) -> dict[str, np.ndarray]:
+    """Load trajectory HDF5 files listed in train.txt, resampled to target_freq.
+
+    Only ``_t.hdf5`` (trajectory) files are read; ``_i.hdf5`` (IMU-only)
+    entries are ignored.  Noise is returned in **metres** — no DPI conversion
+    is applied since ``computed/ronin`` and ``computed/aligned_pos`` are
+    already in metres.
+
+    Parameters
+    ----------
+    data_dir   : directory containing ``_t.hdf5`` files and ``train.txt``
+    target_freq: desired output frequency in Hz
+
+    Returns
+    -------
+    dict mapping trajectory name to ``(T, 5)`` float64 array
+    ``[ts, x_m, y_m, gt_x_m, gt_y_m]`` at target_freq.
     """
     train_entries = set((data_dir / 'train.txt').read_text().splitlines())
-    # Keep only _t entries that have a corresponding file on disk.
     train_t = {e for e in train_entries if e.endswith('_t')}
 
     trajs: dict[str, np.ndarray] = {}
@@ -106,20 +152,18 @@ def load_train_trajectories_hdf5(data_dir: Path, dpi: float) -> dict[str, np.nda
             print(f'  warning: {hdf5_path} not found, skipping')
             continue
         with h5py.File(hdf5_path, 'r') as f:
-            ts     = np.array(f['synced/time'])          # (T,)
-            ronin  = np.array(f['computed/ronin'])       # (T, 2) metres
-            gt     = np.array(f['computed/aligned_pos']) # (T, 2) metres
+            ts    = np.array(f['synced/time'])           # (T,) seconds
+            ronin = np.array(f['computed/ronin'])        # (T, 2) metres
+            gt    = np.array(f['computed/aligned_pos'])  # (T, 2) metres
 
-        # Align RoNIN to start at the same position as ground truth.
+        # Align RoNIN start to ground-truth start.
         ronin = ronin + (gt[0] - ronin[0])
 
-        # Scale from metres to pixels.
-        x_px   = ronin[:, 0] * dpi
-        y_px   = ronin[:, 1] * dpi
-        gtx_px = gt[:, 0] * dpi
-        gty_px = gt[:, 1] * dpi
+        # Build (T, 5) array in metres, then resample.
+        full = np.stack([ts, ronin[:, 0], ronin[:, 1], gt[:, 0], gt[:, 1]], axis=1)
+        full = _resample(full, ts, target_freq)
 
-        trajs[name] = np.stack([ts, x_px, y_px, gtx_px, gty_px], axis=1)
+        trajs[name] = full
 
     return trajs
 
@@ -182,7 +226,7 @@ def filter_outliers(
     threshold = factor * p95
     keep = max_drifts <= threshold
     n_removed = int((~keep).sum())
-    print(f'  outlier threshold ({factor}x p95={p95:.1f}): {threshold:.1f} px')
+    print(f'  outlier threshold ({factor}x p95={p95:.3f}): {threshold:.3f} m')
     print(f'  removed {n_removed} outlier segments, keeping {keep.sum()}')
     return segments[keep], [m for m, k in zip(meta, keep) if k]
 
@@ -193,6 +237,7 @@ def save_library(
     out_dir: Path,
     window: int,
     stride: int,
+    target_freq: float,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     npy_path  = out_dir / 'noise_library.npy'
@@ -202,16 +247,17 @@ def save_library(
 
     all_drifts = np.array([m['mean_drift'] for m in meta])
     summary = {
-        'n_segments':    len(segments),
-        'window_size':   window,
-        'stride':        stride,
-        'source_dpi':    SOURCE_DPI,
-        'shape':         list(segments.shape),
-        'mean_drift_px': float(all_drifts.mean()),
-        'median_drift_px': float(np.median(all_drifts)),
-        'p95_drift_px':  float(np.percentile(all_drifts, 95)),
-        'max_drift_px':  float(all_drifts.max()),
-        'segments':      meta,
+        'n_segments':      len(segments),
+        'window_size':     window,
+        'stride':          stride,
+        'units':           'metres',
+        'target_freq_hz':  target_freq,
+        'shape':           list(segments.shape),
+        'mean_drift_m':    float(all_drifts.mean()),
+        'median_drift_m':  float(np.median(all_drifts)),
+        'p95_drift_m':     float(np.percentile(all_drifts, 95)),
+        'max_drift_m':     float(all_drifts.max()),
+        'segments':        meta,
     }
     json_path.write_text(json.dumps(summary, indent=2))
     print(f'  saved {npy_path}  shape={segments.shape}')
@@ -231,15 +277,15 @@ def plot_gallery(segments: np.ndarray, out_path: Path, n: int = 20) -> None:
         mag = np.sqrt(seg[:, 0]**2 + seg[:, 1]**2)
         ax.plot(mag, alpha=0.6, linewidth=0.8)
     ax.set_xlabel('Frame index within segment')
-    ax.set_ylabel('|drift| (px)')
+    ax.set_ylabel('|drift| (m)')
     ax.set_title(f'Noise magnitude — {len(sample)} random segments from library')
 
     ax2 = axes[1]
     for seg in sample:
         ax2.plot(seg[:, 0], seg[:, 1], alpha=0.5, linewidth=0.7)
     ax2.scatter([0], [0], color='red', zorder=5, s=20, label='start (0,0)')
-    ax2.set_xlabel('noise_x (px)')
-    ax2.set_ylabel('noise_y (px)')
+    ax2.set_xlabel('noise_x (m)')
+    ax2.set_ylabel('noise_y (m)')
     ax2.set_title('2-D drift paths (normalized to origin)')
     ax2.legend()
     ax2.set_aspect('equal')
@@ -285,12 +331,16 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description='Build VIO noise segment library.')
     parser.add_argument('--data-dir',  type=Path,
                         default=Path('data/universityA'),
-                        help='Directory with universityA .txt files and split lists.')
+                        help='Directory with .txt trajectory files and split lists.')
+    parser.add_argument('--source-dpi', type=float, default=2.5,
+                        help='Pixels per metre of the primary .txt source (default: 2.5 for universityA).')
+    parser.add_argument('--target-freq', type=float, default=1.0,
+                        help='Resample all sources to this frequency in Hz before windowing (default: 1.0).')
     parser.add_argument('--out-dir',   type=Path,
                         default=Path('preprocess/data'),
                         help='Output directory for noise_library.npy and metadata.')
     parser.add_argument('--window',    type=int, default=DEFAULT_WINDOW,
-                        help='Segment window length in frames.')
+                        help='Segment window length in frames at target-freq.')
     parser.add_argument('--stride',    type=int, default=DEFAULT_STRIDE,
                         help='Sliding window stride in frames.')
     parser.add_argument('--plot',      action='store_true',
@@ -298,25 +348,24 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         '--extra-sources',
         nargs='+',
-        metavar='DATA_DIR:DPI',
+        metavar='DATA_DIR',
         default=[],
         help=(
-            'Additional HDF5 data sources to include, each specified as '
-            '<path>:<dpi>.  Example: data/universityB:2.5 data/officeC:10.0'
+            'Additional HDF5 data sources to include (path only). '
+            'Example: data/officeC data/universityB'
         ),
     )
     args = parser.parse_args(argv)
 
-    print(f'Loading trajectories from {args.data_dir} ...')
-    trajs = load_train_trajectories(args.data_dir)
+    print(f'Loading trajectories from {args.data_dir} (source_dpi={args.source_dpi}) ...')
+    trajs = load_train_trajectories(args.data_dir, args.source_dpi, args.target_freq)
     print(f'  {len(trajs)} train trajectories loaded')
 
-    for spec in args.extra_sources:
-        extra_dir, extra_dpi = _parse_extra_source(spec)
-        print(f'Loading HDF5 trajectories from {extra_dir} (dpi={extra_dpi}) ...')
-        extra_trajs = load_train_trajectories_hdf5(extra_dir, extra_dpi)
+    for extra_dir_str in args.extra_sources:
+        extra_dir = Path(extra_dir_str)
+        print(f'Loading HDF5 trajectories from {extra_dir} ...')
+        extra_trajs = load_train_trajectories_hdf5(extra_dir, args.target_freq)
         print(f'  {len(extra_trajs)} train trajectories loaded')
-        # Prefix names with the directory name to avoid collisions.
         prefix = extra_dir.name
         trajs.update({f'{prefix}/{k}': v for k, v in extra_trajs.items()})
 
@@ -337,14 +386,14 @@ def main(argv: list[str] | None = None) -> None:
         print(f'WARNING: only {len(segments)} segments — below 500-segment target.')
 
     print('Saving library ...')
-    save_library(segments, meta, args.out_dir, args.window, args.stride)
+    save_library(segments, meta, args.out_dir, args.window, args.stride, args.target_freq)
 
     if args.plot:
         print('Generating gallery ...')
         plot_gallery(segments, args.out_dir / 'noise_library_gallery.png')
 
     print(f'\nDone. {len(segments)} segments, window={args.window}, stride={args.stride}')
-    print(f'Mean drift: {np.mean([m["mean_drift"] for m in meta]):.1f} px')
+    print(f'Mean drift: {np.mean([m["mean_drift"] for m in meta]):.4f} m')
 
 
 if __name__ == '__main__':

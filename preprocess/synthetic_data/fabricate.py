@@ -192,7 +192,6 @@ def run(cfg: dict) -> int:
         n_out=n_out,
         aug_mult=cfg["aug_mult"],
         target_dpi=cfg["target_dpi"],
-        source_dpi=cfg["source_dpi"],
         rng=rng,
     )
     _LOG.info("Fabrication complete — %d trajectories produced", len(results))

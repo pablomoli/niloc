@@ -2,7 +2,6 @@
 gt_paths_dir: data/avalon/synthetic_output
 gt_glob: "floorplan_avalon_*.txt"
 noise_library: preprocess/data/noise_library.npy
-source_dpi: 2.5        # universityA px/m — noise library was built at this DPI
 target_dpi: 10.0       # Avalon px/m (Ana's measured value, commit 260a09a)
 n_trajectories: 500    # total fabricated trajectories to produce
 aug_mult: 5            # noise samples per GT path

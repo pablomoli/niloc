@@ -2,7 +2,10 @@
 Noise injection engine (issue #6).
 
 Takes clean A* ground-truth paths and injects real VIO drift from the noise
-library (issue #3) to produce realistic (x, y) columns for NILOC training.
+library to produce realistic (x, y) columns for NILOC training.
+
+The noise library stores offsets in **metres**. Injection scales them to the
+target floorplan's pixel space by multiplying by ``target_dpi``.
 
 Pipeline position
 -----------------
@@ -12,21 +15,15 @@ Pipeline position
 
 Coordinate convention
 ---------------------
-In universityA .txt files the columns are ts, x, y, gt_x, gt_y where:
-  gt_x = row index into the floorplan image  (height dimension)
-  gt_y = col index into the floorplan image  (width dimension)
-
-Noise is computed as (x - gt_x, y - gt_y) — a relative offset that is valid
-regardless of axis convention. Noise values can be negative: real VIO systems
-perform loop closure and recalibration events that pull the estimate back past
-ground truth. This module works entirely with relative offsets and is
-unaffected by the row/col convention.
+Noise values can be negative: real VIO systems perform loop closure and
+recalibration events that pull the estimate back past ground truth. This
+module works entirely with relative offsets.
 
 Public API
 ----------
   load_noise_library(path) -> (segments, meta)
-  inject(gt_xy, segments, target_dpi, source_dpi, rng) -> (noisy_xy, segment_idx)
-  fabricate(gt_paths, segments, n_out, aug_mult, target_dpi, source_dpi, rng)
+  inject(gt_xy, segments, target_dpi, rng) -> (noisy_xy, segment_idx)
+  fabricate(gt_paths, segments, n_out, aug_mult, target_dpi, rng)
       -> list of (ts, noisy_xy, gt_xy, segment_idx)
 """
 
@@ -35,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 
-SOURCE_DPI = 2.5   # universityA px/m — noise library was built at this DPI
 AVALON_DPI = 10.0  # Avalon 2nd floor px/m — physically measured (Ana's commit 260a09a)
 
 # ---------------------------------------------------------------------------
@@ -114,7 +110,6 @@ def inject(
     gt_xy: np.ndarray,
     segments: np.ndarray,
     target_dpi: float,
-    source_dpi: float = SOURCE_DPI,
     rng: np.random.Generator = None,
 ) -> tuple[np.ndarray, int]:
     """
@@ -123,25 +118,21 @@ def inject(
     Parameters
     ----------
     gt_xy      : (T, 2) clean ground-truth x, y in target floorplan pixels
-    segments   : (N, window_size, 2) noise library
+    segments   : (N, window_size, 2) noise library in **metres**
     target_dpi : px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
-    source_dpi : px/m the noise library was extracted at (default 2.5)
     rng        : numpy Generator for reproducibility; created if None
 
     Returns
     -------
-    noisy_xy   : (T, 2)  gt_xy + scaled noise
+    noisy_xy   : (T, 2)  gt_xy + noise_metres * target_dpi
     seg_idx    : int  index of the first segment used (for logging/reproducibility)
     """
     if rng is None:
         rng = np.random.default_rng()
 
     T = len(gt_xy)
-    noise, seg_idx = _build_noise(segments, T, rng)
-
-    # Scale from source DPI to target DPI
-    scale = target_dpi / source_dpi
-    noisy_xy = gt_xy + noise * scale
+    noise_m, seg_idx = _build_noise(segments, T, rng)
+    noisy_xy = gt_xy + noise_m * target_dpi
     return noisy_xy, seg_idx
 
 
@@ -155,7 +146,6 @@ def fabricate(
     n_out: int,
     aug_mult: int,
     target_dpi: float,
-    source_dpi: float = SOURCE_DPI,
     rng: np.random.Generator = None,
 ) -> list[dict]:
     """
@@ -169,11 +159,10 @@ def fabricate(
     ----------
     gt_paths  : list of (T_i, 5) arrays — columns: ts, x, y, gt_x, gt_y
                 (A* output format; x==gt_x at this stage)
-    segments  : (N, window_size, 2) noise library
+    segments  : (N, window_size, 2) noise library in **metres**
     n_out     : total number of fabricated trajectories to produce
     aug_mult  : noise samples per GT path (augmentation multiplier)
     target_dpi: px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
-    source_dpi: px/m of the noise library source
     rng       : numpy Generator
 
     Returns
@@ -198,14 +187,12 @@ def fabricate(
         ts    = traj[:, 0]
         gt_xy = traj[:, 3:5]   # gt_x, gt_y — clean A* ground truth
 
-        # aug_mult independent injections per GT path; cycle through them
         aug_i = out_i % aug_mult
         child_rng = np.random.default_rng(rng.integers(2**31) + aug_i)
 
         noisy_xy, seg_idx = inject(
             gt_xy, segments,
             target_dpi=target_dpi,
-            source_dpi=source_dpi,
             rng=child_rng,
         )
 
