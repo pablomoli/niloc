@@ -1,18 +1,18 @@
 {
-  "n_segments": 1163,
+  "n_segments": 1573,
   "window_size": 150,
   "stride": 50,
   "units": "metres",
   "target_freq_hz": 1.0,
   "shape": [
-    1163,
+    1573,
     150,
     2
   ],
-  "mean_drift_m": 26.09883352919101,
-  "median_drift_m": 25.182467837530282,
-  "p95_drift_m": 46.44017965371699,
-  "max_drift_m": 62.555941272235344,
+  "mean_drift_m": 24.24401603171518,
+  "median_drift_m": 22.603493644760853,
+  "p95_drift_m": 49.50432863728734,
+  "max_drift_m": 108.19279149579965,
   "segments": [
     {
       "source": "a000_10",
@@ -7645,6 +7645,3286 @@
       "mean_drift": 25.68184500516614,
       "max_drift": 54.26672309110568,
       "final_drift": 50.53948163489333
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 10.091274153984369,
+      "max_drift": 21.559761878107818,
+      "final_drift": 21.510653504881056
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 9.71759993216277,
+      "max_drift": 16.128462432082234,
+      "final_drift": 11.228898337180699
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.768180099357263,
+      "max_drift": 8.944503576174675,
+      "final_drift": 2.193124089829322
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 5.700629169854383,
+      "max_drift": 11.031851194151713,
+      "final_drift": 11.031851194151713
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 4.919742616969413,
+      "max_drift": 12.027463599900422,
+      "final_drift": 11.661288078527724
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 6.111751587352408,
+      "max_drift": 10.201052816082372,
+      "final_drift": 9.119751558967915
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 4.629765471885011,
+      "max_drift": 7.783751366953658,
+      "final_drift": 7.783751366953658
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 3.859637077962916,
+      "max_drift": 6.659312638510326,
+      "final_drift": 5.768650522653457
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 2.365137229050432,
+      "max_drift": 3.83100145539685,
+      "final_drift": 2.724791370835015
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 4.041777322462696,
+      "max_drift": 6.9340351024698395,
+      "final_drift": 6.9340351024698395
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 4.210364246828493,
+      "max_drift": 7.876068360314672,
+      "final_drift": 7.876068360314672
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 5.596557723857524,
+      "max_drift": 12.380803711348587,
+      "final_drift": 12.01274575424737
+    },
+    {
+      "source": "universityB/a0000_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 7.002238852835505,
+      "max_drift": 10.802591804373263,
+      "final_drift": 5.029523419546499
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.28873322321304,
+      "max_drift": 10.842463436681586,
+      "final_drift": 5.677660998306668
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 7.781403551208625,
+      "max_drift": 20.44119767317277,
+      "final_drift": 20.44119767317277
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 21.15283519721029,
+      "max_drift": 45.697583459633165,
+      "final_drift": 42.72833679511707
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 30.404997781902864,
+      "max_drift": 68.89323431344113,
+      "final_drift": 68.89323431344113
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 38.647003032491924,
+      "max_drift": 79.36530176917984,
+      "final_drift": 70.40696106693991
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 30.197374402406773,
+      "max_drift": 59.01933198202086,
+      "final_drift": 8.750365949483086
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 28.40403529533949,
+      "max_drift": 90.96565328790912,
+      "final_drift": 90.96565328790912
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 76.03723062649648,
+      "max_drift": 166.73204762891748,
+      "final_drift": 166.73204762891748
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 80.57662038208628,
+      "max_drift": 136.28508799293542,
+      "final_drift": 106.28224429155765
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 46.943177798034874,
+      "max_drift": 94.98591440658917,
+      "final_drift": 83.59818908648207
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 51.989327030225994,
+      "max_drift": 73.45517507659848,
+      "final_drift": 33.28940505356915
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 30.735294334689314,
+      "max_drift": 60.7965846978766,
+      "final_drift": 44.01213211734518
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 61.24475844579349,
+      "max_drift": 132.21248426048743,
+      "final_drift": 132.21248426048743
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 62.584151256510836,
+      "max_drift": 138.07176802973063,
+      "final_drift": 138.07176802973063
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 108.19279149579965,
+      "max_drift": 199.84771933357692,
+      "final_drift": 199.84771933357692
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 71.7037183788821,
+      "max_drift": 132.220576558794,
+      "final_drift": 81.24638374435315
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 40.0776053639379,
+      "max_drift": 85.71590664764032,
+      "final_drift": 41.36099906055691
+    },
+    {
+      "source": "universityB/a0052_t",
+      "frame_start": 850,
+      "frame_end": 1000,
+      "mean_drift": 77.66601737631842,
+      "max_drift": 185.07454993532937,
+      "final_drift": 185.07454993532937
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 12.383935783994575,
+      "max_drift": 23.075936817968298,
+      "final_drift": 23.075936817968298
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 11.187630090537663,
+      "max_drift": 30.05571249104464,
+      "final_drift": 30.05571249104464
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 12.899716548932531,
+      "max_drift": 27.138400281960813,
+      "final_drift": 6.677654797290555
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 14.230123978231438,
+      "max_drift": 43.96790338959471,
+      "final_drift": 43.96790338959471
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 44.351063272759724,
+      "max_drift": 107.9058046942246,
+      "final_drift": 107.9058046942246
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 56.63680188612617,
+      "max_drift": 98.90910032683728,
+      "final_drift": 77.03222181658666
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 39.49687475252715,
+      "max_drift": 72.69257663900555,
+      "final_drift": 72.69257663900555
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 28.134738042462402,
+      "max_drift": 45.1071964787311,
+      "final_drift": 22.93559651286016
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 19.891421347375005,
+      "max_drift": 35.94353298731201,
+      "final_drift": 32.3954705169677
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 56.87730935447873,
+      "max_drift": 127.22520439647677,
+      "final_drift": 127.22520439647677
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 64.52063267149461,
+      "max_drift": 135.97593936097917,
+      "final_drift": 135.97593936097917
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 85.20452348823721,
+      "max_drift": 137.99281140592615,
+      "final_drift": 113.14347138447201
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 37.237367529192746,
+      "max_drift": 70.40808303328855,
+      "final_drift": 7.4992484396280865
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 35.020446589219546,
+      "max_drift": 84.71373620653519,
+      "final_drift": 84.71373620653519
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 60.524496253060185,
+      "max_drift": 131.60072794779182,
+      "final_drift": 131.60072794779182
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 70.10646763833877,
+      "max_drift": 138.6234048747429,
+      "final_drift": 138.6234048747429
+    },
+    {
+      "source": "universityB/a0113_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 61.357560285698796,
+      "max_drift": 101.76336131928433,
+      "final_drift": 76.2876195983823
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.893650054784002,
+      "max_drift": 14.827928829318832,
+      "final_drift": 11.46703216581549
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 7.33808197762582,
+      "max_drift": 12.218970242863174,
+      "final_drift": 7.2903874928351895
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 9.820354635503149,
+      "max_drift": 21.45742667525026,
+      "final_drift": 16.578885534521717
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 16.351319096956214,
+      "max_drift": 36.1950380961537,
+      "final_drift": 36.1950380961537
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 19.125764544616764,
+      "max_drift": 44.61032418021057,
+      "final_drift": 44.61032418021057
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 40.7611851879785,
+      "max_drift": 77.2357330156966,
+      "final_drift": 77.2357330156966
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 32.97450080093033,
+      "max_drift": 68.65044578417806,
+      "final_drift": 48.545384665919066
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 23.876355886767286,
+      "max_drift": 51.299078227485815,
+      "final_drift": 3.6360742065631455
+    },
+    {
+      "source": "universityB/a0131_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 26.315708922377397,
+      "max_drift": 68.91900791863881,
+      "final_drift": 68.91900791863881
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 5.059041017551942,
+      "max_drift": 10.899283746793797,
+      "final_drift": 10.440822103582732
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 5.23403136377525,
+      "max_drift": 8.168045654103496,
+      "final_drift": 6.957409817967213
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 8.72105173587439,
+      "max_drift": 28.942452862827622,
+      "final_drift": 28.942452862827622
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 20.91417366618663,
+      "max_drift": 58.03374764338603,
+      "final_drift": 58.03374764338603
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 51.108899235214295,
+      "max_drift": 108.59936204491774,
+      "final_drift": 108.59936204491774
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 46.9719183275979,
+      "max_drift": 87.09693433209254,
+      "final_drift": 51.74426852480236
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 26.363193172436876,
+      "max_drift": 57.348652125038676,
+      "final_drift": 32.28988852054067
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 56.80783393037383,
+      "max_drift": 148.7922279834833,
+      "final_drift": 148.7922279834833
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 78.02172764190558,
+      "max_drift": 139.30934033866592,
+      "final_drift": 137.021522003056
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 82.83312241090081,
+      "max_drift": 146.27627780092317,
+      "final_drift": 131.77546363831146
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 50.892663949754144,
+      "max_drift": 83.65616629645142,
+      "final_drift": 23.427198046521898
+    },
+    {
+      "source": "universityB/a0151_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 32.82590869280588,
+      "max_drift": 69.35611103367431,
+      "final_drift": 54.45615512561188
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 9.186808630280309,
+      "max_drift": 16.24392604917111,
+      "final_drift": 15.016988766641832
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 11.096821318235781,
+      "max_drift": 23.422946929714396,
+      "final_drift": 20.5853818119403
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 24.416082981366834,
+      "max_drift": 55.236824631185996,
+      "final_drift": 55.236824631185996
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 29.622202266275465,
+      "max_drift": 70.79074022061991,
+      "final_drift": 70.79074022061991
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 53.14580820559771,
+      "max_drift": 102.14484221549425,
+      "final_drift": 102.14484221549425
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 48.48159643036659,
+      "max_drift": 100.96120305839428,
+      "final_drift": 100.36777272057283
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 40.55634676120637,
+      "max_drift": 74.96218075044379,
+      "final_drift": 12.310036001455588
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 27.339710480584642,
+      "max_drift": 51.22755762618532,
+      "final_drift": 49.378368015751185
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 73.67742047040565,
+      "max_drift": 143.8700723872027,
+      "final_drift": 143.8700723872027
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 71.62193352021883,
+      "max_drift": 154.7877357807487,
+      "final_drift": 147.51781592538617
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 98.20753091196069,
+      "max_drift": 185.29931445284438,
+      "final_drift": 183.73262233581247
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 68.72725679230577,
+      "max_drift": 118.21421114792162,
+      "final_drift": 68.02601891733534
+    },
+    {
+      "source": "universityB/a0153_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 38.402135584547,
+      "max_drift": 67.30608382227533,
+      "final_drift": 40.74388338088257
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 4.821982237853799,
+      "max_drift": 10.109469507580364,
+      "final_drift": 8.904275070392487
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 3.3761783795669857,
+      "max_drift": 6.442498296226737,
+      "final_drift": 0.43462939522833666
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.242319545415717,
+      "max_drift": 8.987250843870806,
+      "final_drift": 6.670213272794445
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 7.013345266847823,
+      "max_drift": 13.306594671994013,
+      "final_drift": 13.005317195540725
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 7.491591196891657,
+      "max_drift": 19.040171659335304,
+      "final_drift": 19.040171659335304
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 14.182590016034197,
+      "max_drift": 25.434405591883756,
+      "final_drift": 25.434405591883756
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 13.166470306292425,
+      "max_drift": 21.64875210231034,
+      "final_drift": 20.224182075757167
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 6.1875084442056645,
+      "max_drift": 11.350810338676819,
+      "final_drift": 3.2711797471739437
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 6.131598631600042,
+      "max_drift": 17.50426156297367,
+      "final_drift": 17.50426156297367
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 16.19088588374249,
+      "max_drift": 37.12568453150238,
+      "final_drift": 37.12568453150238
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 20.451289639075814,
+      "max_drift": 37.32779476470622,
+      "final_drift": 36.01998718821559
+    },
+    {
+      "source": "universityB/a0189_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 15.147099561180521,
+      "max_drift": 23.037786850705437,
+      "final_drift": 15.16316003488372
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.958415770971309,
+      "max_drift": 11.663801667306618,
+      "final_drift": 6.218275014951886
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 13.273103368879086,
+      "max_drift": 43.11079483860285,
+      "final_drift": 43.11079483860285
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 28.828324483654136,
+      "max_drift": 68.98087259689406,
+      "final_drift": 68.98087259689406
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 57.97799086353384,
+      "max_drift": 118.12137949082044,
+      "final_drift": 118.12137949082044
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 39.64399593428215,
+      "max_drift": 73.87898433608164,
+      "final_drift": 28.817152894416157
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 25.836327533818118,
+      "max_drift": 48.55340656407213,
+      "final_drift": 48.55340656407213
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 71.91099348545781,
+      "max_drift": 163.4384858565857,
+      "final_drift": 163.4384858565857
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 79.95614043527584,
+      "max_drift": 156.91214748714964,
+      "final_drift": 112.07387136200279
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 70.3535523265154,
+      "max_drift": 115.0658835082416,
+      "final_drift": 115.0658835082416
+    },
+    {
+      "source": "universityB/a0198_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 35.14304697558349,
+      "max_drift": 68.0077497883756,
+      "final_drift": 11.659549949483308
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 12.19144382572137,
+      "max_drift": 32.201738764207086,
+      "final_drift": 32.201738764207086
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 18.639052104785648,
+      "max_drift": 45.42638862859444,
+      "final_drift": 45.42638862859444
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 37.87255986694489,
+      "max_drift": 79.90065411923604,
+      "final_drift": 79.90065411923604
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 30.487292283960542,
+      "max_drift": 62.09611010279568,
+      "final_drift": 31.870621510491503
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 21.918759700570437,
+      "max_drift": 45.609732441776934,
+      "final_drift": 31.508666892779914
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 46.444806634756226,
+      "max_drift": 124.92749475521056,
+      "final_drift": 124.92749475521056
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 68.32914344196098,
+      "max_drift": 129.97948308235328,
+      "final_drift": 129.97948308235328
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 74.19131624539982,
+      "max_drift": 132.22049009396574,
+      "final_drift": 95.38607514408565
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 42.46354362478895,
+      "max_drift": 80.16310485986561,
+      "final_drift": 18.261092067249283
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 36.71163393875277,
+      "max_drift": 66.85593455614256,
+      "final_drift": 61.735555188116436
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 56.55291578697278,
+      "max_drift": 110.39209554751183,
+      "final_drift": 110.39209554751183
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 34.18421919645442,
+      "max_drift": 77.21957034725433,
+      "final_drift": 4.464374688586494
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 40.48972047679012,
+      "max_drift": 80.63236813686886,
+      "final_drift": 47.97566230143524
+    },
+    {
+      "source": "universityB/a0203_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 72.77513073597571,
+      "max_drift": 106.15613106700289,
+      "final_drift": 81.56764576985586
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 8.44992182087567,
+      "max_drift": 16.87336757843459,
+      "final_drift": 16.57996258980983
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 10.029472783853514,
+      "max_drift": 17.10219858490116,
+      "final_drift": 17.10219858490116
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 5.751056568799443,
+      "max_drift": 10.939459365301976,
+      "final_drift": 1.6689190601566044
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 4.011002674857308,
+      "max_drift": 7.20026494962873,
+      "final_drift": 6.9352282032001495
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 8.906642537873024,
+      "max_drift": 16.70716743147825,
+      "final_drift": 16.6707799279259
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 8.020877724936314,
+      "max_drift": 24.277730636330393,
+      "final_drift": 24.277730636330393
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 14.267913312318758,
+      "max_drift": 35.27518162037574,
+      "final_drift": 32.62610782155278
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 18.207429450094818,
+      "max_drift": 30.67405972193348,
+      "final_drift": 25.081472150983043
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 12.765353500318051,
+      "max_drift": 25.49092165212547,
+      "final_drift": 21.044356317503148
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 12.10726226963738,
+      "max_drift": 18.16485781553788,
+      "final_drift": 5.5752466963390255
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 11.602105863047253,
+      "max_drift": 21.005328496841862,
+      "final_drift": 21.005328496841862
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 21.425004918114077,
+      "max_drift": 42.0115380726403,
+      "final_drift": 42.0115380726403
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 21.04700403797879,
+      "max_drift": 36.30162199702568,
+      "final_drift": 35.14417942065185
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 19.965186001060545,
+      "max_drift": 37.598208328138995,
+      "final_drift": 37.46080178010172
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 10.15720768734335,
+      "max_drift": 20.56779653156262,
+      "final_drift": 4.294089411485807
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 9.840334405936693,
+      "max_drift": 21.542924147211433,
+      "final_drift": 21.542924147211433
+    },
+    {
+      "source": "universityB/a0215_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 28.58605248545618,
+      "max_drift": 63.74343276377668,
+      "final_drift": 63.62356077720927
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 4.651462923245405,
+      "max_drift": 9.12771009761414,
+      "final_drift": 6.788182045419848
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 4.502880406988201,
+      "max_drift": 8.570000266307737,
+      "final_drift": 2.8680608526707663
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 3.257547026653486,
+      "max_drift": 7.6031753321621744,
+      "final_drift": 6.6581733811637385
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 6.15533746728557,
+      "max_drift": 12.727690352153422,
+      "final_drift": 12.270180599137767
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 9.524324898265007,
+      "max_drift": 16.27686822641294,
+      "final_drift": 16.21482890984716
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 5.612876844661076,
+      "max_drift": 10.408127269171374,
+      "final_drift": 2.8295650483500063
+    },
+    {
+      "source": "universityB/a0222_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 5.4611626034947856,
+      "max_drift": 12.970114639903219,
+      "final_drift": 12.970114639903219
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.83009480754267,
+      "max_drift": 11.157307565244928,
+      "final_drift": 2.5016415057985935
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 3.964845520020514,
+      "max_drift": 8.451372627217914,
+      "final_drift": 5.652474593997474
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 7.872997657683427,
+      "max_drift": 13.872725774791691,
+      "final_drift": 13.057209490600993
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 7.022478047773322,
+      "max_drift": 16.68900676315784,
+      "final_drift": 16.68900676315784
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 10.426374213834173,
+      "max_drift": 17.8110793571615,
+      "final_drift": 17.8110793571615
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 8.441966207941267,
+      "max_drift": 13.242945515999748,
+      "final_drift": 7.835902691513084
+    },
+    {
+      "source": "universityB/a0224_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 2.705974681801467,
+      "max_drift": 5.668329081708192,
+      "final_drift": 4.543718034990168
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 10.603231994853695,
+      "max_drift": 21.49717599282335,
+      "final_drift": 21.49717599282335
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 10.23299414073522,
+      "max_drift": 22.006287509469335,
+      "final_drift": 14.618990336436763
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 7.691349375721857,
+      "max_drift": 16.363961810534235,
+      "final_drift": 14.019827884839637
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 16.262607960527216,
+      "max_drift": 46.68628774238233,
+      "final_drift": 46.68628774238233
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 34.88399246280508,
+      "max_drift": 70.30410276476198,
+      "final_drift": 66.71064815191495
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 41.284720470051944,
+      "max_drift": 83.84078559020614,
+      "final_drift": 83.5510895182828
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 33.18098042310146,
+      "max_drift": 57.994652076705584,
+      "final_drift": 26.592444379234365
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 17.307528172384362,
+      "max_drift": 37.87972707064497,
+      "final_drift": 35.49190270066821
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 33.519387692367964,
+      "max_drift": 67.86759228580028,
+      "final_drift": 67.86759228580028
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 36.405982537597076,
+      "max_drift": 79.82134933947265,
+      "final_drift": 79.82134933947265
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 72.9241582487041,
+      "max_drift": 126.91856613734913,
+      "final_drift": 126.91856613734913
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 49.982482839364614,
+      "max_drift": 90.77377530262267,
+      "final_drift": 90.77377530262267
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 33.86294248033042,
+      "max_drift": 75.90867066946568,
+      "final_drift": 46.2403197197049
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 29.0089104103382,
+      "max_drift": 63.27953808046967,
+      "final_drift": 63.27953808046967
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 61.70291077010037,
+      "max_drift": 164.5698532051688,
+      "final_drift": 164.5698532051688
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 97.08582523844674,
+      "max_drift": 156.21128520909122,
+      "final_drift": 156.21128520909122
+    },
+    {
+      "source": "universityB/a0409_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 87.07040429999387,
+      "max_drift": 144.02891531200055,
+      "final_drift": 97.1018457700157
+    },
+    {
+      "source": "universityB/b0078_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.008308528207195,
+      "max_drift": 5.175329963216578,
+      "final_drift": 4.677801606377739
+    },
+    {
+      "source": "universityB/b0078_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.0725242123634278,
+      "max_drift": 3.5439993792679982,
+      "final_drift": 1.288110547389774
+    },
+    {
+      "source": "universityB/b0078_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 2.042177545280565,
+      "max_drift": 3.8753959903883812,
+      "final_drift": 2.9644427674883227
+    },
+    {
+      "source": "universityB/b0078_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 1.3271982985195314,
+      "max_drift": 3.15990864985744,
+      "final_drift": 3.15990864985744
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 4.212881124782526,
+      "max_drift": 8.63731537469199,
+      "final_drift": 5.443789943047318
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 8.289593750804881,
+      "max_drift": 16.452517590007893,
+      "final_drift": 16.452517590007893
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 9.221587330320187,
+      "max_drift": 17.854294057756615,
+      "final_drift": 17.854294057756615
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 9.862590823835998,
+      "max_drift": 18.15153885312024,
+      "final_drift": 16.73626738895805
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 6.674111038561919,
+      "max_drift": 11.835375774886556,
+      "final_drift": 9.246781418217005
+    },
+    {
+      "source": "universityB/b0090_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 6.7205728897442425,
+      "max_drift": 10.57494640331819,
+      "final_drift": 8.806705144682073
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.774428145072299,
+      "max_drift": 7.18390273904745,
+      "final_drift": 3.1606577598063295
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 1.944579179577604,
+      "max_drift": 4.866198022864376,
+      "final_drift": 4.7285283844655694
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 3.3078580847213077,
+      "max_drift": 6.857980854108806,
+      "final_drift": 6.857980854108806
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 4.45916689176142,
+      "max_drift": 9.901241592755296,
+      "final_drift": 8.862284369613171
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 4.151652455443717,
+      "max_drift": 9.448678892980237,
+      "final_drift": 8.484539474226175
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 6.451029523311066,
+      "max_drift": 10.69693908033099,
+      "final_drift": 8.849761540981588
+    },
+    {
+      "source": "universityB/b0109_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 4.900480945099033,
+      "max_drift": 8.03030321791312,
+      "final_drift": 8.03030321791312
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.5646657266763455,
+      "max_drift": 6.411042243616715,
+      "final_drift": 4.341574301783222
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 6.233789130255474,
+      "max_drift": 12.752850031735264,
+      "final_drift": 12.752850031735264
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.736142769540702,
+      "max_drift": 12.920370225045742,
+      "final_drift": 12.920370225045742
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 8.908625443812031,
+      "max_drift": 20.50424995985667,
+      "final_drift": 20.49695346396132
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 8.858900726896039,
+      "max_drift": 15.619159703641825,
+      "final_drift": 9.667655757593272
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 4.557427118417494,
+      "max_drift": 9.281832185648332,
+      "final_drift": 4.225253892674966
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 10.87657258626167,
+      "max_drift": 23.52899834908225,
+      "final_drift": 22.622632664922573
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 11.59983829755777,
+      "max_drift": 19.840576582401823,
+      "final_drift": 19.840576582401823
+    },
+    {
+      "source": "universityB/b0112_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 9.27684313674033,
+      "max_drift": 16.31043712349039,
+      "final_drift": 6.4928707761137066
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.883543020192206,
+      "max_drift": 12.272582451380524,
+      "final_drift": 6.686084971235908
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 4.148454777827477,
+      "max_drift": 9.159099168658402,
+      "final_drift": 8.371585381009403
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 2.585126929366317,
+      "max_drift": 6.199201252379303,
+      "final_drift": 0.38068965529315063
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 5.222156920170466,
+      "max_drift": 8.39437791040195,
+      "final_drift": 8.384672631271087
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 10.548130197519512,
+      "max_drift": 26.672844527521903,
+      "final_drift": 26.619792570431425
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 16.422407638579536,
+      "max_drift": 25.290312247775052,
+      "final_drift": 21.754514869964968
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 9.536603697489564,
+      "max_drift": 14.420564668015027,
+      "final_drift": 3.8556442655401066
+    },
+    {
+      "source": "universityB/b0127_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 8.112425569535025,
+      "max_drift": 19.247004139241724,
+      "final_drift": 9.734150464760026
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 22.954376648408065,
+      "max_drift": 45.88144800623933,
+      "final_drift": 29.265567294534506
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 41.05711738977972,
+      "max_drift": 77.5857981812627,
+      "final_drift": 77.5857981812627
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 45.34571675929168,
+      "max_drift": 73.90455562645958,
+      "final_drift": 53.25721764443749
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 18.6922121947937,
+      "max_drift": 38.38679748200172,
+      "final_drift": 8.54286740018792
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 24.658501809553496,
+      "max_drift": 46.87408623716913,
+      "final_drift": 40.237456852508316
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 22.507296120130523,
+      "max_drift": 34.46719695754014,
+      "final_drift": 20.23856245360287
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 5.615838121279061,
+      "max_drift": 10.526862065114303,
+      "final_drift": 8.576915034534084
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 7.838197747628592,
+      "max_drift": 14.128745876294293,
+      "final_drift": 14.128745876294293
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 6.141646848838473,
+      "max_drift": 11.420365221368435,
+      "final_drift": 7.35610232410866
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 9.600925655450542,
+      "max_drift": 16.15464613562722,
+      "final_drift": 13.102483213883541
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 4.428177131436375,
+      "max_drift": 14.434727637174156,
+      "final_drift": 14.328454587831473
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 11.05585607874414,
+      "max_drift": 32.625126142532345,
+      "final_drift": 32.625126142532345
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 25.359345216920925,
+      "max_drift": 55.068959927527125,
+      "final_drift": 41.46944619960465
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 20.91285573811254,
+      "max_drift": 39.15520459276959,
+      "final_drift": 31.829168150070075
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 16.818001752322733,
+      "max_drift": 34.64422019901515,
+      "final_drift": 33.57812188180462
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 12.97531339457899,
+      "max_drift": 25.820226298886997,
+      "final_drift": 16.31399474548417
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 22.588188689052544,
+      "max_drift": 59.58542950411604,
+      "final_drift": 57.34509235074016
+    },
+    {
+      "source": "universityB/b0169_t",
+      "frame_start": 850,
+      "frame_end": 1000,
+      "mean_drift": 46.306578252559085,
+      "max_drift": 75.03374190684839,
+      "final_drift": 44.998711843518095
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 10.178897828790168,
+      "max_drift": 17.311251775202347,
+      "final_drift": 17.311251775202347
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 6.359876613845627,
+      "max_drift": 11.2397142569427,
+      "final_drift": 10.251790109787807
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.661305252033539,
+      "max_drift": 7.527836294836808,
+      "final_drift": 4.465503937060624
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 3.5376793457192903,
+      "max_drift": 6.760537928605076,
+      "final_drift": 4.5425778901024865
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 2.530721660524825,
+      "max_drift": 4.728119541039503,
+      "final_drift": 3.926964979162574
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 2.76671914733587,
+      "max_drift": 8.122473426421813,
+      "final_drift": 7.365558580487743
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 5.162521722972591,
+      "max_drift": 12.786127551460908,
+      "final_drift": 12.786127551460908
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 7.712730885659102,
+      "max_drift": 13.576463561192302,
+      "final_drift": 10.09716707105669
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 5.159515486365182,
+      "max_drift": 9.665750750219624,
+      "final_drift": 9.537935230462576
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 3.697198643787211,
+      "max_drift": 7.755141142632098,
+      "final_drift": 6.079648196164743
+    },
+    {
+      "source": "universityB/b0182_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 4.962957867370421,
+      "max_drift": 7.5305340648925645,
+      "final_drift": 5.171520300689444
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.827075560471714,
+      "max_drift": 16.87758676375628,
+      "final_drift": 16.32553396682857
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 10.365978366756366,
+      "max_drift": 17.489703351417123,
+      "final_drift": 16.2345111828473
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 9.475662532846238,
+      "max_drift": 11.782112179780217,
+      "final_drift": 10.582351690385368
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 2.2121912803910186,
+      "max_drift": 6.509765216340125,
+      "final_drift": 6.503482485623526
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 3.9096326701752058,
+      "max_drift": 7.14530816063573,
+      "final_drift": 6.969415538998877
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 4.027955364462966,
+      "max_drift": 7.103727183068179,
+      "final_drift": 4.229251657059902
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 2.6288023612298606,
+      "max_drift": 5.401615059929184,
+      "final_drift": 1.887648823760847
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 2.6878365073863386,
+      "max_drift": 4.675481622348099,
+      "final_drift": 3.561748385289401
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 2.588975688371839,
+      "max_drift": 8.126656973411912,
+      "final_drift": 7.595889294536062
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 5.157622849881113,
+      "max_drift": 13.742981244753944,
+      "final_drift": 6.773604963071227
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 6.239122480161678,
+      "max_drift": 13.5354504373738,
+      "final_drift": 5.515476770536714
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 3.13226378332993,
+      "max_drift": 6.770353936499649,
+      "final_drift": 2.3044610685363196
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 4.9849518928786285,
+      "max_drift": 10.335796145694195,
+      "final_drift": 10.335796145694195
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 10.261808688763342,
+      "max_drift": 30.67905862730156,
+      "final_drift": 30.67905862730156
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 19.85620941891219,
+      "max_drift": 43.58666329347533,
+      "final_drift": 35.01424003986248
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 24.410258004397466,
+      "max_drift": 38.774613700143846,
+      "final_drift": 38.774613700143846
+    },
+    {
+      "source": "universityB/b0200_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 13.8295158669512,
+      "max_drift": 24.85519019233934,
+      "final_drift": 8.711423085642174
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 8.905369436190947,
+      "max_drift": 14.132069207009271,
+      "final_drift": 12.289030207564684
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 6.473205265851062,
+      "max_drift": 14.46709788064055,
+      "final_drift": 14.46709788064055
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.6931910137551816,
+      "max_drift": 11.42950130783576,
+      "final_drift": 1.7233987102544723
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 6.006881494823509,
+      "max_drift": 11.888963688898674,
+      "final_drift": 11.849099351588839
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 16.902772693961058,
+      "max_drift": 34.224163105004266,
+      "final_drift": 29.64241929071382
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 15.152047211529064,
+      "max_drift": 24.819535650870858,
+      "final_drift": 23.71554152437859
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 9.699339127023494,
+      "max_drift": 16.58488509846241,
+      "final_drift": 8.163660859469353
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 7.590134193475837,
+      "max_drift": 14.88393355490416,
+      "final_drift": 14.88393355490416
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 11.839411335746124,
+      "max_drift": 25.13644192452272,
+      "final_drift": 25.13644192452272
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 14.932230414251705,
+      "max_drift": 24.174262214710392,
+      "final_drift": 19.995492202055896
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 7.659046457794742,
+      "max_drift": 11.955991395458685,
+      "final_drift": 7.706216460207313
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 3.4012452020209616,
+      "max_drift": 11.302142616318202,
+      "final_drift": 11.302142616318202
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 6.619191669507732,
+      "max_drift": 15.229077326606259,
+      "final_drift": 14.594259336535433
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 11.194276809636225,
+      "max_drift": 18.061963532027942,
+      "final_drift": 15.346638103160664
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 5.8968411886297645,
+      "max_drift": 9.838937712820407,
+      "final_drift": 4.797020814464758
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 2.2194983218063404,
+      "max_drift": 4.255177919717375,
+      "final_drift": 3.851770852510287
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 800,
+      "frame_end": 950,
+      "mean_drift": 5.367980975199526,
+      "max_drift": 10.367131906149185,
+      "final_drift": 10.367131906149185
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 850,
+      "frame_end": 1000,
+      "mean_drift": 5.715970235099738,
+      "max_drift": 10.159716701150915,
+      "final_drift": 10.159041203300948
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 900,
+      "frame_end": 1050,
+      "mean_drift": 5.621113945009602,
+      "max_drift": 10.142387006942881,
+      "final_drift": 4.60475736800822
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 950,
+      "frame_end": 1100,
+      "mean_drift": 3.5017009489904036,
+      "max_drift": 7.862038256682139,
+      "final_drift": 7.280997239388592
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 1000,
+      "frame_end": 1150,
+      "mean_drift": 7.277943116718672,
+      "max_drift": 13.85601439451609,
+      "final_drift": 13.85601439451609
+    },
+    {
+      "source": "universityB/b0241_t",
+      "frame_start": 1050,
+      "frame_end": 1200,
+      "mean_drift": 7.459319132017869,
+      "max_drift": 12.796705424090263,
+      "final_drift": 11.610668548115143
+    },
+    {
+      "source": "universityB/b0272_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 19.402010517142898,
+      "max_drift": 31.421159737631655,
+      "final_drift": 19.982767048192247
+    },
+    {
+      "source": "universityB/b0272_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 6.9550902952003995,
+      "max_drift": 14.695672742508425,
+      "final_drift": 8.155251242794705
+    },
+    {
+      "source": "universityB/b0272_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 14.767563383163264,
+      "max_drift": 28.2283836533929,
+      "final_drift": 28.2283836533929
+    },
+    {
+      "source": "universityB/b0272_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 11.585820933885367,
+      "max_drift": 18.459770451617167,
+      "final_drift": 15.640022660088087
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.6019254402068466,
+      "max_drift": 7.70614988783989,
+      "final_drift": 1.2050470479800626
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 5.284164749319646,
+      "max_drift": 12.147442572659084,
+      "final_drift": 11.986690728162445
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 9.100069212037754,
+      "max_drift": 20.897655540710044,
+      "final_drift": 20.520880787878195
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 13.597369898521457,
+      "max_drift": 21.634432822685564,
+      "final_drift": 17.268654022678266
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 9.172393966495378,
+      "max_drift": 13.118900695001413,
+      "final_drift": 8.493164706936136
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 2.449260159827755,
+      "max_drift": 5.219265885719463,
+      "final_drift": 2.1881937372222846
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 4.5956836705368715,
+      "max_drift": 8.320930212948959,
+      "final_drift": 6.467040900287672
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 4.058273226873912,
+      "max_drift": 8.779332071143234,
+      "final_drift": 1.9958008009908637
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 4.971277155620622,
+      "max_drift": 11.412854055069875,
+      "final_drift": 11.412854055069875
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 450,
+      "frame_end": 600,
+      "mean_drift": 11.601225357558535,
+      "max_drift": 45.05638011533013,
+      "final_drift": 45.05638011533013
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 500,
+      "frame_end": 650,
+      "mean_drift": 32.3397720906698,
+      "max_drift": 77.45989240048708,
+      "final_drift": 70.70722871292352
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 550,
+      "frame_end": 700,
+      "mean_drift": 41.52302717823783,
+      "max_drift": 65.44923408234409,
+      "final_drift": 47.653982443329504
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 600,
+      "frame_end": 750,
+      "mean_drift": 21.621001285561512,
+      "max_drift": 35.164681287578546,
+      "final_drift": 35.164681287578546
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 650,
+      "frame_end": 800,
+      "mean_drift": 17.01081734937477,
+      "max_drift": 29.04285601399052,
+      "final_drift": 24.00240848437143
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 700,
+      "frame_end": 850,
+      "mean_drift": 20.316234823372707,
+      "max_drift": 34.80307718944207,
+      "final_drift": 9.42918889977379
+    },
+    {
+      "source": "universityB/b0295_t",
+      "frame_start": 750,
+      "frame_end": 900,
+      "mean_drift": 22.433537221044585,
+      "max_drift": 37.63343106048974,
+      "final_drift": 31.77152157650283
+    },
+    {
+      "source": "universityB/c0048_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.589692470518552,
+      "max_drift": 12.616179652832983,
+      "final_drift": 7.435568865143365
+    },
+    {
+      "source": "universityB/c0048_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 4.507134271939628,
+      "max_drift": 9.786879230452742,
+      "final_drift": 3.2615897710520096
+    },
+    {
+      "source": "universityB/c0048_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 5.876642188453597,
+      "max_drift": 11.18622400865502,
+      "final_drift": 10.882895362613052
+    },
+    {
+      "source": "universityB/c0048_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 4.755228599432853,
+      "max_drift": 9.603046172329677,
+      "final_drift": 5.501405241790058
+    },
+    {
+      "source": "universityB/c0048_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 8.904014813056838,
+      "max_drift": 29.46475152600621,
+      "final_drift": 29.46475152600621
+    },
+    {
+      "source": "universityB/c0058_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.5906902373886656,
+      "max_drift": 12.740984180506864,
+      "final_drift": 4.9172671992576475
+    },
+    {
+      "source": "universityB/c0058_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 7.687705072054526,
+      "max_drift": 14.320799122266784,
+      "final_drift": 14.294994319574645
+    },
+    {
+      "source": "universityB/c0058_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 10.274267980408236,
+      "max_drift": 28.201735831500674,
+      "final_drift": 28.201735831500674
+    },
+    {
+      "source": "universityB/c0058_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 20.211503767363954,
+      "max_drift": 37.79855572420934,
+      "final_drift": 26.103421001996427
+    },
+    {
+      "source": "universityB/c0058_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 12.28789295510148,
+      "max_drift": 24.27432501832884,
+      "final_drift": 23.395505298690086
+    },
+    {
+      "source": "universityB/c0077_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 2.5734127823865447,
+      "max_drift": 4.373072191160853,
+      "final_drift": 2.860121919235273
+    },
+    {
+      "source": "universityB/c0077_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 1.9804327039092837,
+      "max_drift": 5.26330810163983,
+      "final_drift": 5.26330810163983
+    },
+    {
+      "source": "universityB/c0077_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 6.012290741295904,
+      "max_drift": 17.225536941964748,
+      "final_drift": 17.225536941964748
+    },
+    {
+      "source": "universityB/c0077_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 10.385656088987757,
+      "max_drift": 21.508717039085344,
+      "final_drift": 13.50659217951041
+    },
+    {
+      "source": "universityB/c0077_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 7.361751125260948,
+      "max_drift": 15.033688051297801,
+      "final_drift": 13.025326195837895
+    },
+    {
+      "source": "universityB/c0079_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 9.765309254906139,
+      "max_drift": 15.868815444698006,
+      "final_drift": 4.4958889989588675
+    },
+    {
+      "source": "universityB/c0079_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 11.535993188700527,
+      "max_drift": 32.69984719638537,
+      "final_drift": 32.69984719638537
+    },
+    {
+      "source": "universityB/c0079_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 22.040808340667322,
+      "max_drift": 50.71327198124562,
+      "final_drift": 50.71327198124562
+    },
+    {
+      "source": "universityB/c0079_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 34.98224407507144,
+      "max_drift": 59.784276126800684,
+      "final_drift": 35.81599454344874
+    },
+    {
+      "source": "universityB/c0079_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 18.04906884081541,
+      "max_drift": 45.51351861638996,
+      "final_drift": 45.51351861638996
+    },
+    {
+      "source": "universityB/c0081_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.5450616404710225,
+      "max_drift": 5.785388242141744,
+      "final_drift": 3.8832204644532102
+    },
+    {
+      "source": "universityB/c0081_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.2992036462634324,
+      "max_drift": 5.832352724081978,
+      "final_drift": 4.40644897235204
+    },
+    {
+      "source": "universityB/c0081_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 6.410290068442333,
+      "max_drift": 15.556754178222056,
+      "final_drift": 14.854382455006764
+    },
+    {
+      "source": "universityB/c0081_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 7.768018947410604,
+      "max_drift": 13.32263496767774,
+      "final_drift": 11.975745126757104
+    },
+    {
+      "source": "universityB/c0081_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 5.746530631287463,
+      "max_drift": 9.72204816470992,
+      "final_drift": 3.645748679281683
+    },
+    {
+      "source": "universityB/c0084_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.227936122370302,
+      "max_drift": 10.182431891796638,
+      "final_drift": 6.4971673344166785
+    },
+    {
+      "source": "universityB/c0084_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 4.072338342635958,
+      "max_drift": 8.305179944330707,
+      "final_drift": 8.305179944330707
+    },
+    {
+      "source": "universityB/c0084_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.641403657562434,
+      "max_drift": 7.8081181216271,
+      "final_drift": 6.9594002958159775
+    },
+    {
+      "source": "universityB/c0084_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 3.959210490586655,
+      "max_drift": 6.276577809460403,
+      "final_drift": 5.2914691982063
+    },
+    {
+      "source": "universityB/c0084_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 2.624876199083685,
+      "max_drift": 9.41505741587935,
+      "final_drift": 9.41505741587935
+    },
+    {
+      "source": "universityB/c0087_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 6.714245687154751,
+      "max_drift": 12.675596917426851,
+      "final_drift": 12.375678989171426
+    },
+    {
+      "source": "universityB/c0087_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 7.519275852538117,
+      "max_drift": 19.197499274349564,
+      "final_drift": 19.197499274349564
+    },
+    {
+      "source": "universityB/c0087_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 12.939715791814804,
+      "max_drift": 38.18638242935102,
+      "final_drift": 38.18638242935102
+    },
+    {
+      "source": "universityB/c0087_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 25.141081543904694,
+      "max_drift": 50.81944547230437,
+      "final_drift": 32.70923309413932
+    },
+    {
+      "source": "universityB/c0087_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 16.801334195932384,
+      "max_drift": 35.80863826392763,
+      "final_drift": 15.293528951667414
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.11952928128513,
+      "max_drift": 5.929920181568706,
+      "final_drift": 3.4834098561796405
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.4923205964719286,
+      "max_drift": 4.923458249413133,
+      "final_drift": 3.6980686748263647
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 5.196495325935381,
+      "max_drift": 13.702880627108321,
+      "final_drift": 13.702880627108321
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 9.364671822455263,
+      "max_drift": 18.68490895037729,
+      "final_drift": 11.493137574474455
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 7.652272916622786,
+      "max_drift": 15.775152691714183,
+      "final_drift": 13.394814163344279
+    },
+    {
+      "source": "universityB/c0091_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 4.817030773614048,
+      "max_drift": 10.102511039754097,
+      "final_drift": 5.9654767620222975
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.533488425126378,
+      "max_drift": 12.27653217588966,
+      "final_drift": 11.752672638768473
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 5.18235128056529,
+      "max_drift": 10.718865317619857,
+      "final_drift": 10.718865317619857
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 5.485430944721778,
+      "max_drift": 20.376891059743013,
+      "final_drift": 20.376891059743013
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 13.452525041657989,
+      "max_drift": 29.59587334168301,
+      "final_drift": 29.59587334168301
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 16.81516935274388,
+      "max_drift": 30.548907639139806,
+      "final_drift": 21.592425315654992
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 10.980886164346336,
+      "max_drift": 22.0672922094574,
+      "final_drift": 14.79371888212466
+    },
+    {
+      "source": "universityB/c0092_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 9.285891422096977,
+      "max_drift": 18.28962677824434,
+      "final_drift": 18.28962677824434
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 2.7421835009483924,
+      "max_drift": 4.530117730984556,
+      "final_drift": 2.29438962318713
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.7981048342353287,
+      "max_drift": 5.781216588584948,
+      "final_drift": 3.6937985380844274
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 2.68812601632577,
+      "max_drift": 5.776743169815374,
+      "final_drift": 5.776743169815374
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 2.774313306303721,
+      "max_drift": 8.171021492293278,
+      "final_drift": 8.171021492293278
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 6.054493099342519,
+      "max_drift": 11.979809810782667,
+      "final_drift": 11.48913180913942
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 4.514034993376486,
+      "max_drift": 8.296766709006194,
+      "final_drift": 6.634284009603469
+    },
+    {
+      "source": "universityB/c0095_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 8.995742882716725,
+      "max_drift": 25.111083776653807,
+      "final_drift": 24.263126135075286
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 5.474667921098838,
+      "max_drift": 8.935100510200954,
+      "final_drift": 7.099087945126444
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.98137989874226,
+      "max_drift": 5.148613032466794,
+      "final_drift": 2.2642600446657744
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 2.785036612041013,
+      "max_drift": 7.538587362940306,
+      "final_drift": 7.538587362940306
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 4.63238767879965,
+      "max_drift": 10.813378297992548,
+      "final_drift": 10.813378297992548
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 5.599842182431346,
+      "max_drift": 9.614124194507452,
+      "final_drift": 8.348741466755694
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 4.722587917303122,
+      "max_drift": 9.819916025323934,
+      "final_drift": 6.894488258968222
+    },
+    {
+      "source": "universityB/c0098_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 2.821212291792052,
+      "max_drift": 5.083067783656535,
+      "final_drift": 4.73901518613477
+    },
+    {
+      "source": "universityB/c0102_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 3.213017071583404,
+      "max_drift": 6.718832935239724,
+      "final_drift": 3.429667373061381
+    },
+    {
+      "source": "universityB/c0102_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 6.502499748146928,
+      "max_drift": 21.56743177429897,
+      "final_drift": 21.56743177429897
+    },
+    {
+      "source": "universityB/c0102_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 18.174150807667555,
+      "max_drift": 40.487129626964645,
+      "final_drift": 40.487129626964645
+    },
+    {
+      "source": "universityB/c0102_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 23.229516739344483,
+      "max_drift": 42.86118415597701,
+      "final_drift": 35.19576260138514
+    },
+    {
+      "source": "universityB/c0102_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 12.529002198098478,
+      "max_drift": 26.973358876380125,
+      "final_drift": 4.557361639277703
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 7.880577535678957,
+      "max_drift": 13.989201325119394,
+      "final_drift": 3.653711318270366
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 9.63792265408424,
+      "max_drift": 23.887582251859794,
+      "final_drift": 23.887582251859794
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 16.786470924640287,
+      "max_drift": 32.86377096337329,
+      "final_drift": 25.9536164004572
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 13.82850598350813,
+      "max_drift": 25.874519804077092,
+      "final_drift": 2.0322711716771042
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 13.370550705898959,
+      "max_drift": 36.49301481862086,
+      "final_drift": 36.49301481862086
+    },
+    {
+      "source": "universityB/c0103_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 27.43454146288576,
+      "max_drift": 51.78229312787942,
+      "final_drift": 42.6209305961506
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 4.882003224948685,
+      "max_drift": 18.73254010859404,
+      "final_drift": 10.967559910065148
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 14.2687227611854,
+      "max_drift": 42.00010770407554,
+      "final_drift": 39.58465511500622
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 17.796307052651287,
+      "max_drift": 36.0306849597372,
+      "final_drift": 2.9257063112434896
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 18.857384964257278,
+      "max_drift": 39.398883949160684,
+      "final_drift": 39.398883949160684
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 53.801530945525045,
+      "max_drift": 122.0341818974989,
+      "final_drift": 122.0341818974989
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 67.64034370638359,
+      "max_drift": 133.71883777172147,
+      "final_drift": 108.00143500931279
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 49.94217600748661,
+      "max_drift": 96.90175859332408,
+      "final_drift": 17.104534718529838
+    },
+    {
+      "source": "universityB/c0112_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 47.22663549119216,
+      "max_drift": 130.59668280004772,
+      "final_drift": 130.59668280004772
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 4.658088340887433,
+      "max_drift": 7.1647185334921515,
+      "final_drift": 6.7061486764530835
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 4.58457392495464,
+      "max_drift": 12.927900715719224,
+      "final_drift": 4.2330031406799735
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 6.129414702635671,
+      "max_drift": 12.465039467702569,
+      "final_drift": 4.9455190263993485
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 7.1112100143778205,
+      "max_drift": 18.278881114387012,
+      "final_drift": 18.278881114387012
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 18.77951121100245,
+      "max_drift": 49.855668926841844,
+      "final_drift": 45.29426427287403
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 30.919194608281142,
+      "max_drift": 50.218173455663496,
+      "final_drift": 44.55597987383
+    },
+    {
+      "source": "universityB/c0122_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 14.926554329780913,
+      "max_drift": 27.178464985120044,
+      "final_drift": 12.768619152546881
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 1.74886458409135,
+      "max_drift": 3.100516287038623,
+      "final_drift": 2.013805472328003
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.6696735323975878,
+      "max_drift": 12.556016414002169,
+      "final_drift": 12.556016414002169
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 4.09860107748198,
+      "max_drift": 13.022837777565744,
+      "final_drift": 8.100432002540197
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 11.871713517298828,
+      "max_drift": 37.745500729741416,
+      "final_drift": 37.745500729741416
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 10.796738521871175,
+      "max_drift": 29.02649081880616,
+      "final_drift": 4.168459457517785
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 17.05163121087374,
+      "max_drift": 36.60254822992292,
+      "final_drift": 36.60254822992292
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 45.72618266451163,
+      "max_drift": 84.91927254484263,
+      "final_drift": 84.91927254484263
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 45.591715779957376,
+      "max_drift": 76.76366430044024,
+      "final_drift": 55.3615333178969
+    },
+    {
+      "source": "universityB/c0144_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 22.399471032347854,
+      "max_drift": 40.548808771780664,
+      "final_drift": 21.921039134917
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 2.11987774361472,
+      "max_drift": 5.640474911783476,
+      "final_drift": 5.640474911783476
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 3.681482016291802,
+      "max_drift": 9.663346430519903,
+      "final_drift": 6.86866963099916
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 9.609825165394074,
+      "max_drift": 33.762611841361064,
+      "final_drift": 33.762611841361064
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 17.879726865225713,
+      "max_drift": 44.5736034373188,
+      "final_drift": 37.49165136695006
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 27.07059940948742,
+      "max_drift": 46.42709416332705,
+      "final_drift": 31.432105135883244
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 7.7209384946046065,
+      "max_drift": 18.69452171709876,
+      "final_drift": 15.889221032128667
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 22.42948570361236,
+      "max_drift": 65.97672101500483,
+      "final_drift": 65.97672101500483
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 350,
+      "frame_end": 500,
+      "mean_drift": 37.75870395073235,
+      "max_drift": 84.35613809736729,
+      "final_drift": 84.35613809736729
+    },
+    {
+      "source": "universityB/c0222_t",
+      "frame_start": 400,
+      "frame_end": 550,
+      "mean_drift": 40.36327844581627,
+      "max_drift": 67.27232829247569,
+      "final_drift": 37.86302422409067
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 1.784470606300703,
+      "max_drift": 8.288068957737618,
+      "final_drift": 8.288068957737618
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 8.168682602904445,
+      "max_drift": 28.861511347055927,
+      "final_drift": 28.861511347055927
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 15.847840146337628,
+      "max_drift": 32.535404780051074,
+      "final_drift": 12.843629703520753
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 14.509882342970407,
+      "max_drift": 27.643122379587727,
+      "final_drift": 25.90068141701894
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 34.93994129934615,
+      "max_drift": 82.25210893962586,
+      "final_drift": 82.25210893962586
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 47.147172591672415,
+      "max_drift": 85.36641040396529,
+      "final_drift": 55.96397278430214
+    },
+    {
+      "source": "universityB/c0224_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 24.010730115219218,
+      "max_drift": 52.73131768698964,
+      "final_drift": 30.87838702919512
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 2.0684437837288763,
+      "max_drift": 4.702508453441686,
+      "final_drift": 1.8772238347650865
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 2.603060795784055,
+      "max_drift": 7.446570085814077,
+      "final_drift": 7.446570085814077
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 100,
+      "frame_end": 250,
+      "mean_drift": 8.63360859437505,
+      "max_drift": 21.055874770189625,
+      "final_drift": 21.055874770189625
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 150,
+      "frame_end": 300,
+      "mean_drift": 10.700634327711278,
+      "max_drift": 21.743869252047887,
+      "final_drift": 8.851502450089232
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 200,
+      "frame_end": 350,
+      "mean_drift": 6.3614449146105425,
+      "max_drift": 14.249865140564372,
+      "final_drift": 10.9295437130509
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 250,
+      "frame_end": 400,
+      "mean_drift": 5.253002021716265,
+      "max_drift": 13.413837629390933,
+      "final_drift": 13.413837629390933
+    },
+    {
+      "source": "universityB/c0277_t",
+      "frame_start": 300,
+      "frame_end": 450,
+      "mean_drift": 6.694258897503423,
+      "max_drift": 16.959340884750805,
+      "final_drift": 16.959340884750805
+    },
+    {
+      "source": "universityB/d0073_t",
+      "frame_start": 0,
+      "frame_end": 150,
+      "mean_drift": 5.8804813222940195,
+      "max_drift": 8.742954514953297,
+      "final_drift": 8.037038073924599
+    },
+    {
+      "source": "universityB/d0073_t",
+      "frame_start": 50,
+      "frame_end": 200,
+      "mean_drift": 7.1452279741231,
+      "max_drift": 11.335069735501127,
+      "final_drift": 11.335069735501127
     },
     {
       "source": "officeC/a0092_t",

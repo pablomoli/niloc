@@ -48,18 +48,18 @@ uv run python -m preprocess.synthetic_data.build_noise_library \
     --target-freq 1.0 \
     --window 150 \
     --stride 50 \
-    --extra-sources data/officeC \
+    --extra-sources data/universityB data/officeC \
     --out-dir preprocess/data \
     --plot
 ```
 
 Expected output (numbers may vary slightly):
 ```
-Total trajectories: 124
-1163 raw segments
+Total trajectories: 169
+1573 raw segments
 ...
-Done. 1163 segments, window=150, stride=50
-Mean drift: 26.xxxx m
+Done. 1573 segments, window=150, stride=50
+Mean drift: 24.xxxx m
 ```
 
 ---

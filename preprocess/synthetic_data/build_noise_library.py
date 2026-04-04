@@ -142,8 +142,12 @@ def load_train_trajectories_hdf5(
     dict mapping trajectory name to ``(T, 5)`` float64 array
     ``[ts, x_m, y_m, gt_x_m, gt_y_m]`` at target_freq.
     """
-    train_entries = set((data_dir / 'train.txt').read_text().splitlines())
-    train_t = {e for e in train_entries if e.endswith('_t')}
+    train_path = data_dir / 'train.txt'
+    if train_path.exists():
+        train_t = {e for e in train_path.read_text().splitlines() if e.endswith('_t')}
+    else:
+        # No split file — use all _t.hdf5 files in the directory.
+        train_t = {p.stem for p in data_dir.glob('*_t.hdf5')}
 
     trajs: dict[str, np.ndarray] = {}
     for name in sorted(train_t):
