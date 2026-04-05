@@ -203,14 +203,17 @@ class TestSmoothAndResample:
 
 
 class TestGeneratePaths:
+    # Small-graph tests use min_frames=1 because the fixture graph spans only
+    # ~150 px; production min_frames (60) is tested via the Avalon smoke test.
+    _SMALL = dict(min_path_nodes=2, min_frames=1, avg_speed_px_s=15.0)
+
     def test_returns_requested_count(self, linear_graph: Path) -> None:
         paths = generate_paths(
             n_paths=5,
             graph_path=linear_graph,
             freq=1.0,
-            avg_speed_px_s=15.0,
-            min_path_nodes=2,
             rng=np.random.default_rng(0),
+            **self._SMALL,
         )
         assert len(paths) == 5
 
@@ -219,9 +222,8 @@ class TestGeneratePaths:
             n_paths=3,
             graph_path=linear_graph,
             freq=1.0,
-            avg_speed_px_s=15.0,
-            min_path_nodes=2,
             rng=np.random.default_rng(0),
+            **self._SMALL,
         )
         for p in paths:
             assert p.shape[1] == 5
@@ -231,9 +233,8 @@ class TestGeneratePaths:
             n_paths=2,
             graph_path=linear_graph,
             freq=1.0,
-            avg_speed_px_s=15.0,
-            min_path_nodes=2,
             rng=np.random.default_rng(0),
+            **self._SMALL,
         )
         for p in paths:
             assert p.dtype == np.float64
@@ -243,9 +244,8 @@ class TestGeneratePaths:
             n_paths=4,
             graph_path=linear_graph,
             freq=1.0,
-            avg_speed_px_s=15.0,
-            min_path_nodes=2,
             rng=np.random.default_rng(42),
+            **self._SMALL,
         )
         for p in paths:
             assert not np.any(np.isnan(p))
@@ -256,31 +256,60 @@ class TestGeneratePaths:
             n_paths=3,
             graph_path=linear_graph,
             freq=1.0,
-            avg_speed_px_s=15.0,
-            min_path_nodes=2,
             rng=np.random.default_rng(0),
+            **self._SMALL,
         )
         for p in paths:
             np.testing.assert_array_equal(p[:, 1:3], p[:, 3:5])
 
     def test_reproducible_with_same_seed(self, linear_graph: Path) -> None:
-        kwargs = dict(n_paths=3, graph_path=linear_graph, freq=1.0,
-                      avg_speed_px_s=15.0, min_path_nodes=2)
+        kwargs = dict(
+            n_paths=3, graph_path=linear_graph, freq=1.0, **self._SMALL
+        )
         paths_a = generate_paths(**kwargs, rng=np.random.default_rng(7))
         paths_b = generate_paths(**kwargs, rng=np.random.default_rng(7))
         for a, b in zip(paths_a, paths_b):
             np.testing.assert_array_equal(a, b)
 
+    def test_min_frames_enforced(self, linear_graph: Path) -> None:
+        # All paths from this small graph are short; with min_frames=8 some
+        # should be rejected, with min_frames=1 all should pass.
+        paths_strict = generate_paths(
+            n_paths=5,
+            graph_path=linear_graph,
+            freq=1.0,
+            avg_speed_px_s=15.0,
+            min_path_nodes=2,
+            min_frames=8,
+            rng=np.random.default_rng(0),
+        )
+        paths_loose = generate_paths(
+            n_paths=5,
+            graph_path=linear_graph,
+            freq=1.0,
+            avg_speed_px_s=15.0,
+            min_path_nodes=2,
+            min_frames=1,
+            rng=np.random.default_rng(0),
+        )
+        # Strict filter should produce paths where every path meets the minimum.
+        for p in paths_strict:
+            assert len(p) >= 8
+        # Loose filter may include shorter paths.
+        assert all(len(p) >= 1 for p in paths_loose)
+
     def test_avalon_graph_smoke(self, avalon_graph: Path) -> None:
-        """Smoke test against the real Avalon graph — 20 paths, no crash."""
+        """Smoke test with production defaults: avg_speed=5.0, min_frames=60."""
         paths = generate_paths(
             n_paths=20,
             graph_path=avalon_graph,
             freq=1.0,
-            avg_speed_px_s=12.0,
+            avg_speed_px_s=5.0,
+            min_frames=60,
             rng=np.random.default_rng(0),
         )
         assert len(paths) == 20
         for p in paths:
             assert p.shape[1] == 5
             assert not np.any(np.isnan(p))
+            assert len(p) >= 60

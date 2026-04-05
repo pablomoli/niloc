@@ -176,7 +176,8 @@ def run(cfg: dict) -> int:
             n_paths=n_gt_paths,
             graph_path=graph_path,
             freq=cfg["freq"],
-            avg_speed_px_s=cfg.get("avg_speed_px_s", 12.0),
+            avg_speed_px_s=cfg.get("avg_speed_px_s", 5.0),
+            min_frames=cfg.get("min_frames", 60),
             rng=gt_rng,
         )
     else:

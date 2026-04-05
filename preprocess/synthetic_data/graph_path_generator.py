@@ -217,11 +217,12 @@ def generate_paths(
     n_paths: int,
     graph_path: Path = _DEFAULT_GRAPH,
     freq: float = 1.0,
-    avg_speed_px_s: float = 12.0,
+    avg_speed_px_s: float = 5.0,
     smooth_factor: float = 2.0,
     min_path_nodes: int = _MIN_WAYPOINTS,
+    min_frames: int = 60,
     rng: np.random.Generator | None = None,
-    max_attempts_multiplier: int = 10,
+    max_attempts_multiplier: int = 20,
 ) -> list[np.ndarray]:
     """
     Generate n_paths graph-routed synthetic GT trajectories.
@@ -236,9 +237,18 @@ def generate_paths(
     graph_path              : path to avalon_graph.json
     freq                    : output frequency in Hz (must match fabrication config)
     avg_speed_px_s          : mean walking speed in pixels/second.
-                              At Avalon's 10 px/m, 12 px/s ≈ 1.2 m/s (brisk walk).
+                              At Avalon's 10 px/m, 5 px/s ≈ 0.5 m/s (slow walk).
+                              Lower values produce longer frame sequences; the noise
+                              library window is 150 frames so paths should be at least
+                              60 frames (enforced by min_frames).
     smooth_factor           : B-spline smoothing divisor (see _smooth_and_resample)
-    min_path_nodes          : discard source/dest pairs whose route has fewer nodes
+    min_path_nodes          : discard source/dest pairs whose Dijkstra route has
+                              fewer graph nodes (cheap pre-filter before smoothing)
+    min_frames              : discard smoothed trajectories with fewer output frames.
+                              Set to match or exceed the model's expected sequence
+                              length. Default 60 = 40 % of the 150-frame noise window,
+                              which allows the noise injector to still draw a clean
+                              segment while leaving headroom for augmentation.
     rng                     : numpy Generator for reproducibility; created if None
     max_attempts_multiplier : retry budget = n_paths × this value
 
@@ -291,6 +301,16 @@ def generate_paths(
             _LOG.debug("Skipping %s→%s: %s", src_id, dst_id, exc)
             continue
 
+        if len(traj) < min_frames:
+            _LOG.debug(
+                "Skipping %s→%s: %d frames < min_frames=%d",
+                src_id,
+                dst_id,
+                len(traj),
+                min_frames,
+            )
+            continue
+
         results.append(traj)
         _LOG.debug(
             "Path %d/%d: %s→%s  %d waypoints  %d frames",
@@ -304,8 +324,8 @@ def generate_paths(
 
     if len(results) < n_paths:
         _LOG.warning(
-            "Generated %d/%d paths after %d attempts (increase max_attempts_multiplier "
-            "or lower min_path_nodes if this is unexpected)",
+            "Generated %d/%d paths after %d attempts (lower min_frames, raise "
+            "max_attempts_multiplier, or lower avg_speed_px_s to produce longer paths)",
             len(results),
             n_paths,
             attempts,
