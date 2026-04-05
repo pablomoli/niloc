@@ -351,7 +351,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out-dir", type=Path, default=None)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--freq", type=float, default=1.0)
-    p.add_argument("--avg-speed", type=float, default=12.0)
+    p.add_argument("--avg-speed", type=float, default=5.0)
     return p
 
 

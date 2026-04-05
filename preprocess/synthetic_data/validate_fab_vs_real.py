@@ -481,6 +481,8 @@ def _parse_args() -> argparse.Namespace:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--n-fab", type=int, default=None,
                    help="Max fabricated sessions to load (default: all ~800)")
+    p.add_argument("--fab-dir", type=Path, default=FAB_DIR,
+                   help=f"Fabricated data directory (default: {FAB_DIR})")
     p.add_argument("--out-dir", type=Path, default=DEFAULT_OUT,
                    help=f"Output directory (default: {DEFAULT_OUT})")
     return p.parse_args()
@@ -495,8 +497,8 @@ def main() -> None:
     _LOG.info("Loading real sessions from %s", REAL_DIR)
     real = load_sessions(REAL_DIR, REAL_GLOB)
 
-    _LOG.info("Loading fabricated sessions from %s (n_max=%s)", FAB_DIR, args.n_fab)
-    fab = load_sessions(FAB_DIR, FAB_GLOB, n_max=args.n_fab)
+    _LOG.info("Loading fabricated sessions from %s (n_max=%s)", args.fab_dir, args.n_fab)
+    fab = load_sessions(args.fab_dir, FAB_GLOB, n_max=args.n_fab)
 
     _LOG.info("Running Layer 1 — trajectory statistics")
     plot_layer1(fab, real, args.out_dir)
