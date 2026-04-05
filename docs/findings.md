@@ -114,19 +114,31 @@ inform the paper. Updated as new results come in.
 
 ### Evaluation on Real Sessions (4 Avalon recordings, 2026-03-31)
 Test data: `outputs/niloc_input_1hz/` — real RoNIN-processed sessions from the Avalon 2nd floor.
-Compared epoch=99 (old partial run) vs epoch=799 (Ana's full 800-epoch run).
+Compared epoch=99 (partial, tr_ratio=0.96) vs epoch=799 (Ana's full 800-epoch run).
+AUC = area under fraction-of-frames-within-D curve, integrated 0→45 m. avg_err over all frames.
 
-Cold-start (`start_zero`) metric captured for epoch=799:
-- avg_err = 154.9 px = **15.5 m**
-- AUC = **0.668** (fraction of estimates within acceptance radius)
+| Mode         | ep99 avg_err | ep99 AUC | ep799 avg_err | ep799 AUC | delta     |
+|--------------|-------------|----------|--------------|-----------|-----------|
+| encoder      | 18.0 m      | 0.617    | **13.9 m**   | **0.703** | **−4.1 m** |
+| start_gt_1   | 17.0 m      | 0.637    | 18.0 m       | 0.616     | +1.0 m    |
+| start_zero   | 17.0 m      | 0.637    | 18.0 m       | 0.616     | +1.0 m    |
+| start_gt_2   | crash        | —        | crash        | —         | —         |
 
-Full per-mode comparison table incomplete: only the last subprocess's stdout survived a
-`tail -30` capture. Full eval output files are in `outputs/2026-04-05/`. Need a clean rerun
-with full stdout capture to complete the epoch=99 vs epoch=799 comparison table.
+- `start_gt_2` crashes both epochs: `UnboundLocalError` in `scheduled_2branch.py:224`
+  (`pred_dec_softmax` referenced before assignment). Bug needs fixing in issue #23.
+- ep99 `start_gt_1` == `start_zero`: expected — tr_ratio=0.96 means decoder was nearly
+  fully teacher-forced; without teacher input both modes collapse to the same behaviour.
+- ep799 decoder modes (start_gt_1 / start_zero) show no improvement over ep99:
+  the decoder is not generalizing from synthetic to real sessions.
 
-**Implication**: 15.5 m cold-start error is a reasonable starting point for a model trained
-only on synthetic data with no real-session fine-tuning. AUC=0.668 means 66.8% of position
-estimates fall within the acceptance radius across the 4 test sessions.
+**Key finding**: The encoder (which uses GT trajectory context) improves significantly
+(−4.1 m, AUC +0.086). The decoder cold-start does not improve. This confirms the
+synthetic→real domain gap is the bottleneck, not model capacity. The fabrication
+improvements in Layer 1 (graph paths, typed noise, expanded library) directly target this.
+
+Heatmap images extracted to `outputs/heatmaps_ep799/` — 16 PNGs across 4 sessions × 4 modes.
+Encoder mode shows prediction tracking GT trajectory; decoder cold-start prediction is
+pinned to a single corner of the map (zero signal from VIO in unseen real sessions).
 
 ### Infrastructure Changes (2026-04-05)
 - `<path>/` directory renamed to `runs/` — `niloc/config/io/default.yaml` updated accordingly.
