@@ -27,6 +27,7 @@ import numpy as np
 import yaml
 
 from preprocess.synthetic_data.format_output import validate_outputs, write_dataset
+from preprocess.synthetic_data.graph_path_generator import generate_paths
 from preprocess.synthetic_data.inject_noise import fabricate, load_noise_library
 
 _LOG = logging.getLogger(__name__)
@@ -159,13 +160,31 @@ def run(cfg: dict) -> int:
 
     # Resolve paths relative to cwd
     cwd = Path.cwd()
-    gt_paths_dir = cwd / cfg["gt_paths_dir"]
     noise_library_path = cwd / cfg["noise_library"]
     out_dir = cwd / cfg["out_dir"]
 
-    # -- 1. Load GT paths --------------------------------------------------
-    _LOG.info("Loading GT paths from '%s' (glob: %s)", gt_paths_dir, cfg["gt_glob"])
-    gt_paths = load_gt_paths(gt_paths_dir, cfg["gt_glob"])
+    # -- 1. Load or generate GT paths --------------------------------------
+    path_generator = cfg.get("path_generator", "density_map")
+    if path_generator == "graph":
+        graph_path = cwd / cfg["graph_path"]
+        n_gt_paths: int = cfg["n_gt_paths"]
+        _LOG.info(
+            "Generating %d GT paths from graph '%s'", n_gt_paths, graph_path
+        )
+        gt_rng = np.random.default_rng(cfg["seed"])
+        gt_paths = generate_paths(
+            n_paths=n_gt_paths,
+            graph_path=graph_path,
+            freq=cfg["freq"],
+            avg_speed_px_s=cfg.get("avg_speed_px_s", 12.0),
+            rng=gt_rng,
+        )
+    else:
+        gt_paths_dir = cwd / cfg["gt_paths_dir"]
+        _LOG.info(
+            "Loading GT paths from '%s' (glob: %s)", gt_paths_dir, cfg["gt_glob"]
+        )
+        gt_paths = load_gt_paths(gt_paths_dir, cfg["gt_glob"])
 
     # -- 2. Load noise library ---------------------------------------------
     _LOG.info("Loading noise library from '%s'", noise_library_path)

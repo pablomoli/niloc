@@ -1,0 +1,17 @@
+# Fabrication pipeline config — Avalon 2nd floor, graph-based path generation
+# Uses the validated IMDF navigation graph (issue #15) instead of pre-recorded
+# density-map paths, giving uniform spatial coverage across the full floor.
+path_generator: graph
+graph_path: preprocess/synthetic_data/data/avalon_graph.json
+n_gt_paths: 200          # distinct GT paths to generate before augmentation
+avg_speed_px_s: 12.0     # ~1.2 m/s at 10 px/m (brisk indoor walk)
+noise_library: preprocess/data/noise_library.npy
+target_dpi: 10.0         # Avalon px/m (Ana's measured value, commit 260a09a)
+n_trajectories: 800      # total fabricated trajectories to produce
+aug_mult: 4              # noise samples per GT path
+freq: 1.0                # Hz — Avalon simulator runs at 1 fps
+file_tag: fab_graph
+seed: 42
+out_dir: outputs/fabricated/avalon_2nd_floor_graph
+validate: true
+n_validate: 20
