@@ -27,12 +27,102 @@ Public API
       -> list of (ts, noisy_xy, gt_xy, segment_idx)
 """
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
 import numpy as np
 
 AVALON_DPI = 10.0  # Avalon 2nd floor px/m — physically measured (Ana's commit 260a09a)
+
+# Motion type labels — must match build_noise_library.classify_segment_motion.
+MOTION_STRAIGHT    = "straight"
+MOTION_TURN        = "turn"
+MOTION_STATIONARY  = "stationary"
+
+# Thresholds for GT path classification (mirrors build_noise_library constants).
+_TURN_THRESHOLD_DEG        = 20.0
+_STATIONARY_THRESHOLD_M_S  = 0.3
+_MIN_BUCKET_SIZE           = 10   # fall back to full library if bucket is smaller
+
+# ---------------------------------------------------------------------------
+# Motion type classification
+# ---------------------------------------------------------------------------
+
+
+def classify_path_motion(
+    gt_xy_px: np.ndarray,
+    target_dpi: float,
+    freq: float = 1.0,
+) -> str:
+    """
+    Classify a GT path as 'stationary', 'turn', or 'straight'.
+
+    Uses the same thresholds as build_noise_library.classify_segment_motion so
+    that injection buckets are consistent with library construction.
+
+    Parameters
+    ----------
+    gt_xy_px   : (T, 2) GT positions in floorplan pixels
+    target_dpi : pixels per metre of the target floorplan
+    freq       : sampling frequency in Hz (default 1.0)
+
+    Returns
+    -------
+    "stationary" | "turn" | "straight"
+    """
+    gt_m = gt_xy_px / target_dpi
+    dx = np.diff(gt_m[:, 0])
+    dy = np.diff(gt_m[:, 1])
+    displacements = np.sqrt(dx**2 + dy**2)
+    mean_speed = displacements.mean() * freq  # m/s
+
+    if mean_speed < _STATIONARY_THRESHOLD_M_S:
+        return MOTION_STATIONARY
+
+    moving = displacements > 1e-6
+    if not np.any(moving):
+        return MOTION_STATIONARY
+
+    headings = np.arctan2(dy[moving], dx[moving])
+    if len(headings) < 2:
+        return MOTION_STRAIGHT
+
+    dh = np.abs(np.diff(headings))
+    dh = np.minimum(dh, 2 * np.pi - dh)
+    # Use p90 so occasional large steps don't override the characteristic motion.
+    if np.degrees(np.percentile(dh, 90)) > _TURN_THRESHOLD_DEG:
+        return MOTION_TURN
+
+    return MOTION_STRAIGHT
+
+
+def build_buckets(meta: list[dict]) -> dict[str, np.ndarray]:
+    """
+    Pre-compute motion-type bucket index arrays from segment metadata.
+
+    Parameters
+    ----------
+    meta : per-segment metadata list from load_noise_library()
+
+    Returns
+    -------
+    dict mapping each motion type label to a numpy array of segment indices.
+    Buckets with fewer than _MIN_BUCKET_SIZE segments are omitted so callers
+    can detect a missing bucket and fall back to the full library.
+    """
+    acc: dict[str, list[int]] = {}
+    for i, m in enumerate(meta):
+        mt = m.get("motion_type", MOTION_STRAIGHT)
+        acc.setdefault(mt, []).append(i)
+
+    return {
+        mt: np.array(indices, dtype=np.intp)
+        for mt, indices in acc.items()
+        if len(indices) >= _MIN_BUCKET_SIZE
+    }
+
 
 # ---------------------------------------------------------------------------
 # Library loading
@@ -64,6 +154,7 @@ def _build_noise(
     segments: np.ndarray,
     n_frames: int,
     rng: np.random.Generator,
+    seg_indices: np.ndarray | None = None,
 ) -> tuple[np.ndarray, int]:
     """
     Build a noise signal of length n_frames from the segment library.
@@ -76,17 +167,20 @@ def _build_noise(
 
     Parameters
     ----------
-    segments : (N, window_size, 2)
-    n_frames : desired output length
-    rng      : numpy Generator
+    segments    : (N, window_size, 2)
+    n_frames    : desired output length
+    rng         : numpy Generator
+    seg_indices : optional array of indices into segments to draw from.
+                  When None, samples uniformly from all N segments.
 
     Returns
     -------
     noise   : (n_frames, 2)
     seg_idx : int  index of the first segment drawn (for logging)
     """
+    pool = seg_indices if seg_indices is not None else np.arange(len(segments))
     window = segments.shape[1]
-    seg_idx = int(rng.integers(len(segments)))
+    seg_idx = int(rng.choice(pool))
 
     if n_frames <= window:
         return segments[seg_idx, :n_frames].copy(), seg_idx
@@ -97,7 +191,7 @@ def _build_noise(
 
     while remaining > 0:
         take = min(window, remaining)
-        new_idx = int(rng.integers(len(segments)))
+        new_idx = int(rng.choice(pool))
         chunk = segments[new_idx, :take] + offset
         chunks.append(chunk)
         offset = chunk[-1].copy()
@@ -111,6 +205,8 @@ def inject(
     segments: np.ndarray,
     target_dpi: float,
     rng: np.random.Generator = None,
+    buckets: dict[str, np.ndarray] | None = None,
+    freq: float = 1.0,
 ) -> tuple[np.ndarray, int]:
     """
     Inject a randomly sampled noise segment onto a single GT path.
@@ -121,6 +217,11 @@ def inject(
     segments   : (N, window_size, 2) noise library in **metres**
     target_dpi : px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
     rng        : numpy Generator for reproducibility; created if None
+    buckets    : optional motion-type bucket dict from build_buckets().
+                 When provided, the GT path is classified and noise is drawn
+                 from the matching bucket. Falls back to the full library if
+                 the bucket has fewer than _MIN_BUCKET_SIZE segments.
+    freq       : sampling frequency in Hz — used for speed classification
 
     Returns
     -------
@@ -130,8 +231,15 @@ def inject(
     if rng is None:
         rng = np.random.default_rng()
 
+    seg_indices: np.ndarray | None = None
+    if buckets is not None:
+        motion_type = classify_path_motion(gt_xy, target_dpi, freq)
+        bucket = buckets.get(motion_type)
+        if bucket is not None and len(bucket) >= _MIN_BUCKET_SIZE:
+            seg_indices = bucket
+
     T = len(gt_xy)
-    noise_m, seg_idx = _build_noise(segments, T, rng)
+    noise_m, seg_idx = _build_noise(segments, T, rng, seg_indices)
     noisy_xy = gt_xy + noise_m * target_dpi
     return noisy_xy, seg_idx
 
@@ -147,6 +255,8 @@ def fabricate(
     aug_mult: int,
     target_dpi: float,
     rng: np.random.Generator = None,
+    meta: list[dict] | None = None,
+    freq: float = 1.0,
 ) -> list[dict]:
     """
     Fabricate n_out noisy trajectories from a pool of GT paths.
@@ -157,13 +267,19 @@ def fabricate(
 
     Parameters
     ----------
-    gt_paths  : list of (T_i, 5) arrays — columns: ts, x, y, gt_x, gt_y
-                (A* output format; x==gt_x at this stage)
-    segments  : (N, window_size, 2) noise library in **metres**
-    n_out     : total number of fabricated trajectories to produce
-    aug_mult  : noise samples per GT path (augmentation multiplier)
-    target_dpi: px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
-    rng       : numpy Generator
+    gt_paths   : list of (T_i, 5) arrays — columns: ts, x, y, gt_x, gt_y
+                 (A* output format; x==gt_x at this stage)
+    segments   : (N, window_size, 2) noise library in **metres**
+    n_out      : total number of fabricated trajectories to produce
+    aug_mult   : noise samples per GT path (augmentation multiplier)
+    target_dpi : px/m of the target floorplan (use AVALON_DPI=10.0 for Avalon)
+    rng        : numpy Generator
+    meta       : per-segment metadata list from load_noise_library().
+                 When provided, motion-typed injection is enabled: each GT
+                 path is classified and noise is drawn from the matching
+                 bucket. Falls back to the full library when a bucket is
+                 too small (< _MIN_BUCKET_SIZE segments).
+    freq       : sampling frequency in Hz — passed to classify_path_motion
 
     Returns
     -------
@@ -176,6 +292,8 @@ def fabricate(
     """
     if rng is None:
         rng = np.random.default_rng()
+
+    buckets = build_buckets(meta) if meta is not None else None
 
     results = []
     n_gt = len(gt_paths)
@@ -194,6 +312,8 @@ def fabricate(
             gt_xy, segments,
             target_dpi=target_dpi,
             rng=child_rng,
+            buckets=buckets,
+            freq=freq,
         )
 
         results.append({

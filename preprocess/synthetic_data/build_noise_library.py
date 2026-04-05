@@ -172,10 +172,72 @@ def load_train_trajectories_hdf5(
     return trajs
 
 
+TURN_THRESHOLD_DEG = 20.0          # max heading change in window → "turn"
+STATIONARY_THRESHOLD_M_S = 0.3    # mean GT speed below this → "stationary"
+
+
+def classify_segment_motion(
+    traj: np.ndarray,
+    start: int,
+    end: int,
+    target_freq: float = 1.0,
+    turn_threshold_deg: float = TURN_THRESHOLD_DEG,
+    stationary_threshold_m_s: float = STATIONARY_THRESHOLD_M_S,
+) -> str:
+    """
+    Classify the GT motion type for trajectory window [start:end].
+
+    Classification priority: stationary > turn > straight.
+
+    Parameters
+    ----------
+    traj              : (T, 5) array in metres — columns [ts, x, y, gt_x, gt_y]
+    start, end        : frame indices into traj
+    target_freq       : sampling frequency in Hz (used to compute speed)
+    turn_threshold_deg: maximum single-step heading change that still counts
+                        as straight (degrees)
+    stationary_threshold_m_s: mean GT speed below this is stationary
+
+    Returns
+    -------
+    "stationary" | "turn" | "straight"
+    """
+    gt_x = traj[start:end, GTX]
+    gt_y = traj[start:end, GTY]
+
+    dx = np.diff(gt_x)
+    dy = np.diff(gt_y)
+    displacements = np.sqrt(dx**2 + dy**2)
+    mean_speed = displacements.mean() * target_freq  # m/s
+
+    if mean_speed < stationary_threshold_m_s:
+        return "stationary"
+
+    moving = displacements > 1e-6
+    if not np.any(moving):
+        return "stationary"
+
+    headings = np.arctan2(dy[moving], dx[moving])
+    if len(headings) < 2:
+        return "straight"
+
+    dh = np.abs(np.diff(headings))
+    dh = np.minimum(dh, 2 * np.pi - dh)   # handle ±π wraparound
+
+    # Use the 90th-percentile heading change to characterise the window.
+    # Using the maximum causes almost all 150-frame windows to be classified
+    # as "turn" because any long walk contains at least one sharp step.
+    if np.degrees(np.percentile(dh, 90)) > turn_threshold_deg:
+        return "turn"
+
+    return "straight"
+
+
 def extract_segments(
     trajs: dict[str, np.ndarray],
     window: int,
     stride: int,
+    target_freq: float = 1.0,
 ) -> tuple[np.ndarray, list[dict]]:
     """
     Slide a window over each trajectory's noise signal and extract segments.
@@ -186,7 +248,7 @@ def extract_segments(
     Returns
     -------
     segments : (N, window, 2) float32
-    meta     : list of N dicts with provenance and per-segment statistics
+    meta     : list of N dicts with provenance, statistics, and motion_type
     """
     segments = []
     meta = []
@@ -214,6 +276,7 @@ def extract_segments(
                 'mean_drift':  float(mag.mean()),
                 'max_drift':   float(mag.max()),
                 'final_drift': float(mag[-1]),
+                'motion_type': classify_segment_motion(traj, start, end, target_freq),
             })
 
     return np.array(segments, dtype=np.float32), meta
@@ -250,6 +313,13 @@ def save_library(
     np.save(npy_path, segments)
 
     all_drifts = np.array([m['mean_drift'] for m in meta])
+
+    # Per-bucket counts for the summary.
+    bucket_counts: dict[str, int] = {}
+    for m in meta:
+        mt = m.get('motion_type', 'straight')
+        bucket_counts[mt] = bucket_counts.get(mt, 0) + 1
+
     summary = {
         'n_segments':      len(segments),
         'window_size':     window,
@@ -261,6 +331,7 @@ def save_library(
         'median_drift_m':  float(np.median(all_drifts)),
         'p95_drift_m':     float(np.percentile(all_drifts, 95)),
         'max_drift_m':     float(all_drifts.max()),
+        'motion_buckets':  bucket_counts,
         'segments':        meta,
     }
     json_path.write_text(json.dumps(summary, indent=2))
@@ -297,6 +368,51 @@ def plot_gallery(segments: np.ndarray, out_path: Path, n: int = 20) -> None:
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     print(f'  saved gallery {out_path}')
+    plt.close(fig)
+
+
+def plot_motion_buckets(
+    segments: np.ndarray,
+    meta: list[dict],
+    out_path: Path,
+    n_per_bucket: int = 30,
+) -> None:
+    """
+    Plot drift magnitude curves per motion type to verify distinct profiles.
+
+    Saves a figure with one subplot per bucket (straight / turn / stationary).
+    """
+    from collections import defaultdict
+
+    rng = np.random.default_rng(42)
+    buckets: dict[str, list[int]] = defaultdict(list)
+    for i, m in enumerate(meta):
+        buckets[m.get('motion_type', 'straight')].append(i)
+
+    motion_types = ['straight', 'turn', 'stationary']
+    present = [mt for mt in motion_types if mt in buckets]
+    n_cols = len(present)
+
+    fig, axes = plt.subplots(1, n_cols, figsize=(6 * n_cols, 4), sharey=True)
+    if n_cols == 1:
+        axes = [axes]
+
+    for ax, mt in zip(axes, present):
+        idx = np.array(buckets[mt])
+        sample_idx = rng.choice(idx, size=min(n_per_bucket, len(idx)), replace=False)
+        for i in sample_idx:
+            mag = np.sqrt(segments[i, :, 0]**2 + segments[i, :, 1]**2)
+            ax.plot(mag, alpha=0.5, linewidth=0.7, color={'straight': 'steelblue',
+                                                           'turn': 'tomato',
+                                                           'stationary': 'seagreen'}.get(mt))
+        ax.set_title(f'{mt}  (n={len(idx)})')
+        ax.set_xlabel('Frame within segment')
+        ax.set_ylabel('|drift| (m)')
+
+    fig.suptitle('Noise drift magnitude by motion type')
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    print(f'  saved bucket plot {out_path}')
     plt.close(fig)
 
 
@@ -376,7 +492,7 @@ def main(argv: list[str] | None = None) -> None:
     print(f'Total trajectories: {len(trajs)}')
 
     print(f'Extracting segments (window={args.window}, stride={args.stride}) ...')
-    segments, meta = extract_segments(trajs, args.window, args.stride)
+    segments, meta = extract_segments(trajs, args.window, args.stride, args.target_freq)
     print(f'  {len(segments)} raw segments')
 
     if len(segments) == 0:
@@ -395,6 +511,8 @@ def main(argv: list[str] | None = None) -> None:
     if args.plot:
         print('Generating gallery ...')
         plot_gallery(segments, args.out_dir / 'noise_library_gallery.png')
+        print('Generating motion bucket plot ...')
+        plot_motion_buckets(segments, meta, args.out_dir / 'noise_library_buckets.png')
 
     print(f'\nDone. {len(segments)} segments, window={args.window}, stride={args.stride}')
     print(f'Mean drift: {np.mean([m["mean_drift"] for m in meta]):.4f} m')

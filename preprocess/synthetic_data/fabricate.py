@@ -206,6 +206,7 @@ def run(cfg: dict) -> int:
         cfg["aug_mult"],
         cfg["seed"],
     )
+    motion_typed = cfg.get("motion_typed_noise", False)
     results = fabricate(
         gt_paths=gt_paths,
         segments=segments,
@@ -213,6 +214,8 @@ def run(cfg: dict) -> int:
         aug_mult=cfg["aug_mult"],
         target_dpi=cfg["target_dpi"],
         rng=rng,
+        meta=meta if motion_typed else None,
+        freq=cfg["freq"],
     )
     _LOG.info("Fabrication complete — %d trajectories produced", len(results))
 
