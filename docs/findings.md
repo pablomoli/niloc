@@ -235,4 +235,21 @@ distribution.
 - Issue #18 (IMUDiffusion) should proceed in parallel but a retrain on speed-
   corrected paths is required before drawing conclusions about noise quality.
 
+### Fix applied (2026-04-05, issue #1b)
+
+Graph-based dataset regenerated at `outputs/fabricated/avalon_2nd_floor_graph/`
+using `configs/fabricate_avalon_graph.yaml`. Validation against real sessions:
+
+| Metric | Old (density-map) | New (graph) | Real VIO |
+|--------|------------------|-------------|---------|
+| GT step speed | 1.37 m/s | **0.50 m/s** | 0.55 m/s |
+| VIO step speed | 1.55 m/s | **0.90 m/s** | 0.55 m/s |
+
+GT speed now matches. Remaining VIO gap (0.90 vs 0.55) is noise drift on top
+of correct GT speed — the noise segments themselves run at their recorded speed
+regardless of the path speed. This is the next thing to investigate (issue #18).
+
+Ana should retrain on `outputs/fabricated/avalon_2nd_floor_graph/` using
+`configs/dataset/avalon_2nd_floor_syn.yaml` pointing at the new directory.
+
 ---
