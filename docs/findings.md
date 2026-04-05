@@ -69,4 +69,20 @@ inform the paper. Updated as new results come in.
 - Density-map sampling over-represents the central corridor and under-represents
   outer offices and dead ends. Graph-based paths (issue #1b) will correct this.
 
+### Graph-Based Path Generator (issue #16)
+- 200 GT paths generated from 112-node Avalon IMDF graph in ~1 s on M3 MBP.
+- Only 13 retries out of 213 Dijkstra calls — the graph is well-connected;
+  degenerate pairs (adjacent nodes, paths shorter than 4 waypoints) are rare.
+- B-spline arc-length reparameterisation runs without the density-map
+  least-squares optimisation used by `SmoothTrajectory`; adequate because
+  graph nodes are already walkable by construction.
+- Mean path length: ~16 frames at 1 Hz / 12 px·s⁻¹ (~1.2 m/s). Paths are
+  shorter than density-map paths (~31 frames) because the graph spans the full
+  floor — many routed paths cross the building diagonally in fewer steps than
+  a corridor-hugging walk. Consider increasing `avg_speed_px_s` or targeting
+  a minimum frame count if longer sequences are needed for training.
+- **Implication**: Graph paths give uniform spatial coverage; density-map bias
+  is eliminated. Validation pipeline accepted all 10 smoke-test trajectories
+  with mean VIO drift 35.9 px (consistent with noise library statistics).
+
 ---
