@@ -8,15 +8,17 @@ mask, and produces a vector overlay image of the DXF lines on the floorplan.
 Outputs (all written to niloc/data/avalon/):
   walkability_mask_dxf.npy   boolean (221, 411) mask — True = walkable
   dxf_overlay.png            DXF wall lines rendered at floorplan resolution
+  walkability_mask_dxf_bw.png  clean black-and-white architectural render
 
 The DXF coordinate system (inches, CAD origin) is mapped to floorplan pixels
-using the wall-layer bounding box centroid as the anchor, with the same 10°
-building rotation established in issue #15.
+using the wall-layer bounding box centroid as the anchor. No geographic rotation
+is applied — the DXF is a local CAD frame with the long axis already along DXF-X.
 
 Usage
 -----
     uv run python -m preprocess.synthetic_data.build_dxf_mask
     uv run python -m preprocess.synthetic_data.build_dxf_mask --compare
+    uv run python -m preprocess.synthetic_data.build_dxf_mask --bw
 """
 
 from __future__ import annotations
@@ -42,6 +44,7 @@ DXF_PATH = REPO_ROOT / "preprocess/data/dxf files/2nd floor.dxf"
 OUT_DIR = REPO_ROOT / "niloc/data/avalon"
 OUT_MASK = OUT_DIR / "walkability_mask_dxf.npy"
 OUT_OVERLAY = OUT_DIR / "dxf_overlay.png"
+OUT_BW = OUT_DIR / "walkability_mask_dxf_bw.png"
 
 IMG_ROWS = 221
 IMG_COLS = 411
@@ -273,6 +276,34 @@ def _render_overlay(
     _LOG.info("DXF overlay saved → %s", out_path)
 
 
+def _render_bw(
+    walkability_mask: np.ndarray,
+    out_path: Path,
+) -> None:
+    """
+    Render a clean black-and-white architectural floorplan from the walkability mask.
+
+    Walkable pixels → white, wall pixels → black. Saved at 4× the native
+    resolution for print-quality output.
+    """
+    # uint8 image: 255 = walkable (white), 0 = wall (black)
+    img = (walkability_mask.astype(np.uint8)) * 255
+
+    scale = 4
+    img_big = img.repeat(scale, axis=0).repeat(scale, axis=1)
+
+    fig, ax = plt.subplots(
+        figsize=(IMG_COLS * scale / 100, IMG_ROWS * scale / 100),
+        dpi=100,
+    )
+    ax.imshow(img_big, cmap="gray", vmin=0, vmax=255, origin="upper", aspect="equal")
+    ax.axis("off")
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    fig.savefig(out_path, dpi=200, bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
+    _LOG.info("B&W floorplan saved → %s", out_path)
+
+
 def _render_comparison(
     walkability_dxf: np.ndarray,
     out_path: Path,
@@ -301,7 +332,7 @@ def _render_comparison(
 # Main
 # ---------------------------------------------------------------------------
 
-def run(compare: bool = False) -> None:
+def run(compare: bool = False, bw: bool = False) -> None:
     import ezdxf
 
     _LOG.info("Loading DXF: %s", DXF_PATH)
@@ -348,6 +379,7 @@ def run(compare: bool = False) -> None:
     _LOG.info("Mask saved → %s", OUT_MASK)
 
     _render_overlay(overlay_segs, transform, walkability, OUT_OVERLAY)
+    _render_bw(walkability, OUT_BW)
 
     if compare:
         _render_comparison(walkability, OUT_DIR / "mask_comparison.png")
@@ -356,7 +388,8 @@ def run(compare: bool = False) -> None:
         f"\nDXF mask: {walkability.sum()} walkable pixels "
         f"({frac*100:.1f}% of floor)\n"
         f"Saved → {OUT_MASK}\n"
-        f"Overlay → {OUT_OVERLAY}"
+        f"Overlay → {OUT_OVERLAY}\n"
+        f"B&W floorplan → {OUT_BW}"
     )
 
 
@@ -373,8 +406,12 @@ def main(argv: list[str] | None = None) -> int:
         "--compare", action="store_true",
         help="Also save a side-by-side comparison with the density-based mask.",
     )
+    parser.add_argument(
+        "--bw", action="store_true",
+        help="Save a clean black-and-white architectural floorplan render.",
+    )
     args = parser.parse_args(argv)
-    run(compare=args.compare)
+    run(compare=args.compare, bw=args.bw)
     return 0
 
 
