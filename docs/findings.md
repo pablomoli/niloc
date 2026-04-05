@@ -149,3 +149,90 @@ pinned to a single corner of the map (zero signal from VIO in unseen real sessio
   because Hydra changes the cwd before running. Results for this session are in `outputs/2026-04-05/`.
 
 ---
+
+## Fabricated vs Real VIO Validation (issue #29)
+
+### Motivation
+Ep799 encoder improved −4.1 m vs ep99 (training is working), but decoder cold-start shows
+no improvement — it pins to one corner of the map regardless of VIO input. This is
+consistent with a synthetic→real domain gap in the velocity sequence features, not a
+model capacity problem. Before continuing the fabrication sprint, the gap needs to be
+quantified so fixes target the right layer.
+
+### Validation plan (four layers)
+
+**Layer 1 — Raw trajectory statistics**
+Compare GT-derived quantities between fabricated (`outputs/fabricated/avalon_2nd_floor/`)
+and real (`outputs/niloc_input_1hz/`) sessions:
+- Speed distribution (px/s and m/s)
+- Heading change distribution (turn rate per step)
+- Path length distribution
+- Spatial coverage heatmap overlaid on floorplan
+
+**Layer 2 — VIO noise characteristics**
+Compare injected noise segments against real VIO residuals:
+- Drift magnitude over time (metres from GT)
+- Drift direction bias and isotropy
+- Heading error distribution
+
+**Layer 3 — NILOC input features (velocity sequences)**
+Load both sets through `VelocityGridSequence` and compare windowed feature tensors:
+- Mean and variance of vx/vy per window
+- Window-level speed and heading distributions
+- Feature-space PCA/t-SNE coloured by source
+
+**Layer 4 — Spatial coverage**
+- Plot GT paths for fabricated vs real sessions on the floorplan
+- Quantify walkable cells touched by at least one path
+- Flag systematic over/under-representation vs the graph-based uniform target
+
+### Results (2026-04-05, all 800 fabricated sessions vs 5 real sessions)
+
+Script: `preprocess/synthetic_data/validate_fab_vs_real.py`
+Plots: `outputs/validation/fab_vs_real/`
+
+**Layer 1 — Speed is the dominant mismatch**
+
+| Metric | Fabricated GT | Real VIO |
+|--------|--------------|---------|
+| Mean step speed | **1.38 m/s** | **0.55 m/s** |
+| Speed std | 0.17 m/s | 0.26 m/s |
+| p5 speed | 1.24 m/s | 0.05 m/s |
+| p95 speed | 1.54 m/s | 0.89 m/s |
+| Mean path length | 104 m | 129 m |
+
+Fabricated paths run at **2.5× real walking speed**. The source GT paths
+(`niloc/data/avalon/synthetic_output/floorplan_avalon_*.txt`) were generated
+by a simulator running agents at ~14 px/s (1.4 m/s). Real indoor walking
+is 5–6 px/s (0.5–0.6 m/s). This is the primary domain gap.
+
+**Layer 2 — VIO noise (fabricated only)**
+- Final-frame drift: mean=25.2 m, p95=62 m (relative to fast GT paths).
+- Real sessions shipped without GT (RoNIN VIO-only), so Layer 2 cross-comparison
+  is not possible from current data. Collecting sessions with ARKit GT via
+  niloc-collector would enable this comparison.
+
+**Layer 3 — VIO velocity features mirror the speed gap**
+
+| Metric | Fabricated VIO | Real VIO |
+|--------|---------------|---------|
+| Mean step speed | **1.55 m/s** | **0.55 m/s** |
+| Speed p95 | 2.60 m/s | 0.89 m/s |
+| Mean vx | −0.009 m/s | −0.035 m/s |
+| Mean vy | +0.004 m/s | −0.032 m/s |
+
+The velocity sequences the model trains on are centred around 1.55 m/s; at
+inference the model receives sequences around 0.55 m/s — a completely
+different magnitude. This directly explains why the decoder cold-start pins
+to a corner: the VIO input at test time is outside the model's training
+distribution.
+
+**Decision gate outcome: distributions are incompatible — fix speed first**
+- Layer 1 and 3 are both dominated by the speed mismatch.
+- The graph path generator (issue #16) was already calibrated to `avg_speed_px_s=5.0`
+  (0.5 m/s), which matches the real sessions. Regenerating fabricated data using
+  graph paths (issue #1b) is the immediate fix.
+- Issue #18 (IMUDiffusion) should proceed in parallel but a retrain on speed-
+  corrected paths is required before drawing conclusions about noise quality.
+
+---
