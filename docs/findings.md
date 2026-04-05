@@ -55,6 +55,20 @@ inform the paper. Updated as new results come in.
 
 ## Fabrication Pipeline
 
+### Motion-Typed Noise Injection (issue #17)
+- Noise segments classified at build time by GT motion type: 830 straight /
+  737 turn / 6 stationary (out of 1573 total).
+- Classifier uses p90 of per-step heading changes, not the maximum.
+  Using max caused 98% of 150-frame windows to be "turn" (any indoor walk
+  contains at least one >20° step over 150 s). p90 >20° requires >10% of
+  steps to be sharply turning, which correctly identifies wiggling/zig-zag
+  corridors vs long straight runs.
+- Stationary bucket (6 segments) falls below MIN_BUCKET_SIZE=10 → always
+  falls back to full library. Too few stationary recordings in source data.
+- **Implication**: straight-corridor paths now draw noise from straight-
+  corridor segments; turn paths from turn segments. Physically inconsistent
+  cross-injection (sharp-turn drift on a straight corridor) is eliminated.
+
 ### Noise Library (as of fabrication-sprint branch)
 - 1,573 segments from universityA + universityB + officeC
 - Stored in metres, DPI-agnostic (issue #14 fix)
