@@ -71,18 +71,20 @@ inform the paper. Updated as new results come in.
 
 ### Graph-Based Path Generator (issue #16)
 - 200 GT paths generated from 112-node Avalon IMDF graph in ~1 s on M3 MBP.
-- Only 13 retries out of 213 Dijkstra calls — the graph is well-connected;
-  degenerate pairs (adjacent nodes, paths shorter than 4 waypoints) are rare.
-- B-spline arc-length reparameterisation runs without the density-map
-  least-squares optimisation used by `SmoothTrajectory`; adequate because
-  graph nodes are already walkable by construction.
-- Mean path length: ~16 frames at 1 Hz / 12 px·s⁻¹ (~1.2 m/s). Paths are
-  shorter than density-map paths (~31 frames) because the graph spans the full
-  floor — many routed paths cross the building diagonally in fewer steps than
-  a corridor-hugging walk. Consider increasing `avg_speed_px_s` or targeting
-  a minimum frame count if longer sequences are needed for training.
-- **Implication**: Graph paths give uniform spatial coverage; density-map bias
-  is eliminated. Validation pipeline accepted all 10 smoke-test trajectories
-  with mean VIO drift 35.9 px (consistent with noise library statistics).
+- Dijkstra finds shortest routes; many node pairs are adjacent corridor
+  intersections, producing paths as short as 3 frames at 12 px/s. Fixed by:
+  (a) lowering `avg_speed_px_s` to 5.0 (~0.5 m/s), and (b) enforcing
+  `min_frames=60` — short paths are retried rather than accepted.
+- With these settings: mean=74 frames, min=60, max=123 at 1 Hz.
+  Consistent with density-map GT distribution (mean=76, min=30, max=150).
+  1271 Dijkstra calls needed to accept 200 paths (~6× overhead from the filter).
+- The 150-frame noise library window still exceeds the longest graph path (123).
+  The noise injector handles this correctly by truncating the segment.
+- B-spline arc-length reparameterisation without density-map optimisation is
+  adequate because graph nodes are walkable by construction.
+- **Implication**: Graph paths give uniform spatial coverage across the full
+  floor. Density-map bias is eliminated. Validation pipeline accepted all
+  spot-checked trajectories with mean VIO drift 146 px (higher than earlier
+  35.9 px because longer paths accumulate more drift — expected and correct).
 
 ---
