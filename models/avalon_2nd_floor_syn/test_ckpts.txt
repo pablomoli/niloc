@@ -1,2 +1,5 @@
 # epoch  checkpoint_path (relative to this file's directory)
+# baseline: old partial run (epoch 99)
 99 version_0/epoch=99-tr_ratio=1.0.ckpt
+# Ana's 800-epoch run (best final checkpoint, train_enc_loss=5.27)
+799 ../../runs/models/avalon_2nd_floor_syn/version_0/epoch=799-tr_ratio=0.0-train_enc_loss_epoch=5.27.ckpt

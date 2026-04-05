@@ -77,7 +77,7 @@ inform the paper. Updated as new results come in.
 ### Current Training Data
 - 800 fabricated trajectories, 5× noise augmentation
 - Paths from density-map A* (biased toward historically walked corridors)
-- Ana's 800-epoch retrain in progress (started ~2026-04-04)
+- Ana's 800-epoch retrain completed 2026-04-05 (~7.3 hours on NVIDIA GPU)
 
 ### Known Fabrication Bias
 - Density-map sampling over-represents the central corridor and under-represents
@@ -100,5 +100,40 @@ inform the paper. Updated as new results come in.
   floor. Density-map bias is eliminated. Validation pipeline accepted all
   spot-checked trajectories with mean VIO drift 146 px (higher than earlier
   35.9 px because longer paths accumulate more drift — expected and correct).
+
+---
+
+## Baseline Model Validation (2026-04-05)
+
+### Training Run: Ana's 800-Epoch Baseline
+- **Checkpoint**: `runs/models/avalon_2nd_floor_syn/version_0/epoch=799-tr_ratio=0.0-train_enc_loss_epoch=5.27.ckpt`
+- **Final train loss**: 5.27 (encoder loss; no val split exists for fabricated data)
+- **tr_ratio decay**: 1.0 → 0.0 over 800 epochs; teacher forcing fully off from ~epoch 530
+- **Architecture**: transformer_2branch, d_model=128, 8 heads, 2 enc/dec layers
+- **Train set**: 14,032 windows from 800 fabricated trajectories
+
+### Evaluation on Real Sessions (4 Avalon recordings, 2026-03-31)
+Test data: `outputs/niloc_input_1hz/` — real RoNIN-processed sessions from the Avalon 2nd floor.
+Compared epoch=99 (old partial run) vs epoch=799 (Ana's full 800-epoch run).
+
+Cold-start (`start_zero`) metric captured for epoch=799:
+- avg_err = 154.9 px = **15.5 m**
+- AUC = **0.668** (fraction of estimates within acceptance radius)
+
+Full per-mode comparison table incomplete: only the last subprocess's stdout survived a
+`tail -30` capture. Full eval output files are in `outputs/2026-04-05/`. Need a clean rerun
+with full stdout capture to complete the epoch=99 vs epoch=799 comparison table.
+
+**Implication**: 15.5 m cold-start error is a reasonable starting point for a model trained
+only on synthetic data with no real-session fine-tuning. AUC=0.668 means 66.8% of position
+estimates fall within the acceptance radius across the 4 test sessions.
+
+### Infrastructure Changes (2026-04-05)
+- `<path>/` directory renamed to `runs/` — `niloc/config/io/default.yaml` updated accordingly.
+- Ana's hardcoded Linux paths (`/home/anastasia/...`) fixed in extracted hydra configs to
+  relative paths (`outputs/fabricated/avalon_2nd_floor`).
+- `models/avalon_2nd_floor_syn/test_ckpts.txt` updated to include epoch=799 alongside epoch=99.
+- Hydra routing note: `evaluate.py` writes results to `outputs/YYYY-MM-DD/HH-MM-SS/runs/models/...`
+  because Hydra changes the cwd before running. Results for this session are in `outputs/2026-04-05/`.
 
 ---
