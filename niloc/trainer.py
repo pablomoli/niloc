@@ -13,12 +13,16 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.strategies import DDPStrategy
 from omegaconf import open_dict
 
+# Enable TF32 on Ampere+ Tensor Cores for ~20-30% free matmul speedup.
+torch.set_float32_matmul_precision("high")
+
 sys.path.append(osp.join(osp.dirname(osp.abspath(__file__)), '..'))
 from niloc.data.niloc_datamodule import NilocDataModule
 from niloc.network.base_models import ScheduledSamplingModule
 from niloc.network.scheduled_1branch import Scheduled1branchModule
 from niloc.network.scheduled_2branch import Scheduled2branchModule
 from niloc.network.standard_1branch import Standard1branchModule
+from niloc.progress_callback import EpochProgress
 
 task_models = {
     "standard_1branch": Standard1branchModule,
@@ -169,20 +173,31 @@ def launch_train(cfg: DictConfig) -> None:
     logging.info(f'Network {cfg.task} & {cfg.arch.name} loaded: Model type {type(network).__name__}')
 
     # set model save callbacks
-    ckpt_format = "{epoch}-{tr_ratio:.1f}" if issubclass(model_type, ScheduledSamplingModule) else "{epoch}"
+    # Explicit metric names in the template (auto_insert_metric_name=False) so we can
+    # surface both encoder and decoder loss in the filename — an `ls` on the ckpt dir
+    # becomes a useful progress view. See issue #30.
+    if issubclass(model_type, ScheduledSamplingModule):
+        ckpt_format = "epoch={epoch}-tr_ratio={tr_ratio:.1f}"
+    else:
+        ckpt_format = "epoch={epoch}"
+    # Only the 2-branch model logs separate encoder/decoder losses.
+    if model_type is Scheduled2branchModule:
+        ckpt_format += "-enc={train_enc_loss_epoch:.2f}-dec={train_dec_loss_epoch:.2f}"
     # Use the same metric the LR scheduler watches — guarantees the metric exists whether
     # or not a validation set is present (fabricated data has no val split).
     monitor_metric = cfg.train_cfg.scheduler.monitor
     validation_checkpoint_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
         dirpath=filepath,
         monitor=monitor_metric,
-        filename=ckpt_format + "-{" + monitor_metric + ":.2f}",
+        filename=ckpt_format,
+        auto_insert_metric_name=False,
         save_top_k=10,
     )
 
     periodic_checkpoint_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
         dirpath=filepath,
         filename=ckpt_format,
+        auto_insert_metric_name=False,
         save_top_k=-1,  # save all checkpoints
         every_n_epochs=cfg.train_cfg.get("periodic_save_interval", 10),
     )
@@ -221,6 +236,7 @@ def launch_train(cfg: DictConfig) -> None:
             validation_checkpoint_callback,
             periodic_checkpoint_callback,
             early_stopping,
+            EpochProgress(max_epochs=cfg.train_cfg.epochs),
         ],
         **trainer_cfg,
     )
