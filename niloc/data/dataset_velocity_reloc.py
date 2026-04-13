@@ -63,9 +63,9 @@ class VelocityGridSequence(ProcessedSequence):
         target_traj /= self.cell_size
 
         x_coord = np.round(target_traj[:, 0]).astype(int)
-        x_coord = np.clip(x_coord, 0, self.grid_dim[0])
+        x_coord = np.clip(x_coord, 0, self.grid_dim[0] - 1)
         y_coord = np.round(target_traj[:, 1]).astype(int)
-        y_coord = np.clip(y_coord, 0, self.grid_dim[1])
+        y_coord = np.clip(y_coord, 0, self.grid_dim[1] - 1)
 
         targets = x_coord * self.grid_dim[-1] + y_coord
 

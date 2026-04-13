@@ -7,8 +7,11 @@ discrete waypoint sequence into continuous trajectories compatible with
 the fabrication pipeline's inject_noise.fabricate().
 
 Output format matches load_gt_paths() in fabricate.py:
-    (T, 5) float64  columns: [ts, smooth_row, smooth_col, gt_row, gt_col]
-    where smooth_* == gt_* (no noise at this stage).
+    (T, 5) float64  columns: [ts, smooth_x, smooth_y, gt_x, gt_y]
+    where (x, y) = (col, row) in floorplan pixels and smooth_* == gt_* (no
+    noise at this stage). The (col, row) ordering matches the trainer's
+    dataset loader, which computes grid cell index as x * grid_dim[-1] + y
+    with grid_dim[-1] = floorplan height.
 
 Usage (standalone)
 ------------------
@@ -37,6 +40,10 @@ _MIN_WAYPOINTS = 4
 
 # Graph output relative to this file's directory.
 _DEFAULT_GRAPH = Path(__file__).parent / "data" / "avalon_graph.json"
+
+# Avalon 2nd-floor floorplan dimensions in pixels (floorplan.png is 411x221).
+FLOORPLAN_WIDTH = 411
+FLOORPLAN_HEIGHT = 221
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +211,16 @@ def _smooth_and_resample(
     u_uniform = np.interp(ts * speed, arc, u_dense)
     rows, cols = splev(u_uniform, tck)
 
-    traj = np.column_stack([ts, rows, cols, rows, cols]).astype(np.float64)
+    # Clamp B-spline overshoot back inside the floorplan envelope. The spline
+    # occasionally extrapolates ~1 cell past the endpoints which pushes targets
+    # out of grid bounds downstream.
+    rows = np.clip(rows, 0.0, float(FLOORPLAN_HEIGHT - 1))
+    cols = np.clip(cols, 0.0, float(FLOORPLAN_WIDTH - 1))
+
+    # File/trainer convention is (x, y) = (col, row): x is horizontal (0..W),
+    # y is vertical (0..H). Emit columns in that order so the dataset loader's
+    # grid indexing (stride = H) matches the data.
+    traj = np.column_stack([ts, cols, rows, cols, rows]).astype(np.float64)
     return traj
 
 
@@ -382,8 +398,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for i, traj in enumerate(paths):
             print(f"Path {i:3d}: {len(traj):4d} frames  "
-                  f"row=[{traj[:,3].min():.1f}, {traj[:,3].max():.1f}]  "
-                  f"col=[{traj[:,4].min():.1f}, {traj[:,4].max():.1f}]")
+                  f"x=[{traj[:,3].min():.1f}, {traj[:,3].max():.1f}]  "
+                  f"y=[{traj[:,4].min():.1f}, {traj[:,4].max():.1f}]")
 
     return 0
 
