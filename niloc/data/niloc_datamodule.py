@@ -111,19 +111,26 @@ class NilocDataModule(pl.LightningDataModule):
         print(len(self.train_dataset), len(self.val_dataset))
 
     def train_dataloader(self) -> DataLoader:
+        nw = self._cfg.train_cfg.num_workers
         train_loader = DataLoader(
             self.train_dataset,
             batch_size=self._cfg.data.batch_size,
-            num_workers=self._cfg.train_cfg.num_workers,
+            num_workers=nw,
             shuffle=True,
+            pin_memory=True,
+            persistent_workers=nw > 0,
+            drop_last=True,
         )
         return train_loader
 
     def val_dataloader(self) -> DataLoader:
+        nw = self._cfg.train_cfg.num_workers
         val_loader = DataLoader(
             self.val_dataset,
             batch_size=self._cfg.data.batch_size,
-            num_workers=self._cfg.train_cfg.num_workers,
+            num_workers=nw,
+            pin_memory=True,
+            persistent_workers=nw > 0,
         )
         return val_loader
 
