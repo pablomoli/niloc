@@ -1,0 +1,2 @@
+# Heatmap visualization: epoch 459 (best decoder checkpoint from 2026-04-13 retrain).
+459 ../../outputs/2026-04-12/23-25-31/runs/models/avalon_2nd_floor_syn/version_0/epoch=459-tr_ratio=0.2.ckpt
