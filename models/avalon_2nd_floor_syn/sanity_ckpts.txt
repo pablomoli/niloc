@@ -1,4 +1,5 @@
-# Sanity check: epoch 459 (closest saved to dec_loss minimum at 457) and 799 (final)
-# from the 2026-04-13 retrain with axis-swap fix.
-459 ../../outputs/2026-04-12/23-25-31/runs/models/avalon_2nd_floor_syn/version_0/epoch=459-tr_ratio=0.2.ckpt
-799 ../../outputs/2026-04-12/23-25-31/runs/models/avalon_2nd_floor_syn/version_0/epoch=799-tr_ratio=0.0.ckpt
+# Sanity check: best decoder checkpoint from 2026-04-13 cosine-schedule retrain.
+# dec_loss=8.02, compared against ep=689 and ep=799 to confirm model is stable
+# near its best state and not bouncing.
+689 ../../outputs/2026-04-13/21-59-51/runs/models/avalon_2nd_floor_syn/version_0/epoch=689-tr_ratio=0.0-enc=10.08-dec=8.02.ckpt
+799 ../../outputs/2026-04-13/21-59-51/runs/models/avalon_2nd_floor_syn/version_0/epoch=799-tr_ratio=0.0-enc=10.07-dec=8.32.ckpt

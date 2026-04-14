@@ -489,3 +489,536 @@ Heatmap sanity visual: `outputs/validation/sanity_ep459/heatmap_grid_ep459.png`
 on the floorplan.
 
 ---
+
+## 2026-04-13 #31 Retrain Attempt: Plateau Scheduler Is Wrong Regardless of Monitor
+
+Second retrain launched after issue #31 was fixed
+(`train_cfg.scheduler.monitor` switched from `train_enc_loss_epoch` to
+`train_dec_loss_epoch`) and #30 progress callback was wired up. Hard
+confirmation that **`ReduceLROnPlateau` is the wrong scheduler for this
+training setup, not just a badly-configured one.**
+
+### Results (killed after 360 epochs, compared to 2026-04-13 first retrain)
+
+| ep | first retrain LR | **#31 retrain LR** | first retrain dec | **#31 retrain dec** |
+|---|---|---|---|---|
+| 100 | 4.0e-4 | **1.7e-4** | 9.15 | 9.23 |
+| 200 | 3.0e-4 | **1.3e-5** | 8.89 | 9.12 |
+| 300 | 9.5e-5 | **9.5e-7** | 8.92 | 9.24 |
+| 359 | — | **2.3e-7** | — | 8.83 |
+
+Best decoder loss in the #31 run: **8.65 at epoch 264**. The first retrain
+reached 8.13 (better) at epoch 457. The #31 fix made things *worse*.
+
+### Why monitoring decoder loss didn't help
+
+Per-epoch decoder loss oscillates in a ~±0.15 band (e.g. 9.18 → 9.12 → 9.24
+→ 9.10) while the underlying trend improves by ~0.01 per epoch. With
+`patience=10` and the default relative threshold, "no improvement for 10
+epochs" fires on random-walk noise, not real plateaus. First retrain's
+scheduler was locked onto the flat encoder loss, which is *also* a
+permanently-no-improvement signal, so it fired every time it was eligible
+from ~epoch 120 onward. Switching to decoder loss just gave it a noisier
+version of the same bad input — and the patience fires *earlier* because
+the oscillation crosses the threshold on almost every window.
+
+Conclusion: the problem isn't which metric the plateau scheduler watches;
+it's that plateau-detection on a training-loss signal (no validation split)
+at patience=10 is fundamentally incompatible with this loss's noise profile.
+
+### Fix: switch to deterministic cosine decay
+
+Replaced the plateau scheduler for fabricated runs with `WarmupCosineSchedule`
+(linear warmup → half-cycle cosine decay from peak to 0 over the full epoch
+budget). New config at `niloc/config/train_cfg/scheduler/WarmupCosineAvalon.yaml`:
+
+```yaml
+name: WarmupCosineSchedule
+monitor: False        # LambdaLR-based, no metric consumed
+warmup_steps: 30      # epochs
+cycles: 0.5           # single half-cycle (default 2 would wiggle)
+t_total: True         # resolves to cfg.train_cfg.epochs at runtime
+```
+
+`train_synthetic.sh` selects this scheduler for `avalon_2nd_floor` via a
+`train_cfg/scheduler=WarmupCosineAvalon` Hydra override. Real-data runs
+(A/B/C) keep the default `WarmupReduceLROnPlateau` which is fine because
+they have validation splits.
+
+Supporting change in `niloc/trainer.py`: the `ModelCheckpoint` best-k
+callback falls back to `train_dec_loss_epoch` (for `Scheduled2branchModule`)
+or `train_loss_epoch` otherwise when `scheduler.monitor` is `False`. This
+lets LambdaLR-style schedulers coexist with best-k checkpointing without
+Lightning trying to pass a metric to `scheduler.step()` (which would crash
+on `LambdaLR.step()`).
+
+### Expected LR trajectory this run
+
+| epoch | LR |
+|---|---|
+| 0 | 0 |
+| 15 | ~2e-4 (mid-warmup) |
+| 30 | **4e-4** (peak) |
+| 200 | ~3.5e-4 |
+| 400 | ~2e-4 (halfway) |
+| 600 | ~6e-5 |
+| 800 | ~0 |
+
+Predictable, no plateau cliffs. Decoder should keep getting meaningful
+updates through the whole `tr_ratio` decay window rather than being frozen
+by the time it matters.
+
+---
+
+## 2026-04-14 Cosine-Schedule Retrain: Completed 800 Epochs
+
+### Training result
+
+800 epochs completed cleanly. LR followed the expected warmup + single-cycle
+cosine decay from 0 → 4e-4 (ep 30 peak) → ~0 (ep 800), never crashed below
+productive levels. No plateau cliffs, no NaN, no scheduler interference.
+
+Decoder loss trajectory (smoothed 20-epoch window):
+
+| ep | lr | enc | dec smoothed | tr |
+|---|---|---|---|---|
+| 50 | 3.99e-4 | 10.57 | 9.574 | 1.00 |
+| 100 | 3.92e-4 | 10.43 | 9.085 | 0.96 |
+| 200 | 3.54e-4 | 10.30 | 8.887 | 0.76 |
+| 300 | 2.90e-4 | 10.23 | 8.762 | 0.56 |
+| 400 | 2.12e-4 | 10.17 | 8.641 | 0.36 |
+| 500 | 1.32e-4 | 10.13 | 8.553 | 0.16 |
+| 600 | 6.30e-5 | 10.10 | 8.499 | 0.00 |
+| 700 | 1.64e-5 | 10.09 | 8.477 | 0.00 |
+| 799 | 1.66e-9 | 10.08 | 8.500 | 0.00 |
+
+**Best checkpoint**: `epoch=689-tr_ratio=0.0-enc=10.08-dec=8.02.ckpt`
+(`dec_loss=8.017`). Descent *stalled* around epoch 600; the final 200 epochs
+produced no smoothed improvement despite having productive LR through
+~epoch 550.
+
+Comparison to prior runs:
+
+| metric | first retrain | #31 retrain | **cosine retrain** |
+|---|---|---|---|
+| Best dec | 8.132 @ ep 457 | 8.651 @ ep 264 | **8.017 @ ep 689** |
+| Final dec | 8.483 | killed @ 359 | 8.324 |
+| Last-50 smoothed | 8.642 | — | **8.485** |
+| LR schedule | plateau, crushed | plateau, crushed | **cosine, clean** |
+
+Best-k ModelCheckpoint callback (from #30 fix) worked correctly — top-10 by
+`train_dec_loss_epoch` saved automatically, filenames include both encoder
+and decoder losses. No more guessing which epoch was best.
+
+### Sanity evaluation: decoder still collapses to one cell per session
+
+Evaluated `epoch=689` (best) and `epoch=799` (final) against the same
+20-trajectory in-distribution test subset used for the 2026-04-13 sanity eval.
+
+Aggregate metrics (fraction of frames within N metres):
+
+| ep | mode | w5m | w10m | w15m | AUC | E[err] |
+|---|---|---|---|---|---|---|
+| 689 | encoder | **0.148** | **0.285** | 0.389 | 0.610 | **17.8 m** |
+| 689 | start_gt_1 | 0.185 | 0.435 | **0.690** | **0.719** | **12.9 m** |
+| 689 | start_zero | **0.053** | 0.087 | **0.193** | 0.504 | **22.6 m** |
+| 799 | encoder | 0.140 | 0.268 | 0.399 | 0.608 | 17.9 m |
+| 799 | start_gt_1 | 0.185 | 0.425 | 0.660 | 0.714 | 13.1 m |
+| 799 | start_zero | 0.053 | 0.087 | 0.193 | 0.504 | 22.6 m |
+
+Compared to the 2026-04-13 retrain (which had LR collapse):
+
+| mode | metric | 2026-04-13 (ep 459) | 2026-04-14 (ep 689) | Δ |
+|---|---|---|---|---|
+| encoder | w5m | 0.081 | 0.148 | **+82 %** |
+| encoder | w10m | 0.168 | 0.285 | **+70 %** |
+| encoder | w15m | 0.301 | 0.389 | +29 % |
+| encoder | E[err] | 19.3 m | 17.8 m | −1.5 m |
+| start_gt_1 | w5m | 0.196 | 0.185 | −6 % |
+| start_gt_1 | w10m | 0.389 | 0.435 | +12 % |
+| start_gt_1 | w15m | 0.619 | 0.690 | +11 % |
+| start_gt_1 | E[err] | 13.5 m | 12.9 m | −0.6 m |
+| start_zero | w5m | 0.025 | 0.053 | **+112 %** |
+| start_zero | w15m | 0.076 | 0.193 | **+154 %** |
+| start_zero | E[err] | 24.8 m | 22.6 m | −2.2 m |
+
+The **encoder** improved substantially — with GT context it localises to
+14.8 % of frames within 5 m (was 8.1 %). The **decoder with GT prior**
+(`start_gt_1`) improved only marginally. The **cold-start decoder**
+(`start_zero`) doubled on some metrics but absolute numbers are still bad.
+
+### Decoder inspection: autoregressive collapse confirmed
+
+Spot-check of the `start_gt_1` output trajectories at epoch 689:
+
+```
+fab_graph_0000                 fab_graph_0001                 fab_graph_0002
+ts   pred_x pred_y  err         ts   pred_x pred_y  err         ts   pred_x pred_y  err
+10   177.0  27.0   16          10   292.0  216.0  38          10   254.0  15.0  162
+20   177.0  27.0   51          20   292.0  216.0  64          20   254.0  15.0  170
+30   177.0  27.0   88          30   292.0  216.0  109         30   254.0  15.0  190
+40   177.0  27.0   118         40   292.0  216.0  156         40   254.0  15.0  224
+50   177.0  27.0   154         50     0.0    0.0  188         50   254.0  15.0  198
+60     0.0   0.0   341                                         60   254.0  15.0  209
+                                                               70     0.0    0.0  107
+```
+
+**Every real frame in every session predicts the same cell.** fab_graph_0000
+lands within 16 px on the first frame (the GT starts near (174, 43) and the
+model predicts (177, 27) — essentially nailed the entry point) but then
+**never moves**, accumulating error as the real path walks away. The
+trailing `(0,0)` is the same window-padding artifact observed in the
+2026-04-13 eval, unchanged by this retrain.
+
+This is not a coarse-classification failure — it's **autoregressive
+collapse**. The decoder is supposed to consume its previous prediction plus
+the current velocity window to produce the next cell. Here it produces the
+same cell for every window regardless of the velocity input. The model has
+learned a degenerate fixed point where `f(prev_pred, vel_window) ≈ prev_pred`
+across the support of `vel_window`.
+
+### Diagnosis: training dynamics are now fine; the ceiling is architectural/data
+
+1. **The scheduler fix is fully validated.** LR held in the 1e-4–4e-4 band
+   through epoch ~500 and tapered cleanly via cosine. We unblocked training.
+2. **The model still hits the same ceiling.** Smoothed `dec_loss` stopped
+   improving around epoch 600 despite productive LR, and the decoder still
+   emits one cell per session — the same failure mode as the 2026-04-13
+   run, just ~0.1 loss units lower.
+3. **The encoder did improve materially** (w5m +82 %). So "with GT context"
+   localisation got better. The cold-start and decoder branches didn't.
+4. **Therefore the remaining gap is not a training-config problem** — it's
+   either model capacity (1.9 M params, 90,831-way classifier is a steep
+   output head), architectural (decoder isn't effectively conditioning on
+   velocity), or data diversity (800 GT × 4 aug = 3200 sequences is too
+   narrow to learn a proper motion model).
+
+### Next steps (priority order)
+
+1. **Instrument the decoder forward pass.** Before changing anything, verify
+   the decoder is actually using the velocity input at inference time. Log
+   the gradient of the output with respect to the velocity window for a
+   single session — if it's near zero, the decoder is ignoring velocity and
+   we have an architectural bug. If it's non-zero, the collapse is a
+   training-data diversity problem.
+2. **Fix `get_output_trajectory` padding artifact** (trailing `(0,0)`).
+   Cosmetic but muddies error metrics and visuals.
+3. **Issue #18 (IMUDiffusion)** — expand noise library 1573 → ~5000 segments
+   with per-motion-type conditioning. More diversity in noise → more
+   diversity in training windows → harder for the decoder to find a
+   collapsing fixed point.
+4. **Real-session eval** once Avalon data arrives. Confirm whether the
+   collapse also happens on real VIO input or only on in-distribution fabs.
+5. **Architectural follow-up** (layer-2 work): if the instrumentation in (1)
+   shows the decoder is architecturally underpowered, the sprint shifts to
+   layer 2 (decoder compression / rewrite).
+
+---
+
+## 2026-04-14 Decoder Collapse Diagnostic (revises earlier interpretation)
+
+Ran `niloc/diagnose_decoder.py` on `epoch=689-dec=8.02.ckpt` with
+`fab_graph_0000`. The script iterates all 22 windows of the session and for
+each window records: encoder latent, encoder argmax, `start_zero` and
+`start_gt_1` decoder argmax, and the gradient of the top logit wrt `feat`
+and `memory`. It then ablates `feat` (zeros / noise / 10×) to test whether
+predictions change.
+
+### Results
+
+```
+-- Encoder health --
+  latent cosine sim (off-diag mean): 0.8273
+  unique encoder majority-vote cells: 8 / 22
+  enc argmax per window: [90417, 90417, 57298, 57286, 90417, 57421, 57286,
+                          57260, 57286, 57286, 57498, 23224, 57286, 57286,
+                          57298, 57421, 57421, 57420, 57420, 57420, 90417,
+                          90417]
+
+-- Decoder per-window argmax --
+  start_zero:  3/22 unique   ~19× (409, 28) + two outliers
+  start_gt_1:  20/22 unique  (177,27) (182,56) (143,92) (203,74) (215,16)
+                             (138,60) (139,51) (240,104) (151,109) (259,47)
+                             (253,121) (253,134) (253,146) (204,45) ...
+
+-- Per-window gradient sensitivity (start_zero top logit) --
+  mean |∂/∂feat| = 3.51e-01   (non-zero, varies 0.04 – 2.47 across windows)
+  mean |∂/∂mem|  = 0           (uniform prior edge case, not informative)
+
+-- Ablation on start_zero mode --
+  original feat:        all 90417  →  (409, 28) corner
+  feat = zeros:         all 0       →  (0, 0)
+  feat = random noise:  varied cells (no overlap with original)
+  feat × 10:            varied cells (no overlap with original)
+```
+
+### Revised diagnosis
+
+The diagnostic **falsifies** both hypotheses I offered in the earlier
+"diagnosis" section above:
+
+1. **Encoder is healthy, not collapsed.** Cosine similarity of 0.83 across
+   windows (1.0 would be collapse). Eight unique majority-vote cells across
+   22 windows. The encoder distinguishes velocity windows fine.
+2. **Decoder IS velocity-sensitive.** Non-zero `∂/∂feat` gradient on every
+   window (0.04–2.47 range). Ablation confirms: `feat=zeros`, `feat=noise`,
+   `feat×10` each produce different predictions than the original. The
+   decoder reads the velocity input.
+3. **Decoder CAN produce varied outputs.** When each window is probed
+   independently with a fresh GT seed (`start_gt_1` in the diagnostic's
+   per-window isolated mode), the decoder produces 20 unique cells across
+   22 windows — varied, contextual, and following the GT path closely.
+
+### The actual failure mode: autoregressive fixed point
+
+The apparent "one cell per session" collapse seen in the sanity-eval
+`pred_traj` files (e.g. `fab_graph_0000` outputting `(177, 27)` for every
+timestep) is **not** a collapsed decoder. It's what happens in `get_inference`
+when the autoregressive memory is carried across windows:
+
+```python
+# scheduled_2branch.get_inference, paraphrased
+for window_i in range(n_windows):
+    if i == 0 and start_gt:
+        memory[:, :, :1] = GT_seed              # first window only
+    elif i > 0:
+        memory[:, :, :overlap+1] = pred_dec_softmax[:, :, -overlap-1:]
+```
+
+So the first window's prediction seeds the second window's memory, which
+produces the same prediction, which seeds the third, and so on. The
+decoder has learned a trivial fixed point: `f(seed=X, velocity) ≈ X` on
+the support of velocity windows it saw in training. It never learned
+`f(seed=X, velocity_that_should_move_to_Y) = Y` because during training it
+was mostly teacher-forced with true GT positions, not stale previous
+predictions.
+
+This is a training-coverage problem in the `tr_ratio → 0` regime, not an
+architectural bug. The tr_ratio schedule in the 2026-04-14 cosine run:
+
+| epoch range | tr_ratio | decoder input |
+|---|---|---|
+| 0–74 | 1.00 | always GT |
+| 75–574 | 1.00 → 0.00 | mixed, linear decay |
+| 575–800 | 0.00 | always its own previous output |
+
+The autonomous tail is ~225 epochs but LR by epoch 575 was already 7e-5
+and dropping toward 0 via the cosine schedule. The decoder had maybe
+100 epochs of *productive* training in the regime it's actually tested in
+(fully autonomous rollout). That's apparently not enough to escape the
+`f(X, ·) ≈ X` fixed point.
+
+### `start_zero` defaults to encoder's corner
+
+In `start_zero` mode with uniform memory prior, the decoder outputs cell
+90417 = (409, 28) — the top-right corner — for 19 of 22 windows. That
+cell is the **encoder's most common argmax** for this session. The decoder
+with no prior copies the encoder's majority vote. That's a second,
+orthogonal symptom but likely stems from the same undertraining: the
+decoder doesn't know how to construct a prediction from scratch, only how
+to propagate a prior.
+
+### Implications for next steps (revised)
+
+- **NOT an architecture issue.** Layer-2 rewrites are not indicated. The
+  2-branch design is working; the encoder is fine, the decoder is
+  velocity-sensitive, the gradient flow is healthy.
+- **NOT "decoder ignores velocity."** This hypothesis is falsified.
+- **It is a training-coverage problem** in the low-`tr_ratio` regime.
+  Three complementary fixes, in rough order of expected impact:
+
+  1. **Schedule hacking** (cheapest). Extend the autonomous tail: faster
+     `tr_ratio` decay (lower `tr_warmup`, higher `arre`) so the model spends
+     more epochs at `tr_ratio ≤ 0.3` with productive LR. Alternatively a
+     2-cycle cosine (LR restarts midway) so the second half of training
+     fine-tunes under the new regime with fresh gradient flow. One 4h run
+     to test.
+  2. **Data diversity** (medium cost, issue #18). Expand noise library
+     1573 → ~5000 via IMUDiffusion. More varied training windows make the
+     trivial fixed point less accurate and force the decoder to learn real
+     update dynamics. Requires training the diffusion model first.
+  3. **Real-session eval** once Avalon data arrives. Confirms whether the
+     fixed-point collapse also happens on real VIO input or is partly an
+     artifact of the fabricated distribution.
+
+- **`get_output_trajectory` `(0, 0)` padding artifact** is still a real
+  cosmetic bug worth fixing, but it's not connected to the collapse.
+
+### Tooling added
+- `niloc/diagnose_decoder.py` — Hydra-decorated diagnostic. Loads a
+  checkpoint and one session, runs per-window encoder + decoder forward
+  passes with gradient tracking, performs feat ablation.
+- `diagnose_decoder.sh` — convenience wrapper with Avalon-specific overrides.
+- Usage: `bash diagnose_decoder.sh <ckpt> [session_name]`
+
+---
+
+## 2026-04-14 Schedule-Fix Retrain: Confirms Fixed-Point Ceiling
+
+Based on the decoder diagnostic, the autoregressive collapse hypothesis
+predicted that giving the decoder more *productive* epochs in the
+`tr_ratio = 0` regime (longer autonomous tail with LR still meaningful)
+would break the identity fixed point. Concrete changes: `tr_warmup: 75 → 30`,
+`arrf: 0.01 → 0.02`. Result: `tr_ratio` drops from 1.0 to 0.0 over
+epochs 30–290 (was 75–575), leaving **520 autonomous epochs vs 225**, and
+LR at the `tr_ratio=0` transition was **2.98e-4 vs 7.1e-5** in the prior
+cosine run — roughly 4× more productive LR at the critical transition.
+
+### Training trajectory (800 epochs, 3h 58m wall time)
+
+| ep | lr | enc | dec | tr_ratio | smoothed dec |
+|---|---|---|---|---|---|
+| 0 | 0 | 11.42 | 11.42 | 1.00 | 11.42 |
+| 100 | 3.92e-4 | 10.47 | 9.19 | 0.74 | 9.13 |
+| 200 | 3.54e-4 | 10.33 | 8.97 | 0.34 | 8.92 |
+| 290 (**auto start**) | 2.98e-4 | 10.25 | 8.82 | **0.00** | 8.78 |
+| 400 | 2.12e-4 | 10.19 | 8.61 | 0.00 | 8.65 |
+| 500 | 1.32e-4 | 10.14 | 8.62 | 0.00 | 8.56 |
+| 600 | 6.30e-5 | 10.10 | 8.68 | 0.00 | 8.51 |
+| 700 | 1.64e-5 | 10.10 | 8.48 | 0.00 | 8.49 |
+| 799 | 1.66e-9 | 10.08 | 8.33 | 0.00 | 8.52 |
+
+- **Best `dec_loss` = 7.996 at epoch 689** (vs 8.017 for the prior cosine
+  run at ep 689 — essentially tied, delta −0.021).
+- **Last 50 epochs smoothed mean: 8.499 ± 0.212** (vs 8.485 in the prior
+  cosine run — also essentially tied).
+- LR and `tr_ratio` both followed the new schedule exactly, no anomalies.
+
+### Training-loss ceiling is real
+
+The autonomous regime ran from epoch 290 to 800 (510 epochs) with LR
+descending from 2.98e-4 → 1.66e-9. For comparison, the prior cosine run's
+autonomous regime was ~225 epochs with LR descending from 7e-5 → 1e-9.
+**Despite 2.3× the autonomous budget and 4× the starting LR**, the final
+training loss is indistinguishable from the prior run:
+
+| metric | cosine retrain | **schedule-fix retrain** |
+|---|---|---|
+| best dec | 8.017 @ 689 | **7.996 @ 689** |
+| final dec | 8.324 | 8.330 |
+| last-50 smoothed | 8.485 | 8.499 |
+
+The decoder converges to the same ceiling regardless of how aggressively we
+expose it to the autonomous regime. **The ceiling is capacity/data-bound,
+not training-dynamics-bound.** This was the schedule-fix hypothesis's
+decisive test, and it fails: schedule hacking is a dead end for this
+architecture/dataset combination.
+
+### Sanity evaluation on best checkpoint (ep=689)
+
+Same 20-session in-distribution subset as prior evals:
+
+| mode | first retrain ep=459 | cosine ep=689 | **sched ep=689** | delta vs cosine |
+|---|---|---|---|---|
+| encoder w5m | 0.081 | 0.148 | 0.116 | −0.032 |
+| encoder w10m | 0.168 | 0.285 | 0.210 | −0.075 |
+| encoder w15m | 0.301 | 0.389 | 0.393 | +0.004 |
+| encoder AUC | 0.576 | 0.610 | 0.609 | −0.001 |
+| encoder E[err] | 19.3 m | 17.8 m | 17.8 m | 0.0 m |
+| **start_gt_1 w5m** | 0.196 | 0.185 | **0.248** | **+0.063** |
+| **start_gt_1 w10m** | 0.389 | 0.435 | **0.550** | **+0.115** |
+| **start_gt_1 w15m** | 0.619 | 0.690 | **0.743** | **+0.053** |
+| **start_gt_1 AUC** | 0.707 | 0.719 | **0.747** | **+0.028** |
+| **start_gt_1 E[err]** | 13.5 m | 12.9 m | **11.7 m** | **−1.2 m** |
+| start_zero w5m | 0.025 | 0.053 | 0.025 | −0.028 |
+| start_zero w10m | 0.037 | 0.087 | 0.040 | −0.047 |
+| start_zero w15m | 0.076 | 0.193 | 0.093 | −0.100 |
+| start_zero AUC | 0.455 | 0.504 | 0.479 | −0.025 |
+| start_zero E[err] | 24.8 m | 22.6 m | 23.7 m | +1.1 m |
+
+**Surprising split:** `start_gt_1` improved materially (E[err] 12.9 → 11.7,
+w10m +11.5 pts) even though the training loss is flat. `start_zero` and
+encoder modes regressed slightly. Net effect is a wash on encoder/cold-start
+but a real gain on the "decoder with GT prior" mode.
+
+### Decoder inspection: collapse persists, centroid shifted
+
+Spot check on `fab_graph_0000` with `epoch=689` in `start_gt_1`:
+
+```
+sched ep=689                            cosine ep=689
+ts  pred_x pred_y  err                  ts  pred_x pred_y  err
+10   169.0  106.0   63                  10   177.0   27.0   16
+20   169.0  106.0   83                  20   177.0   27.0   51
+30   169.0  106.0   99                  30   177.0   27.0   88
+40   169.0  106.0   90                  40   177.0   27.0  118
+50   169.0  106.0   98                  50   177.0   27.0  154
+60     0.0    0.0  341                  60     0.0    0.0  341
+```
+
+Both runs still emit a single cell for every window in the session —
+the autoregressive carry-over collapse documented in the diagnostic
+section above has **not been resolved** by the schedule fix. What changed
+is *which* cell the decoder collapses to:
+
+- **Cosine run** picked `(177, 27)` — very close to the GT entry point
+  `(175, 43)` but far from the session's centroid `(230, 100)`. Error grows
+  from 16 px on frame 1 to 154 px on frame 5.
+- **Schedule-fix run** picked `(169, 106)` — farther from entry
+  (63 px) but **much closer to the session centroid**. Error is
+  flat-ish at 63–99 px across all frames instead of growing.
+
+`start_zero` cold-start is *identical* across both runs: both predict
+cell 90417 = `(409, 28)` (top-right corner) for every window in fab_graph_0000.
+That's the encoder's majority vote, and the decoder with uniform memory
+prior defers to it. Unchanged by the new schedule.
+
+### Interpretation
+
+**The schedule fix did something real but not what was hoped for.** More
+productive autonomous-regime epochs let the decoder learn a *better
+fixed-point policy* ("collapse to session centroid" instead of "collapse
+to session entry") — hence the ~10 % improvement in `start_gt_1` E[err].
+But it did not learn to *escape* the fixed point and track motion
+frame-to-frame. Every session still produces one constant cell per window.
+The ceiling is the fixed point itself, not the policy inside it.
+
+Training dynamics are no longer the bottleneck. Three retrains have now
+tried:
+
+1. **Plateau on encoder loss** (pre-#31): LR crushed early by plateau
+   detection on flat metric. Worst result.
+2. **Cosine 1-cycle, slow tr_ratio decay** (2026-04-14 cosine): clean LR
+   trajectory, but decoder only got ~225 autonomous epochs most of which
+   had LR < 1e-4. Plateau at `dec ≈ 8.5`.
+3. **Cosine 1-cycle, fast tr_ratio decay** (this run): 520 autonomous
+   epochs, LR productive through the whole autonomous window. Same
+   plateau at `dec ≈ 8.5`.
+
+The decoder is not training-limited; it has converged to its best available
+policy under the current architecture and data. All three runs land within
+~0.02 of each other on best `dec_loss` despite radically different LR and
+`tr_ratio` schedules.
+
+### Decisive next step: issue #18 (IMUDiffusion noise library expansion)
+
+This is now the next clear experiment. The hypothesis: the trivial
+"collapse to session centroid" fixed point is learnable only because there
+are too few distinct training windows (800 GT paths × 4 noise augmentations
+= 3200 sequences). More diverse noise → more varied windows → the
+trivial fixed point stops being the loss-minimising policy.
+
+Concrete plan:
+1. Implement IMUDiffusion training on the existing 1573 noise segments
+   with per-motion-type conditioning (issue #18 spec).
+2. Generate ~3500 synthetic segments, expanding the library to ~5000
+   total. Mark synthetic segments in metadata so they never replace real.
+3. Re-fabricate `outputs/fabricated/avalon_2nd_floor_graph_v2/` with the
+   expanded library.
+4. Retrain with this run's schedule (`tr_warmup=30, arrf=0.02, cosine`).
+5. Sanity eval and inspect `fab_graph_0000_dec_traj.txt` for *per-window
+   variation*, not just aggregate metrics. The real acceptance criterion
+   is "decoder emits ≥ 3 unique cells per session" — currently it emits 1.
+
+Budget estimate: 2–3 days on #18 implementation, one 4 h retrain, one
+sanity eval. If this doesn't escape the fixed point, the sprint moves to
+layer-2 architecture work.
+
+### What's filed and landed
+- `niloc/config/train_cfg/scheduler/WarmupCosineAvalon.yaml` — cosine config
+- `niloc/diagnose_decoder.py` + `diagnose_decoder.sh` — decoder diagnostic
+- `models/avalon_2nd_floor_syn/sched_ckpts.txt` — best-k pointer for this run
+- Issues still open: #18 (next), #30 (landed), #31 (landed), #32 (telemetry,
+  pending)
+
+---

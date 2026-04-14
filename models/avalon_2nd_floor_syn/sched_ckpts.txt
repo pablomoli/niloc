@@ -1,0 +1,5 @@
+# Schedule-fix retrain (2026-04-14): tr_warmup=30, arrf=0.02, cosine LR.
+# Best by dec_loss is ep=689 (dec=7.996, essentially tied with ep 689 from
+# the prior cosine run at 8.017).
+689 ../../outputs/2026-04-14/07-16-52/runs/models/avalon_2nd_floor_syn/version_0/epoch=689-tr_ratio=0.0-enc=10.10-dec=8.00.ckpt
+799 ../../outputs/2026-04-14/07-16-52/runs/models/avalon_2nd_floor_syn/version_0/epoch=799-tr_ratio=0.0-enc=10.08-dec=8.33.ckpt
