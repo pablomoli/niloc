@@ -1022,3 +1022,85 @@ layer-2 architecture work.
   pending)
 
 ---
+
+## 2026-04-14 IMUDiffusion First Training Run (issue #18)
+
+Conditional DDPM implementation landed in
+`preprocess/synthetic_data/imu_diffusion/`. First training run:
+
+- **Training time:** 200 epochs in **2 min 24 s** on the RTX 3070 Laptop.
+  ~100× faster than the localisation training because the output is
+  `(batch, 2, 149)` (~19k floats per step) vs the localisation model's
+  `(batch, 90831, 20)` (~465M floats per step), plus 15× fewer total
+  optimizer steps (4800 vs 70800).
+- **Model:** 4.13 M params. 3-level 1D U-Net with FiLM conditioning,
+  base_channels=64, channel_mults=(1,2,4).
+- **Loss trajectory:** 1.048 → ~0.22 by epoch 20, plateaued through ep 200.
+  Final loss 0.229, EMA decay 0.999.
+- **Checkpoint:** `preprocess/data/imu_diffusion_ckpts/model.pt`
+
+### QC against the real noise library
+
+250-sample QC batch (100 straight, 100 turn, 50 stationary) compared
+against the real 1573-segment library:
+
+| bucket | real per-step mag (mean/std) | synth (mean/std) | delta |
+|---|---|---|---|
+| straight | 0.797 / 0.350 | 0.383 / 0.162 | **−52 %** |
+| turn | 0.775 / 0.532 | 0.413 / 0.307 | **−47 %** |
+| stationary | 0.321 / 0.426 | 0.301 / 0.353 | −6 % |
+
+Final-drift stats show the same pattern:
+
+| bucket | real final drift (mean/std/p95) | synth |
+|---|---|---|
+| straight | 38.3 / 22.9 / 74.2 m | 24.7 / 14.7 / 50.1 m |
+| turn | 28.0 / 28.4 / 82.9 m | 15.1 / 9.2 / 29.1 m |
+| stationary | 9.8 / 2.6 / 14.0 m | 12.6 / 7.2 / 23.5 m |
+
+### Visual QC: structural match, magnitude undershoot
+
+`outputs/validation/imu_diffusion/real_vs_synth_qc.png` — 3 × 8 grid of
+real (green) vs synthetic (red) trajectories per motion bucket.
+
+- **Straight samples** are visibly straighter/less jagged, some with
+  direction changes consistent with the real set. Spatial extent is
+  clearly smaller (axes range ~half of real).
+- **Turn samples** show looping/coiling structure similar to real turns
+  but tighter.
+- **Stationary samples** cluster near the origin in both real and synth;
+  synth is actually slightly larger-spread here because the 6-sample
+  real training support is so narrow the model had nothing to lock onto.
+
+### Interpretation
+
+The DDPM learned the **structural character** of each motion type but is
+producing trajectories at a **smaller spatial scale**. Likely causes:
+underfitting (loss plateaued at 0.22, not zero), aggressive EMA smoothing
+the high-magnitude tail, or MSE's natural preference for predicting the
+posterior mean when uncertain. See issue #33 for the full list of
+follow-up experiments (longer training, cosine beta schedule, v-param,
+classifier-free guidance, raw-weight sampling).
+
+### Decision: proceed to full generation with current checkpoint
+
+The primary goal of #18 is to **break the localisation decoder's
+autoregressive fixed point** by giving it more diverse training windows.
+Distribution match is a means to that end, not the end itself. Softer
+synthetic noise is still valid noise — it adds window-level structural
+diversity regardless of drift magnitude, and softer noise may actually
+be beneficial given that real Avalon VIO speed is 0.55 m/s while the
+current graph-fabricated VIO is 0.90 m/s (findings above).
+
+Shipping the 200-epoch checkpoint to the re-fabrication + localisation
+retrain step. If the retrain escapes the fixed point (decoder emits ≥ 3
+unique cells per session in sanity eval), we win without needing to tune
+the DDPM. If it doesn't, issue #33 is the next lever.
+
+### What's landed
+- `preprocess/synthetic_data/imu_diffusion/{__init__,dataset,model,diffusion,train,generate}.py`
+- `preprocess/data/imu_diffusion_ckpts/model.pt` — first training checkpoint
+- `outputs/validation/imu_diffusion/real_vs_synth_qc.png` — visual QC grid
+- Issue #33 filed — DDPM distribution fidelity iteration (follow-up work)
+
+---
