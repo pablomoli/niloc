@@ -1,0 +1,19 @@
+# @package _group_
+# Warmup + single-cycle cosine decay from peak LR to 0 over the full run.
+# Scheduler is stepped per-epoch (same cadence as WarmupReduceLROnPlateau).
+#
+# Used for fabricated-data runs (avalon_2nd_floor) where no validation metric
+# exists and plateau detection on per-epoch training loss is too noisy —
+# ReduceLROnPlateau fires on random-walk oscillations regardless of which
+# loss it monitors. Deterministic cosine decay avoids that whole failure mode.
+# See issue #31 for the full postmortem.
+name: WarmupCosineSchedule
+# LambdaLR-based — no metric needed. `monitor: False` tells base_models to
+# skip setting the `monitor` field in Lightning's optimizer_info (otherwise
+# Lightning tries to invoke scheduler.step(metric) on a LambdaLR and crashes).
+# niloc/trainer.py falls back to train_dec_loss_epoch for ModelCheckpoint.
+monitor: False
+
+warmup_steps: 30
+cycles: 0.5
+t_total: True

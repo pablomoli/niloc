@@ -28,19 +28,28 @@ data_config["avalon_2nd_floor"]="avalon_syn"
 
 DATA_CFG=${data_config[$BUILDING]:-train}
 
-# Fabricated datasets have no validation split — monitor train loss instead.
-# Real datasets have a val split so val_enc_loss is available.
-# For the 2-branch model we watch decoder loss, not encoder: the encoder loss
-# plateaus at ~10.2 by epoch ~40 by design (coarse spatial prior), so
-# ReduceLROnPlateau on the encoder crushes decoder LR prematurely. See #31.
-declare -A scheduler_monitor
-scheduler_monitor["avalon_2nd_floor"]="train_dec_loss_epoch"
+# Scheduler selection per building.
+#
+# Fabricated runs (avalon_2nd_floor) use WarmupCosineAvalon — deterministic
+# cosine decay over the full epoch budget. ReduceLROnPlateau was firing on
+# per-epoch random-walk noise regardless of which loss it monitored (both
+# encoder and decoder variants crashed LR to ~1e-7 within 300 epochs — see
+# the 2026-04-13 postmortem in docs/findings.md). Cosine gives a predictable
+# LR trajectory and removes the plateau-detection failure mode entirely.
+#
+# Real-data runs (A/B/C) keep the default WarmupReduceLROnPlateau from
+# defaults.yaml, which monitors val_loss — fine because they have a val split.
+declare -A scheduler_name
+scheduler_name["avalon_2nd_floor"]="WarmupCosineAvalon"
 
-SCHEDULER_MONITOR=${scheduler_monitor[$BUILDING]:-val_enc_loss}
+SCHEDULER_NAME=${scheduler_name[$BUILDING]:-}
 
 EXTRA_OVERRIDES=""
 if [[ -n "$DATA_DIR" ]]; then
 	EXTRA_OVERRIDES="dataset.root_dir=$DATA_DIR dataset.train_list=$DATA_DIR/train.txt dataset.val_list=$DATA_DIR/val.txt"
+fi
+if [[ -n "$SCHEDULER_NAME" ]]; then
+	EXTRA_OVERRIDES="$EXTRA_OVERRIDES train_cfg/scheduler=$SCHEDULER_NAME"
 fi
 
 uv run python niloc/trainer.py \
@@ -54,7 +63,8 @@ uv run python niloc/trainer.py \
   +arch/output@arch.decoder_output=cnnfc_${BUILDING} \
   data.batch_size=256 \
   arch.d_model=${model_dim[$BUILDING]} \
-  train_cfg.scheduler.monitor=${SCHEDULER_MONITOR} \
   train_cfg.num_workers=12 \
   train_cfg.lr=0.0004 \
+  train_cfg.tr_warmup=30 \
+  train_cfg.arrf=0.02 \
   $EXTRA_OVERRIDES

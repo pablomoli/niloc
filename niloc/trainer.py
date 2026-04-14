@@ -183,9 +183,17 @@ def launch_train(cfg: DictConfig) -> None:
     # Only the 2-branch model logs separate encoder/decoder losses.
     if model_type is Scheduled2branchModule:
         ckpt_format += "-enc={train_enc_loss_epoch:.2f}-dec={train_dec_loss_epoch:.2f}"
-    # Use the same metric the LR scheduler watches — guarantees the metric exists whether
-    # or not a validation set is present (fabricated data has no val split).
-    monitor_metric = cfg.train_cfg.scheduler.monitor
+    # ModelCheckpoint needs a scalar name. Prefer the LR scheduler's monitor
+    # (when it has one), otherwise fall back to the canonical training loss
+    # for the task. This lets LambdaLR-style schedulers (cosine) set
+    # `monitor: False` without breaking the best-k checkpoint callback.
+    scheduler_monitor = cfg.train_cfg.scheduler.get("monitor", False)
+    if scheduler_monitor:
+        monitor_metric = scheduler_monitor
+    elif model_type is Scheduled2branchModule:
+        monitor_metric = "train_dec_loss_epoch"
+    else:
+        monitor_metric = "train_loss_epoch"
     validation_checkpoint_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
         dirpath=filepath,
         monitor=monitor_metric,
