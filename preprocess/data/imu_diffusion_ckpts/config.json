@@ -1,0 +1,23 @@
+{
+  "library_path": "preprocess/data/noise_library.npy",
+  "meta_path": "preprocess/data/noise_library_meta.json",
+  "out_dir": "preprocess/data/imu_diffusion_ckpts",
+  "epochs": 200,
+  "batch_size": 64,
+  "lr": 0.0001,
+  "weight_decay": 0.0001,
+  "num_timesteps": 200,
+  "base_channels": 64,
+  "channel_mults": [
+    1,
+    2,
+    4
+  ],
+  "time_embed_dim": 128,
+  "class_embed_dim": 32,
+  "num_classes": 3,
+  "augment_rotation": true,
+  "ema_decay": 0.999,
+  "seed": 42,
+  "log_every": 10
+}
