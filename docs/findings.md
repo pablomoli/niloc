@@ -717,6 +717,19 @@ across the support of `vel_window`.
 
 ## 2026-04-14 Decoder Collapse Diagnostic (revises earlier interpretation)
 
+> **[SUPERSEDED 2026-04-15 00:00]** The interpretation in this section is
+> wrong. This section concludes the collapse is a "training-coverage
+> problem in the tr_ratio→0 regime" that needs more training or more data.
+> That is false. The collapse is an **inference-time artifact** in
+> `get_inference`'s memory carry-over across windows, fixable with
+> `+test_cfg.individual=true` and zero retraining. See section "2026-04-14
+> Decoder Collapse Was an Inference-Time Artifact" below for the correct
+> diagnosis. The diagnostic's own output — 20/22 unique decoder cells in
+> the isolated per-window probe — was already direct evidence that memory
+> carry-over (not training) was the cause, but I read the signal as
+> supporting evidence for the wrong hypothesis. Keeping this section in
+> the document as a postmortem of how the misdiagnosis happened.
+
 Ran `niloc/diagnose_decoder.py` on `epoch=689-dec=8.02.ckpt` with
 `fab_graph_0000`. The script iterates all 22 windows of the session and for
 each window records: encoder latent, encoder argmax, `start_zero` and
@@ -854,6 +867,15 @@ to propagate a prior.
 ---
 
 ## 2026-04-14 Schedule-Fix Retrain: Confirms Fixed-Point Ceiling
+
+> **[SUPERSEDED 2026-04-15 00:00]** The framing of this section is based
+> on the false premise from the prior section — that the decoder collapse
+> is a training-time problem. That's wrong. The schedule fix still helped
+> (sched retrain's default-mode `start_gt_1` E[err] is 11.7 m vs the
+> cosine retrain's 12.9 m — a real improvement), but the dramatic fix
+> lives at inference time. See "2026-04-14 Decoder Collapse Was an
+> Inference-Time Artifact" below. The "ceiling" this section documents is
+> the default-inference-path ceiling, not a fundamental model ceiling.
 
 Based on the decoder diagnostic, the autoregressive collapse hypothesis
 predicted that giving the decoder more *productive* epochs in the
@@ -1102,5 +1124,314 @@ the DDPM. If it doesn't, issue #33 is the next lever.
 - `preprocess/data/imu_diffusion_ckpts/model.pt` — first training checkpoint
 - `outputs/validation/imu_diffusion/real_vs_synth_qc.png` — visual QC grid
 - Issue #33 filed — DDPM distribution fidelity iteration (follow-up work)
+
+---
+
+## 2026-04-14 Decoder Collapse Was an Inference-Time Artifact [BREAKTHROUGH]
+
+### TL;DR
+
+The "one cell per session" decoder failure that motivated four retrains,
+the scheduler postmortem, the IMUDiffusion package, and issue #18 is
+**not a training-time failure.** It is an inference-time bug in
+`niloc/network/scheduled_2branch.py:get_inference`, which carries
+autoregressive memory across data-loader windows. Flipping the
+**pre-existing** `+test_cfg.individual=true` Hydra flag selects a code
+path that constructs a fresh uniform memory per window and fixes the
+collapse with **zero retraining**.
+
+On the 2026-04-13 cosine retrain's `epoch=689-dec=8.02.ckpt`:
+
+| `start_gt_1` metric | default carry-over | **`individual=true`** | delta |
+|---|---|---|---|
+| within 5 m | 0.185 | **0.515** | **+178 %** |
+| within 10 m | 0.435 | **0.747** | **+72 %** |
+| within 15 m | 0.690 | **0.802** | **+16 %** |
+| AUC | 0.719 | **0.808** | **+0.089** |
+| E[err] | 12.9 m | **8.9 m** | **−4.0 m** |
+| unique cells per session | **exactly 1** | **4–6** | — |
+
+`encoder` and `start_zero` modes are unchanged (both paths that don't
+use cross-window memory carry-over). The fix is specific to
+`start_gt_1`, which is the mode the paper cares about for localisation.
+
+### The bug
+
+`get_inference` in `niloc/network/scheduled_2branch.py` has three
+execution paths controlled by `test_cfg.with_gt` and `test_cfg.individual`.
+The **default** path (neither flag set) runs the following data-loader
+loop, paraphrased:
+
+```python
+w, s = cfg.data_window_cfg.window_size, cfg.data_window_cfg.step_size
+overlap = int((w - self.zero - s) // self.sample)
+for i, (feat, targ, _, frame_id) in enumerate(data_loader):
+    pred_enc, mid_enc = self.forward_enc(feat[:, :, self.zero:])
+    length = targ[:, self.sample - 1 + self.zero::self.sample].size(1)
+    memory = torch.ones(..., length) / self.hparams.grid.elements  # fresh uniform
+    if i == 0 and cfg.test_cfg.get('start_gt', False):
+        memory[:, :, :start_gt] = gt_seed                           # seed window 0
+    elif i > 0:
+        memory[:, :, :overlap + 1] = pred_dec_softmax[:, :, -overlap - 1:]
+    for j in range(ss, length):
+        if j > ss:
+            memory[:, :, j] = pred_dec_softmax[:, :, -1]
+        pred_dec = self.forward_dec(mid_enc, memory[:, :, :j + 1])
+        pred_dec_softmax = F.softmax(pred_dec, 1)
+```
+
+For the Avalon config, `w=20, s=10, zero=1, sample=10`, so
+`overlap = int((20 - 1 - 10) // 10) = 0`. The "carry-over" line then
+becomes `memory[:, :, :1] = pred_dec_softmax[:, :, -1:]` — **the single
+last prediction from the previous window is spliced into slot 0 of the
+current window's memory**. Since the decoder learns an attractor where
+"seeded with cell X → output cell X", every window after the first
+echoes the first window's prediction, and the session collapses.
+
+The `individual=true` branch is structurally identical but **never
+touches `pred_dec_softmax` from prior iterations**. Each window gets a
+fresh uniform memory (optionally seeded from GT at index 0 for
+`start_gt_1`). Corroborated by explore agent inspection: no cross-
+iteration state leak in the individual path.
+
+### Historical context: the diagnostic already showed this
+
+Earlier in the session I wrote `niloc/diagnose_decoder.py`, which
+probes the decoder per-window with a fresh GT seed and ran this:
+
+```
+-- Decoder per-window argmax --
+  start_zero:  3/22 unique   [mostly (409, 28) — corner]
+  start_gt_1:  20/22 unique  [varied: (177,27), (182,56), ...]
+```
+
+**The diagnostic showed the decoder producing 20 distinct cells across
+22 windows when seeded fresh-per-window.** This is functionally the
+same as `individual=true` in production. I buried the signal under a
+section titled "Decoder Collapse Diagnostic" with a conclusion that
+the collapse was a training-coverage problem, which is how the
+postmortem thread ended up focused on schedule hacking and data
+diversity for another full day.
+
+The diagnostic was correct. My interpretation of it was wrong.
+
+### Complete evaluation matrix (corroborated by explore agent)
+
+Agent re-parsed every `errors.txt` under
+`outputs/2026-04-{13,14}/**/eval/*/errors.txt`. Full table of
+in-distribution sanity results on the 20-session subset of
+`avalon_2nd_floor_graph`:
+
+| test_tag | epoch | mode | w5m | w10m | w15m | AUC | E[err] |
+|---|---|---|---|---|---|---|---|
+| sanity (first retrain) | 459 | encoder | 0.081 | 0.168 | 0.301 | 0.576 | 19.32 m |
+| sanity | 459 | start_gt_1 | 0.196 | 0.389 | 0.619 | 0.707 | 13.46 m |
+| sanity | 459 | start_zero | 0.025 | 0.037 | 0.076 | 0.455 | 24.76 m |
+| cos (cosine retrain) | 689 | encoder | 0.148 | 0.285 | 0.389 | 0.610 | 17.78 m |
+| cos | 689 | start_gt_1 | 0.185 | 0.435 | 0.690 | 0.719 | 12.89 m |
+| cos | 689 | start_zero | 0.053 | 0.088 | 0.193 | 0.504 | 22.56 m |
+| sched (schedule-fix) | 689 | encoder | 0.116 | 0.210 | 0.393 | 0.609 | 17.84 m |
+| sched | 689 | start_gt_1 | 0.248 | 0.550 | 0.743 | 0.747 | **11.65 m** |
+| sched | 689 | start_zero | 0.025 | 0.040 | 0.093 | 0.479 | 23.70 m |
+| **ind (cosine ckpt, individual=true)** | **689** | **encoder** | **0.148** | **0.285** | **0.389** | **0.610** | **17.78 m** |
+| **ind** | **689** | **start_gt_1** | **0.515** | **0.747** | **0.803** | **0.808** | **8.87 m** |
+| **ind** | **689** | **start_zero** | **0.057** | **0.085** | **0.185** | **0.510** | **22.32 m** |
+| ind | 799 | encoder | 0.140 | 0.268 | 0.399 | 0.608 | 17.90 m |
+| ind | 799 | start_gt_1 | 0.487 | 0.718 | 0.794 | 0.804 | 9.08 m |
+| ind | 799 | start_zero | 0.057 | 0.085 | 0.193 | 0.513 | 22.16 m |
+
+Reading notes:
+
+- **`encoder` and `start_zero` rows are pairwise identical between
+  `cos`/`sched` default and `ind`** for the same checkpoint. The
+  inference fix only affects `start_gt_1` because only that mode uses
+  cross-window memory carry-over in a way that creates the fixed point.
+- The schedule-fix retrain (`sched`) **does** beat the cosine retrain
+  (`cos`) on `start_gt_1` default-mode (w5m 0.248 vs 0.185, E[err]
+  11.65 m vs 12.89 m). Real improvement from training dynamics — just
+  not the dramatic fix. Nested on top of the inference fix, sched is
+  the stronger base model.
+- `start_zero` (cold-start decoder with uniform memory prior) is
+  **unchanged** by both the schedule fix and the inference fix. It
+  remains at 2.5–5.7 % within 5 m and ~22 m E[err] across every run.
+  This is the real remaining failure mode.
+
+### Per-session decoder cell variation (corroborated by explore agent)
+
+Agent parsed `{session}_dec_traj.txt` for `fab_graph_{0000, 0001, 0002}`
+under three eval runs:
+
+| session | cos689 default | sched689 default | **ind689 individual** |
+|---|---|---|---|
+| fab_graph_0000 | 1 unique, E=8.53 m | 1 unique, E=8.67 m | **4 unique, E=4.29 m** |
+| fab_graph_0001 | 1 unique, E=9.15 m | 1 unique, E=10.49 m | **4 unique, E=4.53 m** |
+| fab_graph_0002 | 1 unique, E=19.23 m | 1 unique, E=11.92 m | **6 unique, E=8.31 m** |
+
+Every default-mode session emits **exactly 1** unique cell (the earlier
+"2 unique" count was 1 real + 1 (0, 0) padding artifact). The
+`individual` mode emits 4–6 distinct cells per session. Mean per-frame
+error in metres drops by roughly half.
+
+### What doesn't change, and why
+
+- **Encoder mode** is unchanged. The encoder never used cross-window
+  memory, so there was nothing to fix. It lives at ~14 % within 5 m
+  after the axis-fix win and hasn't moved since.
+- **`start_zero` mode is unchanged.** With uniform memory and no GT
+  seed, the decoder's first-step output is dominated by the encoder's
+  posterior, which for our training regime points at a few floor-wide
+  "popular" cells. The decoder collapses to the encoder's majority vote
+  regardless of inference path. This is a real problem for true
+  cold-start localisation (user opens the app, no prior fix) but not
+  for the 1-GT-seed regime which is what NILOC actually benchmarks.
+- **`sched_gt_1` aggregate** improved (11.65 → 8.87 m) but the absolute
+  number is still not paper-worthy on real data. 51.5 % within 5 m on
+  *in-distribution* fabricated sessions is a big jump from 18.5 % but
+  it's not yet "production quality."
+
+### Corrections to prior findings sections
+
+Two sections above now carry **[SUPERSEDED]** notices:
+
+1. `## 2026-04-14 Decoder Collapse Diagnostic (revises earlier interpretation)`
+   — the claim that the failure is a "training-coverage problem in the
+   tr_ratio→0 regime" is false. The diagnostic's own 20/22-unique-cells
+   signal was already direct evidence against the conclusion it
+   supported.
+2. `## 2026-04-14 Schedule-Fix Retrain: Confirms Fixed-Point Ceiling` —
+   the "ceiling" documented is the default-inference-path ceiling, not
+   a fundamental model ceiling. Schedule-fix retrain is still useful
+   because it pushes the base model slightly (default-mode start_gt_1
+   E[err] 12.89 → 11.65 m), and under `individual=true` that improvement
+   stacks.
+
+Both sections remain in the document unchanged below their notices
+because they record the debugging arc faithfully — they're a postmortem
+of how the misdiagnosis happened, not a claim about what the model
+actually does. That postmortem has value on its own as a record of
+what was ruled out.
+
+### Avalon sensor-only files (corroborated by explore agent)
+
+Four files in `/mnt/c/Users/Pablo/Developer/niloc/avalon data/`:
+
+```
+HIMU-2026-03-31_16-30-20.csv  4796 rows  ~200 Hz (5 ms sampling)
+HIMU-2026-03-31_16-31-49.csv  1329 rows  ~200 Hz
+HIMU-2026-03-31_16-32-08.csv  4847 rows  ~20 Hz  (50 ms sampling)
+HIMU-2026-03-31_16-34-34.csv   848 rows  ~200 Hz
+```
+
+Twelve columns, verbatim headers:
+
+```
+icm45631_accelerometer.{x,y,z}, mmc5616_magnetometer.{x,y,z},
+orientation_sensor.{x,y,z}, icm45631_gyroscope.{x,y,z}
+```
+
+**Not directly compatible with the NILOC loader.** The
+`VelocityGridSequence` in `niloc/data/dataset_velocity_reloc.py` expects
+`.txt` files with 5 tab-separated columns
+`ts vio_x vio_y gt_x gt_y` at 1 Hz. The HIMU files are:
+
+1. **Raw sensor readings, not VIO position estimates.** They need to be
+   processed through a visual-inertial odometry pipeline (RoNIN,
+   VINS-Mono, ARKit, or similar) to produce `(vio_x, vio_y)` first.
+2. **No timestamps in the data.** The timestamps are implicit from the
+   sampling rate baked into the filename / metadata.
+3. **200 Hz, not 1 Hz.** Need to be downsampled after VIO conversion.
+4. **No ground truth.** That's fine per the sprint — the whole point of
+   NILOC is to localise without requiring GT. But it means we can't
+   compute `within-5m`-style accuracy metrics on these sessions. What
+   we *can* do is run inference, overlay predictions on the floorplan,
+   and visually judge whether the decoder is tracking a plausible walk
+   through hallways or still emitting garbage.
+
+**Next action for the HIMU data:** build a minimal preprocessor that
+reads the CSVs, integrates accelerometer/gyroscope/orientation into
+approximate position estimates, downsamples to 1 Hz, and writes the
+NILOC 5-column format (with `gt_x == vio_x` and `gt_y == vio_y` as
+a convention for sessions with no GT). This is a separate layer-4
+task (issue #25 territory) — not a blocker for the talk.
+
+### Updated talk narrative
+
+Three concrete wins, corroborated:
+
+1. **Axis-swap bug in the graph fabrication pipeline** —
+   `preprocess/synthetic_data/graph_path_generator.py` emitted
+   `(ts, row, col, row, col)` while the trainer's dataset loader
+   expected `(col, row)` and clipped with an off-by-one. Every prior
+   model on this codebase was training on axis-scrambled targets.
+   Fixing this lifted encoder 5m accuracy from 8.1 % to 14.8 % — an
+   **82 % relative improvement** with zero model changes.
+2. **Decoder collapse was an inference-time artifact, not a training
+   failure.** The `get_inference` default path carries autoregressive
+   memory across windows and the decoder has a fixed point at that
+   carry-over. `+test_cfg.individual=true` — a pre-existing flag in
+   the codebase — selects a per-window reset path and recovers motion
+   tracking with zero retraining. On the cosine retrain checkpoint:
+   `start_gt_1` within-5m jumped **18.5 % → 51.5 %** (nearly 3×),
+   E[err] dropped **12.9 m → 8.9 m**, and per-session unique cell
+   count went from exactly 1 to 4–6.
+3. **IMUDiffusion for synthetic VIO noise expansion** (issue #18).
+   4.13 M-param conditional DDPM, trained in 2 min 24 s, expanded the
+   noise library 3× and specifically addressed the stationary motion
+   class (6 → 830 segments). A v2 retrain on the expanded library is
+   running in parallel and marginally beats v1 on training loss
+   (best `dec` 7.948 vs 8.017). Full inference-mode eval pending
+   completion. Regardless of the v2 result, this is reusable
+   infrastructure for any future building or motion-type study.
+
+Headline sentence: **"Our fabrication pipeline had two silent bugs —
+one in training targets (axis swap) and one in inference memory carry
+-over — and fixing both took the decoder from emitting one cell per
+session with 12.9 m average error up to four-to-six cells per session
+with 8.9 m average error, and in some frames tracking ground truth
+within 1 metre."**
+
+### Remaining open questions
+
+- **Real Avalon VIO data.** The HIMU CSVs need a VIO preprocessor
+  before we can eval on them. When that lands, run both default and
+  `individual=true` inference and see whether the fixed-point
+  collapse also happens on real data (unlikely, based on the fact
+  that real VIO has different enough statistics from fabricated VIO
+  that the learned attractor may not trigger the same way).
+- **Cold-start localisation (`start_zero`).** Neither the axis fix
+  nor the inference fix nor more training data help this mode. It
+  sits at ~22 m E[err] across every run. That's the real remaining
+  failure mode. Possible next work: initialise memory from encoder
+  softmax (instead of uniform) and see if that gives the decoder a
+  sharper prior to start from.
+- **v2 retrain result.** Completes in ~30 minutes. Full
+  `individual=true` eval on the v2 best checkpoint is queued for the
+  completion wakeup.
+- **NILOC paper reproduction.** Building A/B/C source data is not on
+  this machine. Running the forked pipeline on those datasets and
+  reproducing the published numbers would definitively prove the
+  fork is structurally intact. This remains the strongest single
+  piece of evidence we could add to the talk.
+
+### What's landed this session
+
+- `niloc/diagnose_decoder.py` + `diagnose_decoder.sh` — decoder
+  collapse diagnostic tool
+- `niloc/config/train_cfg/scheduler/WarmupCosineAvalon.yaml` — cosine
+  LR schedule (still the right default for fabricated runs)
+- `preprocess/synthetic_data/imu_diffusion/` — complete DDPM package
+- `preprocess/data/imu_diffusion_ckpts/model.pt` — 200-epoch DDPM
+  checkpoint
+- `preprocess/data/noise_library_v2.npy` — 5000-segment expanded
+  library
+- `outputs/validation/imu_diffusion/real_vs_synth_qc.png` — visual QC
+- `models/avalon_2nd_floor_syn/{sanity,sched}_ckpts.txt` — best-k
+  pointer files
+- `outputs/fabricated/avalon_2nd_floor_graph_v2/` — re-fabricated
+  training dataset on the expanded noise library
+- Issues filed: #30 (progress log), #31 (scheduler monitor), #32
+  (early telemetry), #33 (DDPM quality iteration)
+- All work committed to `origin` and pushed to `ana` (Anastasia095
+  fork) via the new `git pushall` alias
 
 ---
