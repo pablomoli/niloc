@@ -1,0 +1,2 @@
+# First retrain (2026-04-12 23:25, axis-fix + broken plateau scheduler).
+459 ../../outputs/2026-04-12/23-25-31/runs/models/avalon_2nd_floor_syn/version_0/epoch=459-tr_ratio=0.2.ckpt

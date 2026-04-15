@@ -1362,6 +1362,35 @@ provide a useful prior. Possible fixes for a follow-up session:
    (user taps their current location, NFC beacon, etc). Cold-start is
    interesting but not on the critical path.
 
+### Decomposing the improvements (three fixes, three measured deltas)
+
+Ran `individual=true` eval on the 2026-04-13 **first** retrain checkpoint
+(`epoch=459` from `outputs/2026-04-12/23-25-31/`) to isolate the
+contribution of the inference fix from training-time improvements:
+
+| checkpoint | inference mode | start_gt_1 w5m | E[err] | notes |
+|---|---|---|---|---|
+| first retrain ep=459 | default | 0.196 | 13.5 m | post-axis-fix baseline |
+| first retrain ep=459 | **individual** | **0.473** | **8.7 m** | inference fix alone |
+| sched retrain ep=689 | default | 0.248 | 11.6 m | +schedule fix, default inference |
+| sched retrain ep=689 | **individual** | **0.591** | **7.87 m** | all three fixes stacked |
+
+Deltas:
+
+1. **Axis-swap fix → encoder from 8.1 % → 14.8 % within 5 m** (+82 %
+   relative on encoder mode — not shown in the `start_gt_1` column above
+   but see the Sanity Evaluation section earlier in this file).
+2. **Inference fix (flip `+test_cfg.individual=true`) → start_gt_1 from
+   0.196 → 0.473 within 5 m** (**+141 % relative**, −4.8 m E[err]) on the
+   same model weights with zero retraining.
+3. **Schedule fix + additional training → 0.473 → 0.591 within 5 m**
+   (+25 % relative, −0.83 m E[err]) on top of the inference fix.
+
+The inference fix is the dominant contributor to the decoder
+improvement. The schedule fix adds ~25 % more accuracy on top, and the
+axis fix lifts the encoder independently. Three orthogonal wins that
+stack.
+
 ### Talk-worthy numbers (as of 2026-04-15 00:00)
 
 | metric | April 5 baseline | **Today (sched + individual)** | absolute improvement |
