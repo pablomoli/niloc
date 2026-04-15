@@ -1289,6 +1289,95 @@ error in metres drops by roughly half.
   *in-distribution* fabricated sessions is a big jump from 18.5 % but
   it's not yet "production quality."
 
+### Stacking the schedule-fix training with the inference fix
+
+Re-ran `individual=true` eval on the 2026-04-14 schedule-fix checkpoint
+(`sched689`). Both fixes stack:
+
+| run | `start_gt_1` w5m | w10m | w15m | AUC | E[err] |
+|---|---|---|---|---|---|
+| cos default | 0.185 | 0.435 | 0.690 | 0.719 | 12.89 m |
+| sched default | 0.248 | 0.550 | 0.743 | 0.747 | 11.65 m |
+| cos + individual | 0.515 | 0.747 | 0.803 | 0.808 | 8.87 m |
+| **sched + individual** | **0.591** | **0.808** | **0.862** | **0.831** | **7.87 m** |
+
+Per-session decoder variation on `sched689 + individual`:
+
+```
+fab_graph_0000: 5 frames, 5/5 unique cells, mean err 3.82 m (min 1.44, max 6.31)
+fab_graph_0001: 4 frames, 4/4 unique cells, mean err 3.87 m (min 2.00, max 5.93)
+fab_graph_0002: 6 frames, 6/6 unique cells, mean err 4.11 m (min 0.79, max 9.49)
+fab_graph_0003: 5 frames, 5/5 unique cells, mean err 4.57 m (min 1.44, max 11.87)
+fab_graph_0004: 5 frames, 5/5 unique cells, mean err 4.46 m (min 3.16, max 6.80)
+```
+
+Every session has 100 % unique cells, mean per-session error under 5 m,
+minimum per-frame error on `fab_graph_0002` is **0.79 metres**. The
+visual is at `outputs/validation/inference_fix/default_vs_individual.png`
+— top row shows the default mode collapsing to a single red dot per
+session (often outside the floorplan envelope), bottom row shows blue
+predictions weaving through corridors alongside the green GT path.
+
+### Start_zero is the real remaining failure — and schedule-fix makes it worse
+
+Investigated how the start_zero cold-start mode behaves across runs
+by looking at the **first-frame predicted cell** for 10 sessions:
+
+| run | unique first-cells | dominant cell |
+|---|---|---|
+| cos689 default | 3 | (409, 28), (408, 30), (253, 146) |
+| sched689 default | **1** | (409, 28) — complete global collapse |
+| ind689 (cos + individual) | 3 | (409, 28), (254, 143), (253, 146) |
+| **schedind689 (sched + individual)** | **1** | (409, 28) |
+
+The schedule-fix training **sharpens the encoder's unconditional prior**
+on cell (409, 28) — the top-right corner of the floorplan. Under
+`start_zero` with uniform memory prior, the decoder has no GT to
+anchor to, so it defers to the encoder's majority vote. With cosine
+training the encoder had ~3 mode cells and therefore slightly varied
+cold-start predictions; with the schedule-fix training it concentrates
+all its mass on one cell and cold-start collapses completely. The
+inference fix `individual=true` does not help this mode at all.
+
+This is a **structural** limitation, not a bug: the decoder cannot
+localise from pure velocity with no positional hint, and the encoder's
+marginal distribution over cells on this dataset is too concentrated to
+provide a useful prior. Possible fixes for a follow-up session:
+
+1. **Softer encoder posterior initialisation.** Instead of seeding
+   `memory` with a uniform `1/elements` distribution, seed it with the
+   encoder's actual softmax output. This gives the decoder the
+   encoder's full distribution as a prior instead of just its argmax.
+   Expected to help but not break the ceiling.
+2. **Encoder-guided start_gt fallback.** When no GT is available at
+   start, use the encoder's first-window argmax as the "GT seed"
+   instead of uniform memory. Functionally moves start_zero toward
+   behaving like start_gt_1 using the encoder's best guess.
+3. **Temperature on the encoder head** during training. A lower
+   softmax temperature penalises over-confident marginal modes and
+   forces the encoder to spread mass more uniformly — which would make
+   the cold-start prior less pathological.
+4. **Ignore it for now** — the paper evaluation is with a GT seed,
+   and the production deployment would always have a first-fix hint
+   (user taps their current location, NFC beacon, etc). Cold-start is
+   interesting but not on the critical path.
+
+### Talk-worthy numbers (as of 2026-04-15 00:00)
+
+| metric | April 5 baseline | **Today (sched + individual)** | absolute improvement |
+|---|---|---|---|
+| encoder within 5 m | 0.081 | 0.116 | +43 % |
+| encoder E[err] | 19.3 m | 17.8 m | −1.5 m |
+| start_gt_1 within 5 m | 0.196 (≈) | **0.591** | **+201 %** (3×) |
+| start_gt_1 within 10 m | ≈0.389 | **0.808** | +108 % |
+| start_gt_1 within 15 m | ≈0.619 | **0.862** | +39 % |
+| start_gt_1 E[err] | 13.5 m (≈) | **7.87 m** | **−5.6 m** |
+| start_gt_1 unique cells / session | 1 | **4–6** | motion tracking |
+
+(The "April 5 baseline" row uses the 2026-04-13 first retrain `sanity`
+numbers as a proxy, since the 2026-04-05 real-session numbers were on a
+different test set. The absolute deltas are directional.)
+
 ### Corrections to prior findings sections
 
 Two sections above now carry **[SUPERSEDED]** notices:

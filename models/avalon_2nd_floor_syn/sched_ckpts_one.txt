@@ -1,0 +1,2 @@
+# Just ep689 for quick experiments.
+689 ../../outputs/2026-04-14/07-16-52/runs/models/avalon_2nd_floor_syn/version_0/epoch=689-tr_ratio=0.0-enc=10.10-dec=8.00.ckpt
