@@ -1,0 +1,23 @@
+# Fabrication pipeline config — Avalon 2nd floor, graph paths + expanded
+# noise library (issue #18). The v2 library has 5000 segments (1573 real +
+# 3427 synthetic from IMUDiffusion) with balanced motion-type buckets,
+# primarily to expand the stationary class from 6 real segments to 830 and
+# to add overall diversity in the straight/turn buckets. Motivation is the
+# decoder autoregressive fixed-point collapse documented in
+# docs/findings.md section "2026-04-14 Schedule-Fix Retrain".
+path_generator: graph
+graph_path: preprocess/synthetic_data/data/avalon_graph.json
+n_gt_paths: 200          # distinct GT paths to generate before augmentation
+avg_speed_px_s: 5.0      # ~0.5 m/s at 10 px/m; lower speed → longer frame sequences
+min_frames: 60           # reject paths with fewer frames (noise window is 150 frames)
+noise_library: preprocess/data/noise_library_v2.npy
+target_dpi: 10.0         # Avalon px/m (Ana's measured value)
+n_trajectories: 800      # total fabricated trajectories to produce
+aug_mult: 4              # noise samples per GT path
+freq: 1.0                # Hz — Avalon simulator runs at 1 fps
+file_tag: fab_graph_v2
+seed: 42
+out_dir: outputs/fabricated/avalon_2nd_floor_graph_v2
+motion_typed_noise: true  # sample noise from motion-type bucket matching each GT path
+validate: true
+n_validate: 20
